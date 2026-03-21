@@ -9,17 +9,16 @@ import math
 # ==========================================
 # 1. CONFIGURAÇÕES INICIAIS E RESOLUÇÃO
 # ==========================================
-# Inicia o pygame primeiro para conseguirmos pegar a resolução do monitor
 pygame.init()
 info = pygame.display.Info()
 
-# Define a resolução do jogo sempre para o tamanho exato do PC do jogador
-LARGURA_TELA = info.current_w
-ALTURA_TELA = info.current_h
+# Inicia em MODO JANELA ocupando 80% da tela para ficar confortável
+LARGURA_TELA = int(info.current_w * 0.8)
+ALTURA_TELA = int(info.current_h * 0.8)
 FPS = 60
 ARQUIVO_RANKING = "ranking_completo.json"
 
-# MELHORIA DE CONTRASTE: Fundo mais escuro para os neons brilharem mais
+# CORES
 PRETO_FUNDO = (5, 5, 8) 
 BRANCO = (255, 255, 255)
 VERDE_NEON = (57, 255, 20)
@@ -28,6 +27,7 @@ ROSA_NEON = (255, 20, 147)
 LARANJA_NEON = (255, 100, 0)
 AMARELO_DADO = (255, 215, 0)
 VERMELHO_SANGUE = (255, 30, 30)
+ROXO_NEON = (148, 0, 211) 
 CINZA_ESCURO = (35, 40, 50)  
 CINZA_CLARO = (200, 200, 210) 
 AZUL_ESCURO = (15, 20, 30)
@@ -45,14 +45,12 @@ def desenhar_texto(surface, texto, fonte, cor, x, y, alinhamento="centro"):
     surface.blit(img_texto, rect_texto)
     return rect_texto
 
-def desenhar_botao_dinamico(surface, texto, fonte, cor_base, cx, cy, is_hovered):
+def desenhar_botao_dinamico(surface, texto, fonte, cor_base, cx, cy, is_hovered, largura=500, altura=55):
     texto_display = f"> {texto} <" if is_hovered else texto
     cor_texto = PRETO_FUNDO if is_hovered else cor_base
     
-    img_texto = fonte.render(texto_display, True, cor_texto)
-    rect_texto = img_texto.get_rect(center=(cx, cy))
-    
-    rect_botao = rect_texto.inflate(80, 40) 
+    rect_botao = pygame.Rect(0, 0, largura, altura)
+    rect_botao.center = (cx, cy)
     
     if is_hovered:
         pulso = math.sin(time.time() * 10) * 3
@@ -63,7 +61,10 @@ def desenhar_botao_dinamico(surface, texto, fonte, cor_base, cx, cy, is_hovered)
         pygame.draw.rect(surface, (10, 15, 25), rect_botao, border_radius=8)
         pygame.draw.rect(surface, cor_base, rect_botao, 2, border_radius=8)
         
+    img_texto = fonte.render(texto_display, True, cor_texto)
+    rect_texto = img_texto.get_rect(center=rect_botao.center)
     surface.blit(img_texto, rect_texto)
+    
     return rect_botao
 
 def desenhar_icone_som(surface, cx, cy, mutado, cor):
@@ -87,13 +88,15 @@ def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):
 def desenhar_fundo_cyberpunk(surface, tempo):
     surface.fill(PRETO_FUNDO)
     for x in range(0, LARGURA_TELA + 100, 100):
-        pygame.draw.line(surface, (20, 25, 35), (x, 0), (x, ALTURA_TELA), 1)
+        pygame.draw.line(surface, (15, 20, 25), (x, 0), (x, ALTURA_TELA), 1)
+    
     offset_y = (tempo * 50) % 100
     for y in range(-100, ALTURA_TELA + 100, 100):
-        pygame.draw.line(surface, (20, 25, 35), (0, y + offset_y), (LARGURA_TELA, y + offset_y), 1)
-    surf_fade = pygame.Surface((LARGURA_TELA, 300), pygame.SRCALPHA)
-    for i in range(300):
-        alpha = int(255 - (i / 300) * 255)
+        pygame.draw.line(surface, (15, 20, 25), (0, y + offset_y), (LARGURA_TELA, y + offset_y), 1)
+        
+    surf_fade = pygame.Surface((LARGURA_TELA, 200), pygame.SRCALPHA)
+    for i in range(200):
+        alpha = int(255 - (i / 200) * 255)
         pygame.draw.line(surf_fade, (*PRETO_FUNDO, alpha), (0, i), (LARGURA_TELA, i))
     surface.blit(surf_fade, (0, 0))
 
@@ -112,6 +115,22 @@ def criar_painel_transparente(largura, altura):
 # ==========================================
 # 3. ENTIDADES DO JOGO
 # ==========================================
+class ParticulaMenu:
+    def __init__(self):
+        self.pos = pygame.math.Vector2(random.uniform(0, LARGURA_TELA), random.uniform(0, ALTURA_TELA))
+        self.vel = pygame.math.Vector2(random.uniform(-0.5, 0.5), random.uniform(-1.5, -0.5))
+        self.cor = random.choice([CIANO_NEON, ROSA_NEON, VERDE_NEON, AZUL_ESCURO])
+        self.tamanho = random.uniform(1, 3)
+
+    def update(self):
+        self.pos += self.vel
+        if self.pos.y < -10:
+            self.pos.y = ALTURA_TELA + 10
+            self.pos.x = random.uniform(0, LARGURA_TELA)
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, self.cor, (int(self.pos.x), int(self.pos.y)), int(self.tamanho))
+
 class Particula:
     def __init__(self, x, y, cor):
         self.pos = pygame.math.Vector2(x, y)
@@ -174,10 +193,24 @@ class Player:
     def draw(self, surface):
         cor = BRANCO if self.invencivel else CIANO_NEON
         desenhar_brilho_neon(surface, cor, self.pos.x, self.pos.y, self.tamanho // 2, intensidade=4)
+        
         rect = pygame.Rect(0, 0, self.tamanho, self.tamanho)
         rect.center = (int(self.pos.x), int(self.pos.y))
         pygame.draw.rect(surface, cor, rect, border_radius=4)
         pygame.draw.rect(surface, BRANCO, rect.inflate(-6, -6), border_radius=2)
+        
+        raio_anel = 16 
+        rect_anel = pygame.Rect(0, 0, raio_anel * 2, raio_anel * 2)
+        rect_anel.center = (int(self.pos.x), int(self.pos.y))
+        espessura = 5 
+        
+        if self.dash_cooldown > 0:
+            ratio = 1.0 - (self.dash_cooldown / 45.0)
+            angulo_inicio = -math.pi / 2
+            angulo_fim = angulo_inicio + (math.pi * 2 * ratio)
+            pygame.draw.arc(surface, cor, rect_anel, angulo_inicio, angulo_fim, espessura)
+        else:
+            pygame.draw.circle(surface, cor, rect_anel.center, raio_anel, espessura)
 
 class Inimigo:
     def __init__(self, x, y, tipo, velocidade):
@@ -186,22 +219,35 @@ class Inimigo:
         self.raio = 12
         self.vel = velocidade
         self.dir = pygame.math.Vector2(0, 0)
+        self.morto = False
         
         self.estado_investida = "ESPERANDO" 
         self.timer_investida = 0.0
         self.alvo_mira = pygame.math.Vector2(x, y) 
-        self.travado = False # Controle de trava de mira (Kamikaze)
+        self.travado = False 
+        
+        self.timer_explosao = 0.0 
+        self.explodiu = False
+        
+        # NOVAS VARIÁVEIS PARA O BOSS
+        if self.tipo == "boss":
+            self.raio = 40
+            self.timer_habilidade = 0.0
+            self.estado_boss = "PERSEGUINDO"
 
         if self.tipo == "quique":
             ang = random.uniform(0, math.pi * 2)
             self.dir = pygame.math.Vector2(math.cos(ang), math.sin(ang)) * self.vel
 
-    def update(self, player_pos, lista_inimigos, dt, lista_particulas):
+    def update(self, player, lista_inimigos, dt, lista_particulas):
         if self.tipo == "perseguidor":
-            vec_to_player = player_pos - self.pos
+            pos_futura = player.pos + (player.vel * 12)
+            vec_to_player = pos_futura - self.pos
             if vec_to_player.length() > 0:
-                direcao_desejada = vec_to_player.normalize() * (self.vel * 0.7)
-                self.dir = self.dir.lerp(direcao_desejada, 0.1) 
+                direcao_desejada = vec_to_player.normalize() * (self.vel * 0.9)
+                onda = math.sin(time.time() * 6) * 40
+                direcao_desejada = direcao_desejada.rotate(onda)
+                self.dir = self.dir.lerp(direcao_desejada, 0.08) 
 
         elif self.tipo == "investida":
             self.timer_investida += dt
@@ -213,24 +259,76 @@ class Inimigo:
                     self.timer_investida = 0.0
             
             elif self.estado_investida == "MIRANDO":
-                # Segue o jogador pela primeira metade do tempo
                 if self.timer_investida < 0.5:
-                    self.alvo_mira = pygame.math.Vector2(player_pos.x, player_pos.y) 
+                    self.alvo_mira = pygame.math.Vector2(player.pos.x, player.pos.y) 
                 else:
-                    self.travado = True # Trava a mira no último local conhecido
+                    self.travado = True 
 
                 if self.timer_investida > 0.9: 
                     vec = self.alvo_mira - self.pos
                     if vec.length() > 0:
-                        self.dir = vec.normalize() * (self.vel * 4.0) # Investida muito mais rápida
+                        self.dir = vec.normalize() * (self.vel * 4.0) 
                     self.estado_investida = "ATACANDO"
                     self.timer_investida = 0.0
             
             elif self.estado_investida == "ATACANDO":
                 lista_particulas.append(Particula(self.pos.x, self.pos.y, LARANJA_NEON))
-                if self.timer_investida > 0.6: 
-                    self.estado_investida = "ESPERANDO"
-                    self.timer_investida = 0.0
+                if self.timer_investida > 0.8: 
+                    self.morto = True
+                    for _ in range(15): lista_particulas.append(Particula(self.pos.x, self.pos.y, LARANJA_NEON))
+
+        elif self.tipo == "explosivo":
+            self.timer_explosao += dt
+            if self.timer_explosao < 3.5:
+                vec_to_player = player.pos - self.pos
+                if vec_to_player.length() > 0:
+                    self.dir = self.dir.lerp(vec_to_player.normalize() * (self.vel * 0.6), 0.05)
+            else:
+                self.dir = self.dir * 0.9 
+                if self.timer_explosao > 4.5:
+                    self.morto = True
+                    self.explodiu = True
+                    for _ in range(40): lista_particulas.append(Particula(self.pos.x, self.pos.y, AMARELO_DADO))
+                    
+        elif self.tipo == "boss":
+            self.timer_habilidade += dt
+            
+            if self.estado_boss == "PERSEGUINDO":
+                vec_to_player = player.pos - self.pos
+                if vec_to_player.length() > 0:
+                    self.dir = self.dir.lerp(vec_to_player.normalize() * self.vel, 0.03)
+                
+                # Fica 3 segundos a perseguir antes de tentar invocar
+                if self.timer_habilidade > 3.0:
+                    self.estado_boss = "INVOCANDO"
+                    self.timer_habilidade = 0.0
+                    
+            elif self.estado_boss == "INVOCANDO":
+                self.dir *= 0.9 # Abranda muito para carregar a invocação
+                
+                if self.timer_habilidade > 1.0:
+                    # Cospe 1 Inimigo Bomba e 1 Caçador para atrapalhar
+                    lista_inimigos.append(Inimigo(self.pos.x, self.pos.y, "explosivo", 3.5))
+                    lista_inimigos.append(Inimigo(self.pos.x, self.pos.y, "perseguidor", 4.5))
+                    
+                    for _ in range(30): lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
+                    self.estado_boss = "DASH"
+                    self.timer_habilidade = 0.0
+                    
+            elif self.estado_boss == "DASH":
+                if self.timer_habilidade < 0.6:
+                    # Para no ar e carrega o Dash
+                    self.dir *= 0.8 
+                elif self.timer_habilidade < 1.2:
+                    # Executa o Dash (Verifica se está no frame exato do arranque)
+                    if self.timer_habilidade - dt < 0.6: 
+                        vec_to_player = player.pos - self.pos
+                        if vec_to_player.length() > 0:
+                            self.dir = vec_to_player.normalize() * (self.vel * 5.0) # Dispara violentamente
+                        for _ in range(25): lista_particulas.append(Particula(self.pos.x, self.pos.y, VERMELHO_SANGUE))
+                else:
+                    self.estado_boss = "PERSEGUINDO"
+                    self.timer_habilidade = 0.0
 
         forca_repulsao = pygame.math.Vector2(0, 0)
         for vizinho in lista_inimigos:
@@ -238,33 +336,57 @@ class Inimigo:
                 distancia = self.pos.distance_to(vizinho.pos)
                 distancia_segura = self.raio + vizinho.raio + 5
                 if 0 < distancia < distancia_segura:
-                    diferenca = self.pos - vizinho.pos
-                    forca_repulsao += diferenca.normalize() * (distancia_segura - distancia) * 0.1
+                    if self.tipo == "quique":
+                        normal = (self.pos - vizinho.pos).normalize()
+                        if self.dir.length() > 0:
+                            self.dir = self.dir.reflect(normal)
+                        self.pos += normal * 3 
+                    else:
+                        diferenca = self.pos - vizinho.pos
+                        forca_repulsao += diferenca.normalize() * (distancia_segura - distancia) * 0.1
         
         self.pos += self.dir + forca_repulsao
 
+        # Tratamento das Paredes
         if self.pos.x <= self.raio:
             self.pos.x = self.raio
-            if self.tipo == "quique": self.dir.x *= -1
-            elif self.tipo == "investida": self.estado_investida = "ESPERANDO"
+            if self.tipo in ["quique", "explosivo", "boss"]: self.dir.x *= -1
+            elif self.tipo == "investida":
+                self.dir.x = 0
+                if self.estado_investida == "ATACANDO":
+                    self.estado_investida = "ESPERANDO"
+                    self.timer_investida = 0.0
         elif self.pos.x >= LARGURA_TELA - self.raio:
             self.pos.x = LARGURA_TELA - self.raio
-            if self.tipo == "quique": self.dir.x *= -1
-            elif self.tipo == "investida": self.estado_investida = "ESPERANDO"
+            if self.tipo in ["quique", "explosivo", "boss"]: self.dir.x *= -1
+            elif self.tipo == "investida":
+                self.dir.x = 0
+                if self.estado_investida == "ATACANDO":
+                    self.estado_investida = "ESPERANDO"
+                    self.timer_investida = 0.0
             
         if self.pos.y <= 60 + self.raio:
             self.pos.y = 60 + self.raio
-            if self.tipo == "quique": self.dir.y *= -1
-            elif self.tipo == "investida": self.estado_investida = "ESPERANDO"
+            if self.tipo in ["quique", "explosivo", "boss"]: self.dir.y *= -1
+            elif self.tipo == "investida":
+                self.dir.y = 0
+                if self.estado_investida == "ATACANDO":
+                    self.estado_investida = "ESPERANDO"
+                    self.timer_investida = 0.0
         elif self.pos.y >= ALTURA_TELA - self.raio:
             self.pos.y = ALTURA_TELA - self.raio
-            if self.tipo == "quique": self.dir.y *= -1
-            elif self.tipo == "investida": self.estado_investida = "ESPERANDO"
+            if self.tipo in ["quique", "explosivo", "boss"]: self.dir.y *= -1
+            elif self.tipo == "investida":
+                self.dir.y = 0
+                if self.estado_investida == "ATACANDO":
+                    self.estado_investida = "ESPERANDO"
+                    self.timer_investida = 0.0
 
     def draw(self, surface):
         cor_base = ROSA_NEON
         if self.tipo == "perseguidor": cor_base = VERMELHO_SANGUE
         elif self.tipo == "investida": cor_base = LARANJA_NEON
+        elif self.tipo == "explosivo": cor_base = AMARELO_DADO
         
         if self.tipo == "investida" and self.estado_investida == "MIRANDO":
             cor_linha = VERMELHO_SANGUE if not self.travado else BRANCO
@@ -272,15 +394,58 @@ class Inimigo:
             pygame.draw.line(surface, cor_linha, self.pos, self.alvo_mira, espessura)
             if self.travado: cor_base = BRANCO
 
-        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=3)
-        pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
-        pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
+        if self.tipo == "explosivo":
+            if self.timer_explosao > 2.5:
+                if int(self.timer_explosao * 15) % 2 == 0:
+                    cor_base = BRANCO
+            desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=4)
+            pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
+            pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
+            if self.timer_explosao > 3.5:
+                raio_indicador = min(80, (self.timer_explosao - 3.5) * 80)
+                pygame.draw.circle(surface, VERMELHO_SANGUE, (int(self.pos.x), int(self.pos.y)), int(raio_indicador), max(1, int((4.5 - self.timer_explosao)*5)))
+                
+        elif self.tipo == "boss":
+            tempo = time.time()
+            
+            # 1. Desenha as Órbitas (Escudos satélites) do Boss
+            for i in range(3):
+                angulo = tempo * 4 + (i * math.pi * 2 / 3)
+                # Satélites afastam-se dele quando ele vai dar um Dash para avisar o jogador
+                distancia_orbe = self.raio + 35 if self.estado_boss == "DASH" else self.raio + 15
+                x_orb = self.pos.x + math.cos(angulo) * distancia_orbe
+                y_orb = self.pos.y + math.sin(angulo) * distancia_orbe
+                
+                pygame.draw.line(surface, ROXO_NEON, self.pos, (x_orb, y_orb), 2)
+                pygame.draw.circle(surface, VERMELHO_SANGUE, (int(x_orb), int(y_orb)), 8)
+                desenhar_brilho_neon(surface, VERMELHO_SANGUE, x_orb, y_orb, 8, 2)
+                pygame.draw.circle(surface, BRANCO, (int(x_orb), int(y_orb)), 3)
+
+            # 2. Muda a cor de acordo com o Estado
+            if self.estado_boss == "DASH": cor_atual = VERMELHO_SANGUE
+            elif self.estado_boss == "INVOCANDO": cor_atual = BRANCO
+            else: cor_atual = ROXO_NEON
+            
+            # Desenha o anel externo e fundo escuro
+            desenhar_brilho_neon(surface, cor_atual, self.pos.x, self.pos.y, self.raio, intensidade=5)
+            pygame.draw.circle(surface, cor_atual, (int(self.pos.x), int(self.pos.y)), self.raio)
+            pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 6)
+            
+            # 3. Núcleo pulsante interno
+            pulso = abs(math.sin(tempo * 10)) * (self.raio // 1.5)
+            pygame.draw.circle(surface, VERMELHO_SANGUE, (int(self.pos.x), int(self.pos.y)), int(pulso))
+            
+        else:
+            desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=3)
+            pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
+            pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
 
 # ==========================================
 # 4. MÁQUINA DE ESTADOS E LÓGICA
 # ==========================================
 class NeonSurge:
     def __init__(self):
+        pygame.init()
         pygame.mixer.init()
         
         self.volume_musica = 0.4 
@@ -298,26 +463,22 @@ class NeonSurge:
         self.rect_vol_menos = pygame.Rect(0, 0, 35, 35)
         self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
         
-        # Agora inicializa por padrão em Tela Cheia (Borderless Window no tamanho do monitor)
-        self.is_fullscreen = True
-        self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA), pygame.FULLSCREEN)
+        self.info = pygame.display.Info()
+        self.is_fullscreen = False
+        self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
         self.tela = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
         pygame.display.set_caption("Neon Surge - Hardcore Edition")
 
         self.clock = pygame.time.Clock()
         self.dt = 0.0 
         
-        self.blur_surf = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
-        self.blur_surf.set_alpha(80) 
-        self.blur_surf.fill(PRETO_FUNDO)
-
         self.crt_overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
         for y in range(0, ALTURA_TELA, 3): 
             pygame.draw.line(self.crt_overlay, (0, 0, 0, 40), (0, y), (LARGURA_TELA, y))
 
         font_name = "Consolas" if pygame.font.match_font("Consolas") else None
-        self.fonte_titulo = pygame.font.SysFont("Impact", 85)
-        self.fonte_sub = pygame.font.SysFont(font_name, 30, bold=True)
+        self.fonte_titulo = pygame.font.SysFont("Impact", 75)
+        self.fonte_sub = pygame.font.SysFont(font_name, 26, bold=True)
         self.fonte_texto = pygame.font.SysFont(font_name, 22)
         self.fonte_desc = pygame.font.SysFont(font_name, 19) 
         
@@ -334,6 +495,7 @@ class NeonSurge:
         self.inimigos = []
         self.coletaveis = []
         self.particulas = []
+        self.particulas_menu = [ParticulaMenu() for _ in range(50)]
         self.portal_aberto = False
         
         self.tempo_corrida = 0.0
@@ -350,18 +512,15 @@ class NeonSurge:
     def alternar_tela_cheia(self):
         self.is_fullscreen = not self.is_fullscreen
         if self.is_fullscreen: 
-            self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA), pygame.FULLSCREEN)
+            self.tela_real = pygame.display.set_mode((self.info.current_w, self.info.current_h), pygame.FULLSCREEN)
         else: 
-            # Em modo janela, usa 80% da tela para não cortar as margens na barra de tarefas
-            win_w, win_h = int(LARGURA_TELA * 0.8), int(ALTURA_TELA * 0.8)
-            self.tela_real = pygame.display.set_mode((win_w, win_h))
+            self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
 
     def obter_posicao_mouse(self):
         mx, my = pygame.mouse.get_pos()
-        # Ajusta a escala do mouse se estiver em modo janela (80%)
-        if not self.is_fullscreen:
-            mx = mx / 0.8
-            my = my / 0.8
+        if self.is_fullscreen:
+            mx = mx / (self.info.current_w / LARGURA_TELA)
+            my = my / (self.info.current_h / ALTURA_TELA)
         return mx, my
         
     def alterar_volume(self, delta):
@@ -427,14 +586,32 @@ class NeonSurge:
             self.temporizador_spawn = 0.0
         
         if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE"]:
-            for _ in range(5):
-                x = random.randint(50, LARGURA_TELA - 50)
-                y = random.randint(110, ALTURA_TELA - 50)
-                self.coletaveis.append(pygame.math.Vector2(x, y))
+            if self.fase_atual == 10:
+                # FASE 10: O BOSS FINAL COM CAOS ADICIONADO
+                for _ in range(8):
+                    x = random.randint(50, LARGURA_TELA - 50)
+                    y = random.randint(110, ALTURA_TELA - 50)
+                    self.coletaveis.append(pygame.math.Vector2(x, y))
+                
+                ex, ey = LARGURA_TELA // 2, 120
+                while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
+                    ex = random.randint(50, LARGURA_TELA - 50)
+                    ey = random.randint(110, ALTURA_TELA - 50)
+                
+                # Boss bem mais rápido e agressivo
+                self.inimigos.append(Inimigo(ex, ey, "boss", 4.2))
+                # Arena já começa com 4 inimigos base rápidos para dificultar muito a recolha dos itens
+                self._spawn_inimigos(4, 5.0) 
+                
+            else:
+                for _ in range(5):
+                    x = random.randint(50, LARGURA_TELA - 50)
+                    y = random.randint(110, ALTURA_TELA - 50)
+                    self.coletaveis.append(pygame.math.Vector2(x, y))
 
-            qtd_inimigos = 3 + self.fase_atual
-            vel_inimigo = 4 + (self.fase_atual * 0.3)
-            self._spawn_inimigos(qtd_inimigos, vel_inimigo)
+                qtd_inimigos = 3 + self.fase_atual
+                vel_inimigo = 4 + (self.fase_atual * 0.3)
+                self._spawn_inimigos(qtd_inimigos, vel_inimigo)
             
         elif self.modo_jogo == "SOBREVIVENCIA":
             self._spawn_inimigos(2, 4)
@@ -446,7 +623,7 @@ class NeonSurge:
 
     def _spawn_inimigos(self, quantidade, velocidade):
         for _ in range(quantidade):
-            tipo = random.choice(["quique", "perseguidor", "investida"])
+            tipo = random.choice(["quique", "perseguidor", "investida", "explosivo"])
             ex, ey = self.player.pos.x, self.player.pos.y
             while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
                 ex = random.randint(50, LARGURA_TELA - 50)
@@ -461,12 +638,31 @@ class NeonSurge:
             p.update()
             if p.raio <= 0: self.particulas.remove(p)
 
+        inimigos_atuais = self.inimigos.copy()
+        novos_inimigos = []
         for ini in self.inimigos:
-            ini.update(self.player.pos, self.inimigos, self.dt, self.particulas)
+            ini.update(self.player, self.inimigos, self.dt, self.particulas)
+            
+            if ini.morto:
+                if getattr(ini, 'explodiu', False):
+                    self.shake_frames = 15
+                    if not self.player.invencivel and ini.pos.distance_to(self.player.pos) < 80:
+                        self._lidar_com_morte()
+                        return
+                continue 
+                
             dist = ini.pos.distance_to(self.player.pos)
             if not self.player.invencivel and dist < (ini.raio + self.player.tamanho//2 - 2):
                 self._lidar_com_morte()
                 return
+                
+            novos_inimigos.append(ini)
+            
+        for ini in self.inimigos:
+            if ini not in inimigos_atuais:
+                novos_inimigos.append(ini)
+                
+        self.inimigos = novos_inimigos
 
         if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE"]:
             self.tempo_corrida += self.dt
@@ -478,7 +674,12 @@ class NeonSurge:
             
             if len(self.coletaveis) == 0 and not self.portal_aberto:
                 self.portal_aberto = True
-                self.portal_pos = pygame.math.Vector2(LARGURA_TELA//2, 100)
+                
+                margem_x, margem_y = 100, 100
+                px = random.randint(margem_x, LARGURA_TELA - margem_x)
+                py = random.randint(margem_y + 60, ALTURA_TELA - margem_y)
+                
+                self.portal_pos = pygame.math.Vector2(px, py)
                 self.shake_frames = 10
 
             if self.portal_aberto and self.player.pos.distance_to(self.portal_pos) < 30:
@@ -572,86 +773,85 @@ class NeonSurge:
 
         if self.estado in ["INPUT_NOME", "MENU_MODO", "TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "RANKING", "PERGUNTA_MODO"]:
             desenhar_fundo_cyberpunk(self.tela, self.tempo_global)
+            
+            for p in self.particulas_menu:
+                p.update()
+                p.draw(self.tela)
+                
             self.desenhar_controle_volume(mx, my)
             if self.estado in ["MENU_MODO", "TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "PERGUNTA_MODO"]:
                 pygame.draw.rect(self.tela, CINZA_ESCURO, (20, 20, 140, 40), border_radius=5)
                 desenhar_texto(self.tela, "< ESC VOLTAR", self.fonte_texto, BRANCO, 90, 40, alinhamento="centro")
 
         if self.estado == "INPUT_NOME":
-            desenhar_texto(self.tela, "NEON SURGE", self.fonte_titulo, CIANO_NEON, cx, cy - 140)
-            desenhar_texto(self.tela, "IDENTIFICAÇÃO DO PILOTO:", self.fonte_texto, BRANCO, cx, cy - 20)
+            desenhar_texto(self.tela, "NEON SURGE", self.fonte_titulo, CIANO_NEON, cx, cy - 120)
+            desenhar_texto(self.tela, "IDENTIFICAÇÃO DO PILOTO:", self.fonte_texto, BRANCO, cx, cy)
             
             caixa_texto = pygame.Rect(0, 0, 400, 60)
-            caixa_texto.center = (cx, cy + 40)
+            caixa_texto.center = (cx, cy + 50)
             pygame.draw.rect(self.tela, AZUL_ESCURO, caixa_texto, border_radius=10)
             pygame.draw.rect(self.tela, VERDE_NEON, caixa_texto, 2, border_radius=10)
             
             cursor = "_" if int(time.time() * 2) % 2 == 0 else ""
-            desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 40)
+            desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 50)
             
-            btn_rect = desenhar_botao_dinamico(self.tela, "CONFIRMAR DADOS", self.fonte_texto, VERDE_NEON, cx, cy + 180, self.botao_selecionado == 0)
+            btn_rect = desenhar_botao_dinamico(self.tela, "CONFIRMAR DADOS", self.fonte_sub, VERDE_NEON, cx, cy + 150, self.botao_selecionado == 0)
             self.botoes_hitboxes.append(btn_rect)
 
         elif self.estado == "PERGUNTA_MODO":
             desenhar_texto(self.tela, "NOVO PILOTO REGISTRADO", self.fonte_titulo, VERDE_NEON, cx, cy - 100)
-            
             modo_formatado = self.modo_jogo.replace('_', ' ')
             btn_manter_modo = desenhar_botao_dinamico(self.tela, f"CONTINUAR EM: {modo_formatado}", self.fonte_sub, CIANO_NEON, cx, cy + 30, self.botao_selecionado == 0)
-            btn_mudar_modo = desenhar_botao_dinamico(self.tela, "ESCOLHER NOVO MODO", self.fonte_sub, ROSA_NEON, cx, cy + 120, self.botao_selecionado == 1)
-            
+            btn_mudar_modo = desenhar_botao_dinamico(self.tela, "ESCOLHER NOVO MODO", self.fonte_sub, ROSA_NEON, cx, cy + 110, self.botao_selecionado == 1)
             self.botoes_hitboxes.extend([btn_manter_modo, btn_mudar_modo])
 
         elif self.estado == "MENU_MODO":
-            desenhar_texto(self.tela, "SISTEMA PRINCIPAL", self.fonte_titulo, BRANCO, cx, cy - 230)
-            
-            btn_corrida = desenhar_botao_dinamico(self.tela, "CORRIDA (SPEEDRUN)", self.fonte_sub, CIANO_NEON, cx, cy - 110, self.botao_selecionado == 0)
-            btn_corrida_hard = desenhar_botao_dinamico(self.tela, "CORRIDA HARDCORE (PERMADEATH)", self.fonte_sub, CIANO_NEON, cx, cy - 40, self.botao_selecionado == 1)
-            btn_sobre = desenhar_botao_dinamico(self.tela, "SOBREVIVÊNCIA (INFINITO)", self.fonte_sub, ROSA_NEON, cx, cy + 30, self.botao_selecionado == 2)
-            btn_hard = desenhar_botao_dinamico(self.tela, "SOBREVIVÊNCIA HARDCORE (BRUTAL)", self.fonte_sub, VERMELHO_SANGUE, cx, cy + 100, self.botao_selecionado == 3)
-            btn_info = desenhar_botao_dinamico(self.tela, "? ENTENDER OS MODOS ?", self.fonte_sub, AMARELO_DADO, cx, cy + 190, self.botao_selecionado == 4)
-            
+            desenhar_texto(self.tela, "SISTEMA PRINCIPAL", self.fonte_titulo, BRANCO, cx, cy - 200)
+            y_inicio = cy - 80
+            espaco = 75 
+            btn_corrida = desenhar_botao_dinamico(self.tela, "CORRIDA (SPEEDRUN)", self.fonte_sub, CIANO_NEON, cx, y_inicio, self.botao_selecionado == 0)
+            btn_corrida_hard = desenhar_botao_dinamico(self.tela, "CORRIDA HARDCORE", self.fonte_sub, CIANO_NEON, cx, y_inicio + espaco, self.botao_selecionado == 1)
+            btn_sobre = desenhar_botao_dinamico(self.tela, "SOBREVIVÊNCIA", self.fonte_sub, ROSA_NEON, cx, y_inicio + (espaco * 2), self.botao_selecionado == 2)
+            btn_hard = desenhar_botao_dinamico(self.tela, "SOBREVIVÊNCIA HARDCORE", self.fonte_sub, VERMELHO_SANGUE, cx, y_inicio + (espaco * 3), self.botao_selecionado == 3)
+            btn_info = desenhar_botao_dinamico(self.tela, "? ENTENDER OS MODOS ?", self.fonte_sub, AMARELO_DADO, cx, y_inicio + (espaco * 4), self.botao_selecionado == 4)
             self.botoes_hitboxes.extend([btn_corrida, btn_corrida_hard, btn_sobre, btn_hard, btn_info])
             desenhar_texto(self.tela, "Navegue com Mouse ou Setas + Enter", self.fonte_texto, CINZA_CLARO, cx, ALTURA_TELA - 40)
 
         elif self.estado == "TELA_INFO_MODOS":
-            desenhar_texto(self.tela, "MANUAL DOS MODOS DE JOGO", self.fonte_titulo, AMARELO_DADO, cx, 60)
-            
+            desenhar_texto(self.tela, "MANUAL DOS MODOS DE JOGO", self.fonte_titulo, AMARELO_DADO, cx, 80)
             largura_painel, altura_painel = min(1150, LARGURA_TELA - 40), min(460, ALTURA_TELA - 200)
             surf_painel = criar_painel_transparente(largura_painel, altura_painel)
-            
             painel_rect = pygame.Rect(0, 0, largura_painel, altura_painel)
             painel_rect.center = (cx, cy - 20)
             self.tela.blit(surf_painel, painel_rect.topleft)
-            
             x_esq = painel_rect.left + 50
             
             y_base = painel_rect.top + 40
             desenhar_texto(self.tela, "MODO CORRIDA:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Complete 10 fases no menor tempo. Se morrer, você repete apenas a fase atual.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Complete 10 fases no menor tempo. Se morrer, repete apenas a fase atual.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
             
             y_base = painel_rect.top + 140
             desenhar_texto(self.tela, "MODO CORRIDA HARDCORE:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Complete 10 fases. Se a nave for destruída, VOCÊ VOLTA PARA A FASE 1 e o tempo zera!", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Complete 10 fases. Se a nave for destruída, VOLTA PARA A FASE 1 e o tempo zera!", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
             
             y_base = painel_rect.top + 240
             desenhar_texto(self.tela, "MODO SOBREVIVÊNCIA:", self.fonte_sub, ROSA_NEON, x_esq, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Sobreviva o máximo que puder. Inimigos surgem e ficam mais rápidos com o tempo.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Sobreviva o máximo que puder. Inimigos ficam mais rápidos e frequentes com o tempo.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
             
             y_base = painel_rect.top + 340
             desenhar_texto(self.tela, "MODO SOBREVIVÊNCIA HARDCORE:", self.fonte_sub, VERMELHO_SANGUE, x_esq, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Inimigos nascem o dobro de rápido e a velocidade de movimento cresce drasticamente.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Inimigos nascem o dobro de rápido e a velocidade cresce drasticamente.", self.fonte_desc, BRANCO, x_esq, y_base + 35, alinhamento="esquerda")
             
             btn_voltar = desenhar_botao_dinamico(self.tela, "VOLTAR PARA O MENU", self.fonte_sub, VERDE_NEON, cx, cy + 280, self.botao_selecionado == 0)
             self.botoes_hitboxes.append(btn_voltar)
 
         elif self.estado == "TELA_HOTKEYS":
             desenhar_texto(self.tela, "CONTROLES DO SISTEMA", self.fonte_titulo, VERDE_NEON, cx, 100)
-            
             comandos = [
                 ("W A S D / SETAS", "Mover a Nave"),
                 ("BARRA DE ESPAÇO", "DASH (Invencibilidade Rápida)"),
                 ("TECLA ESC", "Pausar ou Voltar Menus"),
-                ("TECLA F11", "Ativar/Desativar Tela Cheia")
+                ("TECLA F11", "Ativar/Desativar Ecrã Inteiro")
             ]
             for i, (tecla, desc) in enumerate(comandos):
                 y_pos = 240 + (i * 70) 
@@ -664,40 +864,52 @@ class NeonSurge:
         elif self.estado == "TELA_INIMIGOS":
             desenhar_texto(self.tela, "ARQUIVO DE AMEAÇAS", self.fonte_titulo, VERMELHO_SANGUE, cx, 60)
             
-            largura_painel, altura_painel = min(1100, LARGURA_TELA - 40), min(480, ALTURA_TELA - 200)
+            largura_painel, altura_painel = min(1100, LARGURA_TELA - 40), min(540, ALTURA_TELA - 160)
             surf_painel = criar_painel_transparente(largura_painel, altura_painel)
-            
             painel_rect = pygame.Rect(0, 0, largura_painel, altura_painel)
-            painel_rect.center = (cx, cy - 10)
+            painel_rect.center = (cx, cy - 20)
             self.tela.blit(surf_painel, painel_rect.topleft)
             
-            espacamento_horizontal = painel_rect.left + 150 
+            espacamento = painel_rect.left + 150 
+            espaco_y = 115 
 
-            y_base = painel_rect.top + 50
+            # 1. Sentinela
+            y_base = painel_rect.top + 45
             desenhar_brilho_neon(self.tela, ROSA_NEON, painel_rect.left + 80, y_base + 20, 18, 2)
             pygame.draw.circle(self.tela, ROSA_NEON, (painel_rect.left + 80, y_base + 20), 18)
             pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-            desenhar_texto(self.tela, "SENTINELA (O Básico):", self.fonte_sub, ROSA_NEON, espacamento_horizontal, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Patrulha a área rebatendo nas paredes.", self.fonte_desc, BRANCO, espacamento_horizontal, y_base + 35, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Cuidado com o efeito manada quando eles se agrupam.", self.fonte_desc, CINZA_CLARO, espacamento_horizontal, y_base + 65, alinhamento="esquerda")
+            desenhar_texto(self.tela, "SENTINELA (O Básico):", self.fonte_sub, ROSA_NEON, espacamento, y_base, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Patrulha rebatendo nas paredes. Cuidado com o efeito manada,", self.fonte_desc, BRANCO, espacamento, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "pois eles ricocheteiam uns nos outros.", self.fonte_desc, CINZA_CLARO, espacamento, y_base + 60, alinhamento="esquerda")
 
-            y_base = painel_rect.top + 190
+            # 2. Caçador
+            y_base += espaco_y
             desenhar_brilho_neon(self.tela, VERMELHO_SANGUE, painel_rect.left + 80, y_base + 20, 18, 2)
             pygame.draw.circle(self.tela, VERMELHO_SANGUE, (painel_rect.left + 80, y_base + 20), 18)
             pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-            desenhar_texto(self.tela, "CAÇADOR (A Sanguessuga):", self.fonte_sub, VERMELHO_SANGUE, espacamento_horizontal, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Possui navegação autônoma avançada.", self.fonte_desc, BRANCO, espacamento_horizontal, y_base + 35, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Persegue sua assinatura de calor continuamente, tente despistá-lo.", self.fonte_desc, CINZA_CLARO, espacamento_horizontal, y_base + 65, alinhamento="esquerda")
+            desenhar_texto(self.tela, "CAÇADOR (A Sanguessuga):", self.fonte_sub, VERMELHO_SANGUE, espacamento, y_base, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Persegue a sua posição futura. Ele vai tentar prever os seus", self.fonte_desc, BRANCO, espacamento, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "movimentos e bloquear a sua fuga em ziguezague.", self.fonte_desc, CINZA_CLARO, espacamento, y_base + 60, alinhamento="esquerda")
 
-            y_base = painel_rect.top + 330
+            # 3. Sniper
+            y_base += espaco_y
             desenhar_brilho_neon(self.tela, LARANJA_NEON, painel_rect.left + 80, y_base + 20, 18, 2)
             pygame.draw.circle(self.tela, LARANJA_NEON, (painel_rect.left + 80, y_base + 20), 18)
             pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-            desenhar_texto(self.tela, "KAMIKAZE (O Fuzil):", self.fonte_sub, LARANJA_NEON, espacamento_horizontal, y_base, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Aguarde o feixe de mira vermelho aparecer, indicando que ele travou no alvo.", self.fonte_desc, BRANCO, espacamento_horizontal, y_base + 35, alinhamento="esquerda")
-            desenhar_texto(self.tela, "Espere o disparo e use o Dash (Espaço) no momento exato para esquivar!", self.fonte_desc, CINZA_CLARO, espacamento_horizontal, y_base + 65, alinhamento="esquerda")
+            desenhar_texto(self.tela, "SNIPER (O Fuzil):", self.fonte_sub, LARANJA_NEON, espacamento, y_base, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Aguarde o feixe de mira, use o Dash no momento exato do disparo.", self.fonte_desc, BRANCO, espacamento, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Ele destrói-se automaticamente após a investida.", self.fonte_desc, CINZA_CLARO, espacamento, y_base + 60, alinhamento="esquerda")
 
-            btn_iniciar = desenhar_botao_dinamico(self.tela, "INICIAR SEQUÊNCIA DE JOGO", self.fonte_sub, VERDE_NEON, cx, cy + 290, self.botao_selecionado == 0)
+            # 4. Bomba
+            y_base += espaco_y
+            desenhar_brilho_neon(self.tela, AMARELO_DADO, painel_rect.left + 80, y_base + 20, 18, 2)
+            pygame.draw.circle(self.tela, AMARELO_DADO, (painel_rect.left + 80, y_base + 20), 18)
+            pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
+            desenhar_texto(self.tela, "A BOMBA (O Relógio):", self.fonte_sub, AMARELO_DADO, espacamento, y_base, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Segue-o e detona num raio gigantesco quando o relógio expirar.", self.fonte_desc, BRANCO, espacamento, y_base + 35, alinhamento="esquerda")
+            desenhar_texto(self.tela, "Saia de perto assim que ela parar e começar a piscar!", self.fonte_desc, CINZA_CLARO, espacamento, y_base + 60, alinhamento="esquerda")
+
+            btn_iniciar = desenhar_botao_dinamico(self.tela, "INICIAR SEQUÊNCIA", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 0)
             self.botoes_hitboxes.append(btn_iniciar)
 
         elif self.estado in ["JOGANDO", "PAUSA"]:
@@ -705,7 +917,7 @@ class NeonSurge:
             offset_y = random.randint(-8, 8) if self.shake_frames > 0 else 0
             if self.shake_frames > 0 and self.estado == "JOGANDO": self.shake_frames -= 1
 
-            self.tela.blit(self.blur_surf, (0, 0))
+            self.tela.fill(PRETO_FUNDO)
             surf_jogo = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
             desenhar_grade_jogo(surf_jogo)
 
@@ -730,7 +942,10 @@ class NeonSurge:
             if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE"]:
                 texto_tempo = f"{self.tempo_corrida:.1f}s"
                 desc_hud = "CORRIDA HARDCORE" if self.modo_jogo == "CORRIDA_HARDCORE" else "CORRIDA"
-                desenhar_texto(self.tela, f"{desc_hud} - FASE {self.fase_atual}/10", self.fonte_sub, BRANCO, 20, 30, alinhamento="esquerda")
+                if self.fase_atual == 10:
+                    desenhar_texto(self.tela, f"{desc_hud} - FASE FINAL (O SOBERANO!)", self.fonte_sub, ROXO_NEON, 20, 30, alinhamento="esquerda")
+                else:
+                    desenhar_texto(self.tela, f"{desc_hud} - FASE {self.fase_atual}/10", self.fonte_sub, BRANCO, 20, 30, alinhamento="esquerda")
             else:
                 texto_tempo = f"{self.tempo_sobrevivencia:.1f}s"
                 titulo_hud = "MODO SOBREVIVÊNCIA" if self.modo_jogo == "SOBREVIVENCIA" else "SOBREVIVÊNCIA HARDCORE"
@@ -739,20 +954,14 @@ class NeonSurge:
             
             desenhar_texto(self.tela, texto_tempo, self.fonte_sub, VERDE_NEON, LARGURA_TELA - 20, 30, alinhamento="direita")
 
-            cor_dash = VERDE_NEON if self.player.dash_cooldown == 0 else ROSA_NEON
-            largura_dash = 100 * (1 - (self.player.dash_cooldown / 45))
-            pygame.draw.rect(self.tela, cor_dash, (cx - 50, 25, largura_dash, 10))
-            pygame.draw.rect(self.tela, BRANCO, (cx - 50, 25, 100, 10), 1)
-
             if self.estado == "PAUSA":
                 overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
                 overlay.fill((0, 0, 0, 180)) 
                 self.tela.blit(overlay, (0, 0))
                 
                 desenhar_texto(self.tela, "SISTEMA PAUSADO", self.fonte_titulo, BRANCO, cx, cy - 100)
-                
                 btn_cont = desenhar_botao_dinamico(self.tela, "CONTINUAR [ESC]", self.fonte_sub, VERDE_NEON, cx, cy + 30, self.botao_selecionado == 0)
-                btn_sair = desenhar_botao_dinamico(self.tela, "ABANDONAR PARTIDA", self.fonte_sub, VERMELHO_SANGUE, cx, cy + 120, self.botao_selecionado == 1)
+                btn_sair = desenhar_botao_dinamico(self.tela, "ABANDONAR PARTIDA", self.fonte_sub, VERMELHO_SANGUE, cx, cy + 110, self.botao_selecionado == 1)
                 
                 self.botoes_hitboxes.append(btn_cont)
                 self.botoes_hitboxes.append(btn_sair)
@@ -762,23 +971,18 @@ class NeonSurge:
             cor_titulo = VERMELHO_SANGUE if "HARDCORE" in self.modo_jogo else (VERDE_NEON if "CORRIDA" in self.modo_jogo else ROSA_NEON)
             desenhar_texto(self.tela, titulo, self.fonte_titulo, cor_titulo, cx, 50)
             
-            largura_rank, altura_rank = 700, 410
+            largura_rank = min(800, LARGURA_TELA - 40)
+            altura_rank = 340 
             surf_rank = criar_painel_transparente(largura_rank, altura_rank)
             rect_ranking = pygame.Rect(0, 0, largura_rank, altura_rank)
-            rect_ranking.center = (cx, cy - 50)
+            rect_ranking.center = (cx, cy - 60)
             
             self.tela.blit(surf_rank, rect_ranking.topleft)
-            
-            # --- INFO DA PARTIDA ATUAL ---
-            desenhar_texto(self.tela, "DESEMPENHO DA MISSÃO:", self.fonte_sub, VERDE_NEON, cx, rect_ranking.top + 25)
+            desenhar_texto(self.tela, "DESEMPENHO DA MISSÃO:", self.fonte_sub, VERDE_NEON, cx, rect_ranking.top + 20)
             texto_desempenho = f"Tempo: {self.ultimo_tempo:.1f}s    |    Sua Posição: {self.ultima_posicao}º Lugar"
-            desenhar_texto(self.tela, texto_desempenho, self.fonte_sub, BRANCO, cx, rect_ranking.top + 60)
-            
-            # Linha divisória
-            pygame.draw.line(self.tela, CINZA_ESCURO, (rect_ranking.left + 50, rect_ranking.top + 95), (rect_ranking.right - 50, rect_ranking.top + 95), 2)
-            
-            # --- TOP 5 ---
-            desenhar_texto(self.tela, f"--- TOP 5 {self.modo_jogo.replace('_', ' ')} ---", self.fonte_sub, CIANO_NEON, cx, rect_ranking.top + 130)
+            desenhar_texto(self.tela, texto_desempenho, self.fonte_sub, BRANCO, cx, rect_ranking.top + 55)
+            pygame.draw.line(self.tela, CINZA_ESCURO, (rect_ranking.left + 50, rect_ranking.top + 85), (rect_ranking.right - 50, rect_ranking.top + 85), 2)
+            desenhar_texto(self.tela, f"--- TOP 5 {self.modo_jogo.replace('_', ' ')} ---", self.fonte_sub, CIANO_NEON, cx, rect_ranking.top + 115)
             
             if self.modo_jogo == "CORRIDA": chave_modo = "Corrida"
             elif self.modo_jogo == "CORRIDA_HARDCORE": chave_modo = "Corrida_Hardcore"
@@ -786,27 +990,30 @@ class NeonSurge:
             else: chave_modo = "Hardcore"
             top5 = self.ranking.get(chave_modo, [])
             
+            margem_esq = rect_ranking.left + 80
+            margem_dir = rect_ranking.right - 80
+            
             for i, reg in enumerate(top5[:5]):
                 cor = AMARELO_DADO if reg.get('id', 0) == self.ranking[chave_modo][self.ultima_posicao-1].get('id', 0) else BRANCO
-                y_pos = rect_ranking.top + 180 + (i * 40)
-                desenhar_texto(self.tela, f"{i+1}º {reg['nome']}", self.fonte_sub, cor, rect_ranking.left + 80, y_pos, alinhamento="esquerda")
-                desenhar_texto(self.tela, f"{reg['tempo']:.1f}s", self.fonte_sub, cor, rect_ranking.right - 80, y_pos, alinhamento="direita")
+                y_pos = rect_ranking.top + 155 + (i * 35) 
+                desenhar_texto(self.tela, f"{i+1}º {reg['nome']}", self.fonte_sub, cor, margem_esq, y_pos, alinhamento="esquerda")
+                desenhar_texto(self.tela, f"{reg['tempo']:.1f}s", self.fonte_sub, cor, margem_dir, y_pos, alinhamento="direita")
             
-            btn_replay = desenhar_botao_dinamico(self.tela, "JOGAR NOVAMENTE (MESMO MODO)", self.fonte_sub, VERDE_NEON, cx, rect_ranking.bottom + 40, self.botao_selecionado == 0)
-            btn_manter = desenhar_botao_dinamico(self.tela, "MANTER PILOTO (MUDAR MODO)", self.fonte_sub, CIANO_NEON, cx, rect_ranking.bottom + 110, self.botao_selecionado == 1)
-            btn_novo = desenhar_botao_dinamico(self.tela, "CRIAR NOVO PILOTO", self.fonte_sub, ROSA_NEON, cx, rect_ranking.bottom + 180, self.botao_selecionado == 2)
+            espaco_y = 65 
+            y_botoes = rect_ranking.bottom + 40
+            
+            btn_replay = desenhar_botao_dinamico(self.tela, "JOGAR NOVAMENTE", self.fonte_sub, VERDE_NEON, cx, y_botoes, self.botao_selecionado == 0)
+            btn_manter = desenhar_botao_dinamico(self.tela, "MANTER PILOTO (MENU)", self.fonte_sub, CIANO_NEON, cx, y_botoes + espaco_y, self.botao_selecionado == 1)
+            btn_novo = desenhar_botao_dinamico(self.tela, "CRIAR NOVO PILOTO", self.fonte_sub, ROSA_NEON, cx, y_botoes + (espaco_y * 2), self.botao_selecionado == 2)
             
             self.botoes_hitboxes.extend([btn_replay, btn_manter, btn_novo])
 
-        self.tela.blit(self.crt_overlay, (0, 0))
-
         if self.is_fullscreen:
-            self.tela_real.blit(self.tela, (0, 0))
-        else:
-            # Pega o novo tamanho da janela caso tenha mudado via alternar_tela_cheia
             w, h = self.tela_real.get_size()
             tela_redimensionada = pygame.transform.scale(self.tela, (w, h))
             self.tela_real.blit(tela_redimensionada, (0, 0))
+        else:
+            self.tela_real.blit(self.tela, (0, 0))
 
         pygame.display.flip()
 
@@ -859,12 +1066,12 @@ class NeonSurge:
                 self.botao_selecionado = 0
                 
         elif self.estado == "RANKING":
-            if self.botao_selecionado == 0: # JOGAR NOVAMENTE
+            if self.botao_selecionado == 0: 
                 self.fase_atual = 1
                 self.iniciar_fase()
-            elif self.botao_selecionado == 1: # MANTER PILOTO (MUDAR MODO)
+            elif self.botao_selecionado == 1: 
                 self.estado = "MENU_MODO"
-            elif self.botao_selecionado == 2: # NOVO PILOTO
+            elif self.botao_selecionado == 2: 
                 self.estado = "INPUT_NOME"
                 self.nome_jogador = ""
                 self.veio_do_game_over = True
