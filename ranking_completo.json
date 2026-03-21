@@ -59,6 +59,11 @@
         },
         {
             "nome": "V",
+            "tempo": 34.1,
+            "id": 1774131894.9702652
+        },
+        {
+            "nome": "V",
             "tempo": 32.6,
             "id": 1774129128.7097049
         },
@@ -165,5 +170,6 @@
             "id": 1774128910.7715373
         }
     ],
-    "Corrida_Hardcore": []
+    "Corrida_Hardcore": [],
+    "Corrida_Infinita": []
 }
