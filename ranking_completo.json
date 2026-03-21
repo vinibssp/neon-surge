@@ -1,0 +1,79 @@
+{
+    "Corrida": [
+        {
+            "nome": "Vini",
+            "tempo": 105.9
+        },
+        {
+            "nome": "reydner",
+            "tempo": 212.1
+        },
+        {
+            "nome": "pedro",
+            "tempo": 221.2
+        },
+        {
+            "nome": "Rey rey",
+            "tempo": 237.7
+        },
+        {
+            "nome": "LUCIANO",
+            "tempo": 374.7
+        }
+    ],
+    "Sobrevivencia": [
+        {
+            "nome": "brenno",
+            "tempo": 102.0
+        },
+        {
+            "nome": "pedro ",
+            "tempo": 86.4
+        },
+        {
+            "nome": "PEDRO",
+            "tempo": 68.0
+        },
+        {
+            "nome": "ALEXANDER",
+            "tempo": 49.1
+        },
+        {
+            "nome": "Vini",
+            "tempo": 46.5
+        }
+    ],
+    "Hardcore": [
+        {
+            "nome": "Lucas",
+            "tempo": 44.7
+        },
+        {
+            "nome": "Vini",
+            "tempo": 43.1
+        },
+        {
+            "nome": "Lucas",
+            "tempo": 41.1
+        },
+        {
+            "nome": "Lucas",
+            "tempo": 40.0
+        },
+        {
+            "nome": "Vini",
+            "tempo": 35.5
+        },
+        {
+            "nome": "Vini",
+            "tempo": 20.1,
+            "id": 1774126750.773626
+        },
+        {
+            "nome": "Vini",
+            "tempo": 6.4,
+            "id": 1774127069.770346
+        }
+    ],
+    "Corrida_Hardcore": []
+}
