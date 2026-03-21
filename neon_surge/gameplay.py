@@ -20,7 +20,6 @@ def obter_pads_menu(self):
 
     modos = [
         {"id": 5, "modo": "CORRIDA_INFINITA", "texto": "CORRIDA INFINITA", "cor": ROXO_NEON},
-        {"id": 1, "modo": "CORRIDA_HARDCORE", "texto": "CORRIDA HARDCORE", "cor": VERMELHO_SANGUE},
         {"id": 3, "modo": "HARDCORE", "texto": "SOBREV. HARDCORE", "cor": LARANJA_NEON},
         {"id": 4, "modo": "INFO", "texto": "TUTORIAL / INFO", "cor": AMARELO_DADO},
         {"id": 2, "modo": "SOBREVIVENCIA", "texto": "SOBREVIVÊNCIA", "cor": ROSA_NEON},
@@ -58,8 +57,8 @@ def iniciar_fase(self):
         self.tempo_sobrevivencia = 0.0
         self.temporizador_spawn = 0.0
 
-    if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE", "CORRIDA_INFINITA"]:
-        eh_fase_boss = (self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE"] and self.fase_atual == 10) or (
+    if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
+        eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
             self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
         )
 
@@ -80,7 +79,7 @@ def iniciar_fase(self):
                     "pos": pygame.math.Vector2(ex, ey),
                     "tipo": "boss",
                     "vel": 4.0 + (variante_boss * 0.2),
-                    "tempo": 2.0,
+                    "tempo": 1.1,
                     "variante": variante_boss,
                 }
             )
@@ -113,7 +112,7 @@ def _spawn_inimigos(self, quantidade, velocidade):
             ex = random.randint(50, LARGURA_TELA - 50)
             ey = random.randint(110, ALTURA_TELA - 50)
 
-        self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": velocidade, "tempo": 1.5})
+        self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": velocidade, "tempo": 0.8})
 
 
 def atualizar_jogo(self):
@@ -166,7 +165,7 @@ def atualizar_jogo(self):
 
     self.inimigos = novos_inimigos
 
-    if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE", "CORRIDA_INFINITA"]:
+    if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         self.tempo_corrida += self.dt
         for d in self.coletaveis[:]:
             if self.player.pos.distance_to(d) < 20:
@@ -299,10 +298,6 @@ def _lidar_com_morte(self):
     self.shake_frames = 15
     if self.modo_jogo == "CORRIDA":
         self.iniciar_fase()
-    elif self.modo_jogo == "CORRIDA_HARDCORE":
-        self.salvar_ranking(self.modo_jogo, self.tempo_corrida)
-        self.estado = "RANKING"
-        self.botao_selecionado = 0
     elif self.modo_jogo == "CORRIDA_INFINITA":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
         self.estado = "RANKING"
