@@ -11,17 +11,19 @@ def acionar_botao(self):
         if len(self.nome_jogador) > 0:
             if self.veio_do_game_over and self.modo_jogo != "":
                 self.estado = "PERGUNTA_MODO"
+                self.botao_selecionado = 0
             else:
                 self.entrar_menu_modo()
-            self.botao_selecionado = -1
+                self.botao_selecionado = 0
 
     elif self.estado == "PERGUNTA_MODO":
         self.veio_do_game_over = False
         if self.botao_selecionado == 0:
             self.estado = "TELA_INIMIGOS"
+            self.botao_selecionado = 0
         elif self.botao_selecionado == 1:
             self.entrar_menu_modo()
-        self.botao_selecionado = -1
+            self.botao_selecionado = 0
 
     elif self.estado == "MENU_MODO":
         if self.botao_selecionado == 0:
@@ -36,18 +38,18 @@ def acionar_botao(self):
             self.modo_jogo = "CORRIDA_INFINITA"
         elif self.botao_selecionado == 4:
             self.estado = "TELA_INFO_MODOS"
-            self.botao_selecionado = -1
+            self.botao_selecionado = 0
             return
 
         self.estado = "TELA_HOTKEYS"
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0
 
     elif self.estado == "TELA_INFO_MODOS" and self.botao_selecionado == 0:
         self.entrar_menu_modo()
 
     elif self.estado == "TELA_HOTKEYS" and self.botao_selecionado == 0:
         self.estado = "TELA_INIMIGOS"
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0
 
     elif self.estado == "TELA_INIMIGOS" and self.botao_selecionado == 0:
         self.fase_atual = 1
@@ -65,11 +67,12 @@ def acionar_botao(self):
             self.iniciar_fase()
         elif self.botao_selecionado == 1:
             self.entrar_menu_modo()
+            self.botao_selecionado = 0
         elif self.botao_selecionado == 2:
             self.estado = "INPUT_NOME"
             self.nome_jogador = ""
             self.veio_do_game_over = True
-        self.botao_selecionado = -1
+            self.botao_selecionado = 0
 
 
 def executar(self):
@@ -92,14 +95,17 @@ def executar(self):
                 elif event.key == pygame.K_ESCAPE:
                     if self.estado == "MENU_MODO":
                         self.estado = "INPUT_NOME"
+                        self.botao_selecionado = 0
                     elif self.estado == "TELA_INFO_MODOS":
                         self.entrar_menu_modo()
                     elif self.estado == "TELA_HOTKEYS":
                         self.entrar_menu_modo()
                     elif self.estado == "TELA_INIMIGOS":
                         self.estado = "TELA_HOTKEYS"
+                        self.botao_selecionado = 0
                     elif self.estado == "PERGUNTA_MODO":
                         self.estado = "INPUT_NOME"
+                        self.botao_selecionado = 0
                     elif self.estado == "JOGANDO":
                         self.estado = "PAUSA"
                         self.botao_selecionado = 0
@@ -110,6 +116,9 @@ def executar(self):
                         if self.botao_selecionado != -1:
                             self.acionar_botao()
                     else:
+                        self.acionar_botao()
+                elif event.key == pygame.K_SPACE and self.estado == "MENU_MODO":
+                    if self.botao_selecionado != -1:
                         self.acionar_botao()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -134,6 +143,9 @@ def executar(self):
 
             if event.type == pygame.KEYDOWN:
                 num_botoes = len(self.botoes_hitboxes)
+
+                if num_botoes > 0 and self.estado != "MENU_MODO" and self.botao_selecionado < 0:
+                    self.botao_selecionado = 0
 
                 if self.estado == "INPUT_NOME":
                     if event.key == pygame.K_BACKSPACE:

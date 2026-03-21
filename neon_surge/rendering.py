@@ -32,6 +32,25 @@ from .ui import (
 )
 
 
+def _desenhar_teclas_menu(self, cx, cy):
+    base_y = cy + 10
+    key_w, key_h = 38, 32
+    esp = 8
+
+    def tecla(txt, x, y, largura=key_w, altura=key_h, cor=CIANO_NEON):
+        rect = pygame.Rect(0, 0, largura, altura)
+        rect.center = (x, y)
+        pygame.draw.rect(self.tela, (10, 16, 24), rect, border_radius=6)
+        pygame.draw.rect(self.tela, cor, rect, 2, border_radius=6)
+        desenhar_texto(self.tela, txt, self.fonte_desc, BRANCO, rect.centerx, rect.centery)
+
+    tecla("W", cx, base_y - (key_h + esp))
+    tecla("A", cx - (key_w + esp), base_y)
+    tecla("S", cx, base_y)
+    tecla("D", cx + (key_w + esp), base_y)
+    tecla("SPACE", cx, base_y + (key_h + 24), largura=132, altura=30, cor=AMARELO_DADO)
+
+
 def desenhar_controle_volume(self, mx, my):
     largura_painel = 280
     altura_painel = 56
@@ -151,28 +170,21 @@ def desenhar(self):
         if self.shake_frames > 0:
             self.shake_frames -= 1
 
-        desenhar_texto(self.tela, "SISTEMA PRINCIPAL", self.fonte_titulo, BRANCO, cx + offset_x, 60 + offset_y)
-        desenhar_texto(
-            self.tela,
-            "USE SEU DASH [ ESPAÇO ] NO NÓDULO OU APERTE [ ENTER ] PARA SELECIONAR",
-            self.fonte_texto,
-            VERDE_NEON,
-            cx + offset_x,
-            120 + offset_y,
-        )
+        # desenhar_texto(self.tela, "SISTEMA PRINCIPAL", self.fonte_titulo, BRANCO, cx + offset_x, 60 + offset_y)
+        # desenhar_texto(
+        #     self.tela,
+        #     "SELECIONE UM MODO PELO CÍRCULO E USE SPACE PARA DASH/CONFIRMAR",
+        #     self.fonte_texto,
+        #     VERDE_NEON,
+        #     cx + offset_x,
+        #     120 + offset_y,
+        # )
 
         pads = self.obter_pads_menu()
-
-        for pad in pads:
-            px, py = pad["pos"]
-            cor = pad["cor"]
-            dist = self.player.pos.distance_to(pygame.math.Vector2(px, py))
-
-            is_hovered = self.botao_selecionado == pad["id"]
-
-            if is_hovered or dist < 300:
-                espessura = max(1, int(6 - (dist / 60))) if dist < 300 else 2
-                pygame.draw.line(self.tela, (*cor[:3], 150), self.player.pos, (px, py), espessura)
+        centro_menu = pygame.math.Vector2(cx, cy + 10)
+        _desenhar_teclas_menu(self, cx, cy + 8)
+        # desenhar_texto(self.tela, "Mover", self.fonte_desc, CINZA_CLARO, cx, cy + 66)
+        # desenhar_texto(self.tela, "SPACE: dash / selecionar", self.fonte_desc, AMARELO_DADO, cx, cy + 88)
 
         for pad in pads:
             px, py = pad["pos"]
@@ -188,7 +200,12 @@ def desenhar(self):
             if is_hovered:
                 pygame.draw.circle(self.tela, cor, (int(px), int(py)), int(raio_pad // 2))
 
-            desenhar_texto(self.tela, pad["texto"], self.fonte_sub, BRANCO if is_hovered else cor, px, py - 80)
+            vetor = pygame.math.Vector2(px, py) - centro_menu
+            if vetor.length() > 0:
+                vetor = vetor.normalize()
+            label_x = px + (vetor.x * 78)
+            label_y = py + (vetor.y * 78)
+            desenhar_texto(self.tela, pad["texto"], self.fonte_sub, BRANCO if is_hovered else cor, label_x, label_y)
 
         for p in self.particulas:
             p.draw(self.tela)
