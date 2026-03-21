@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame
@@ -14,17 +15,25 @@ def entrar_menu_modo(self):
 
 
 def obter_pads_menu(self):
-    cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-    dx = min(350, LARGURA_TELA * 0.3)
-    dy = min(180, ALTURA_TELA * 0.22)
-    return [
-        {"id": 0, "modo": "CORRIDA", "texto": "CORRIDA 10 FASES", "pos": (cx - dx, cy - dy), "cor": CIANO_NEON},
-        {"id": 5, "modo": "CORRIDA_INFINITA", "texto": "CORRIDA INFINITA", "pos": (cx, cy - dy), "cor": ROXO_NEON},
-        {"id": 1, "modo": "CORRIDA_HARDCORE", "texto": "CORRIDA HARDCORE", "pos": (cx + dx, cy - dy), "cor": VERMELHO_SANGUE},
-        {"id": 2, "modo": "SOBREVIVENCIA", "texto": "SOBREVIVÊNCIA", "pos": (cx - dx, cy + dy), "cor": ROSA_NEON},
-        {"id": 4, "modo": "INFO", "texto": "TUTORIAL / INFO", "pos": (cx, cy + dy), "cor": AMARELO_DADO},
-        {"id": 3, "modo": "HARDCORE", "texto": "SOBREV. HARDCORE", "pos": (cx + dx, cy + dy), "cor": LARANJA_NEON},
+    cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2 + 10
+    raio = min(LARGURA_TELA, ALTURA_TELA) * 0.34
+
+    modos = [
+        {"id": 5, "modo": "CORRIDA_INFINITA", "texto": "CORRIDA INFINITA", "cor": ROXO_NEON},
+        {"id": 1, "modo": "CORRIDA_HARDCORE", "texto": "CORRIDA HARDCORE", "cor": VERMELHO_SANGUE},
+        {"id": 3, "modo": "HARDCORE", "texto": "SOBREV. HARDCORE", "cor": LARANJA_NEON},
+        {"id": 4, "modo": "INFO", "texto": "TUTORIAL / INFO", "cor": AMARELO_DADO},
+        {"id": 2, "modo": "SOBREVIVENCIA", "texto": "SOBREVIVÊNCIA", "cor": ROSA_NEON},
+        {"id": 0, "modo": "CORRIDA", "texto": "CORRIDA 10 FASES", "cor": CIANO_NEON},
     ]
+
+    for i, pad in enumerate(modos):
+        angulo = (-math.pi / 2) + (i * (2 * math.pi / len(modos)))
+        px = cx + math.cos(angulo) * raio
+        py = cy + math.sin(angulo) * raio
+        pad["pos"] = (px, py)
+
+    return modos
 
 
 def iniciar_fase(self):
@@ -41,6 +50,8 @@ def iniciar_fase(self):
     self.tipo_lava = 0
     self.lava_hitboxes = []
     self.aviso_lava = 0.0
+    self.lava_lado_horizontal = None
+    self.lava_lado_vertical = None
 
     if self.fase_atual == 1:
         self.tempo_corrida = 0.0
@@ -184,7 +195,7 @@ def atualizar_jogo(self):
             else:
                 self.salvar_ranking(self.modo_jogo, self.tempo_corrida)
                 self.estado = "RANKING"
-                self.botao_selecionado = -1
+                self.botao_selecionado = 0
 
     elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
         self.tempo_sobrevivencia += self.dt
@@ -194,7 +205,9 @@ def atualizar_jogo(self):
             self.tempo_para_lava -= self.dt
             if self.tempo_para_lava <= 3.0:
                 if self.tipo_lava == 0:
-                    self.tipo_lava = random.randint(1, 3)
+                    self.tipo_lava = 1
+                    self.lava_lado_horizontal = random.choice(["esquerda", "direita"])
+                    self.lava_lado_vertical = random.choice(["cima", "baixo"])
                 self.aviso_lava = self.tempo_para_lava
             if self.tempo_para_lava <= 0.0:
                 self.lava_ativa = True
@@ -208,29 +221,33 @@ def atualizar_jogo(self):
                 self.tempo_para_lava = 30.0
                 self.tipo_lava = 0
                 self.lava_hitboxes = []
+                self.lava_lado_horizontal = None
+                self.lava_lado_vertical = None
 
         self.lava_hitboxes = []
         if self.tipo_lava != 0:
             tempo_simulado = self.tempo_lava_restante if self.lava_ativa else 10.0
-            if self.tipo_lava == 1:
-                margem = 180
-                self.lava_hitboxes.append(pygame.Rect(0, 60, LARGURA_TELA, margem))
-                self.lava_hitboxes.append(pygame.Rect(0, ALTURA_TELA - margem, LARGURA_TELA, margem))
-                self.lava_hitboxes.append(pygame.Rect(0, 60, margem, ALTURA_TELA))
-                self.lava_hitboxes.append(pygame.Rect(LARGURA_TELA - margem, 60, margem, ALTURA_TELA))
-            elif self.tipo_lava == 2:
-                cx, cy = LARGURA_TELA // 2, (ALTURA_TELA + 60) // 2
-                w, h = 500, 350
-                self.lava_hitboxes.append(pygame.Rect(cx - w // 2, cy - h // 2, w, h))
-            elif self.tipo_lava == 3:
-                desloc_y = (10.0 - tempo_simulado) * 150
-                largura_p = 250
-                p_y = (desloc_y % (ALTURA_TELA + largura_p)) - largura_p
-                self.lava_hitboxes.append(pygame.Rect(0, p_y, LARGURA_TELA, largura_p))
+            progresso = max(0.0, min(1.0, (10.0 - tempo_simulado) / 10.0))
 
-                desloc_x = (10.0 - tempo_simulado) * 200
-                p_x = (desloc_x % (LARGURA_TELA + largura_p)) - largura_p
-                self.lava_hitboxes.append(pygame.Rect(p_x, 60, largura_p, ALTURA_TELA))
+            metade_largura = int(LARGURA_TELA * 0.5)
+            metade_altura = int((ALTURA_TELA - 60) * 0.5)
+            largura_h = max(32, int(metade_largura * progresso))
+            altura_v = max(32, int(metade_altura * progresso))
+            altura_area = ALTURA_TELA - 60
+
+            lado_h = self.lava_lado_horizontal or "esquerda"
+            if lado_h == "esquerda":
+                rect_h = pygame.Rect(0, 60, largura_h, altura_area)
+            else:
+                rect_h = pygame.Rect(LARGURA_TELA - largura_h, 60, largura_h, altura_area)
+            self.lava_hitboxes.append(rect_h)
+
+            lado_v = self.lava_lado_vertical or "cima"
+            if lado_v == "cima":
+                rect_v = pygame.Rect(0, 60, LARGURA_TELA, altura_v)
+            else:
+                rect_v = pygame.Rect(0, ALTURA_TELA - altura_v, LARGURA_TELA, altura_v)
+            self.lava_hitboxes.append(rect_v)
 
         if self.lava_ativa and not self.player.invencivel:
             p_rect = pygame.Rect(
@@ -273,19 +290,6 @@ def atualizar_menu_interativo(self):
         pad_vec = pygame.math.Vector2(pad["pos"])
         dist = self.player.pos.distance_to(pad_vec)
 
-        raio_colisao = 55
-        if dist < raio_colisao + self.player.tamanho:
-            if self.player.dash_timer > 0:
-                self.shake_frames = 20
-                for _ in range(50):
-                    self.particulas.append(Particula(pad["pos"][0], pad["pos"][1], pad["cor"]))
-                self.botao_selecionado = pad["id"]
-                self.acionar_botao()
-                return
-            elif dist > 0:
-                normal = (self.player.pos - pad_vec).normalize()
-                self.player.vel += normal * 2
-
         if dist < dist_min:
             dist_min = dist
             self.botao_selecionado = pad["id"]
@@ -298,12 +302,12 @@ def _lidar_com_morte(self):
     elif self.modo_jogo == "CORRIDA_HARDCORE":
         self.salvar_ranking(self.modo_jogo, self.tempo_corrida)
         self.estado = "RANKING"
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0
     elif self.modo_jogo == "CORRIDA_INFINITA":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
         self.estado = "RANKING"
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0
     elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
         self.salvar_ranking(self.modo_jogo, self.tempo_sobrevivencia)
         self.estado = "RANKING"
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0

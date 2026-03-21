@@ -75,7 +75,7 @@ class NeonSurge:
         self.fase_atual = 1
         self.veio_do_game_over = False
 
-        self.botao_selecionado = -1
+        self.botao_selecionado = 0
         self.botoes_hitboxes = []
 
         self.player = None
@@ -92,12 +92,14 @@ class NeonSurge:
         self.shake_frames = 0
         self.tempo_global = 0
 
-        self.tempo_para_lava = 30.0
+        self.tempo_para_lava = 30
         self.lava_ativa = False
         self.tempo_lava_restante = 0.0
         self.tipo_lava = 0
         self.lava_hitboxes = []
         self.aviso_lava = 0.0
+        self.lava_lado_horizontal = None
+        self.lava_lado_vertical = None
 
         self.ranking = self.carregar_ranking()
         self.ultima_pos_mouse = (0, 0)
