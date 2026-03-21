@@ -28,8 +28,6 @@ def acionar_botao(self):
     elif self.estado == "MENU_MODO":
         if self.botao_selecionado == 0:
             self.modo_jogo = "CORRIDA"
-        elif self.botao_selecionado == 1:
-            self.modo_jogo = "CORRIDA_HARDCORE"
         elif self.botao_selecionado == 2:
             self.modo_jogo = "SOBREVIVENCIA"
         elif self.botao_selecionado == 3:

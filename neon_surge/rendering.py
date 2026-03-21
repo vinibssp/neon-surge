@@ -222,10 +222,10 @@ def desenhar(self):
         x_esq = painel_rect.left + 50
 
         y_base = painel_rect.top + 30
-        desenhar_texto(self.tela, "CORRIDA / CORRIDA HARDCORE:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
+        desenhar_texto(self.tela, "CORRIDA:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
         desenhar_texto(
             self.tela,
-            "Complete 10 fases no menor tempo. No Hardcore, a morte devolve-o para a fase 1.",
+            "Complete 10 fases no menor tempo possível.",
             self.fonte_desc,
             BRANCO,
             x_esq,
@@ -432,11 +432,26 @@ def desenhar(self):
         desenhar_grade_jogo(surf_jogo)
 
         for p in self.portais_inimigos:
-            raio = 15 + math.sin(time.time() * 15) * 5
             cor_portal = ROXO_NEON if p["tipo"] == "boss" else VERMELHO_SANGUE
-            pygame.draw.circle(surf_jogo, (*cor_portal[:3], 150), (int(p["pos"].x), int(p["pos"].y)), int(raio))
-            pygame.draw.circle(surf_jogo, cor_portal, (int(p["pos"].x), int(p["pos"].y)), int(raio), 2)
-            desenhar_brilho_neon(surf_jogo, cor_portal, p["pos"].x, p["pos"].y, raio, 2)
+            centro = (int(p["pos"].x), int(p["pos"].y))
+            raio_base = 20 if p["tipo"] == "boss" else 16
+            pulso = abs(math.sin(time.time() * 6)) * 3
+            raio = raio_base + pulso
+
+            desenhar_brilho_neon(surf_jogo, cor_portal, centro[0], centro[1], raio + 2, 3)
+            pygame.draw.circle(surf_jogo, (*cor_portal, 128), centro, int(raio + 3))
+            pygame.draw.circle(surf_jogo, PRETO_FUNDO, centro, int(raio - 4))
+            pygame.draw.circle(surf_jogo, cor_portal, centro, int(raio), 3)
+
+            angulo_inicio = (time.time() * 6) % (math.pi * 2)
+            angulo_fim = angulo_inicio + (math.pi * 1.3)
+            rect_loading = pygame.Rect(0, 0, int(raio * 2), int(raio * 2))
+            rect_loading.center = centro
+            pygame.draw.arc(surf_jogo, BRANCO, rect_loading, angulo_inicio, angulo_fim, 4)
+
+            dot_x = centro[0] + math.cos(angulo_inicio) * raio
+            dot_y = centro[1] + math.sin(angulo_inicio) * raio
+            pygame.draw.circle(surf_jogo, BRANCO, (int(dot_x), int(dot_y)), 4)
 
         if self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
             if self.aviso_lava > 0.0 and self.tipo_lava != 0:
@@ -456,23 +471,36 @@ def desenhar(self):
                 )
 
             if getattr(self, "lava_ativa", False):
-                for r in self.lava_hitboxes:
-                    lava_surf = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
-                    lava_surf.fill((255, 60, 0, 140))
-                    pygame.draw.rect(lava_surf, VERMELHO_SANGUE, (0, 0, r.width, r.height), 4)
-                    for i in range(0, r.width + r.height, 40):
-                        pygame.draw.line(lava_surf, (255, 100, 0, 100), (i, 0), (0, i), 3)
-                    surf_jogo.blit(lava_surf, (r.x, r.y))
-                    if random.random() < 0.2:
-                        px = random.randint(r.left, r.right)
-                        py = random.randint(r.top, r.bottom)
-                        self.particulas.append(Particula(px, py, LARANJA_NEON))
+                janela_piscada = 1.5
+                periodo_piscada = 0.25
+                em_piscada_final = self.tempo_lava_restante <= janela_piscada
 
+                if em_piscada_final:
+                    fase = (janela_piscada - max(0.0, self.tempo_lava_restante)) % periodo_piscada
+                    lava_visivel = fase < (periodo_piscada / 2)
+                else:
+                    lava_visivel = True
+
+                if lava_visivel:
+                    for r in self.lava_hitboxes:
+                        lava_surf = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
+                        lava_surf.fill((255, 60, 0, 140))
+                        pygame.draw.rect(lava_surf, VERMELHO_SANGUE, (0, 0, r.width, r.height), 4)
+                        for i in range(0, r.width + r.height, 40):
+                            pygame.draw.line(lava_surf, (255, 100, 0, 100), (i, 0), (0, i), 3)
+                        surf_jogo.blit(lava_surf, (r.x, r.y))
+                        if random.random() < 0.2:
+                            px = random.randint(r.left, r.right)
+                            py = random.randint(r.top, r.bottom)
+                            self.particulas.append(Particula(px, py, LARANJA_NEON))
+
+                texto_lava = f"LAVA DESATIVANDO: {self.tempo_lava_restante:.1f}s" if em_piscada_final else f"LAVA ATIVA: {self.tempo_lava_restante:.1f}s"
+                cor_lava = VERMELHO_SANGUE if em_piscada_final else LARANJA_NEON
                 desenhar_texto(
                     surf_jogo,
-                    f"LAVA ATIVA: {self.tempo_lava_restante:.1f}s",
+                    texto_lava,
                     self.fonte_sub,
-                    LARANJA_NEON,
+                    cor_lava,
                     LARGURA_TELA // 2,
                     90,
                 )
@@ -482,9 +510,23 @@ def desenhar(self):
             pygame.draw.rect(surf_jogo, AMARELO_DADO, (int(d.x) - 6, int(d.y) - 6, 12, 12), border_radius=2)
 
         if self.portal_aberto:
-            raio = 20 + math.sin(time.time() * 10) * 5
-            desenhar_brilho_neon(surf_jogo, VERDE_NEON, self.portal_pos.x, self.portal_pos.y, raio, 4)
-            pygame.draw.circle(surf_jogo, VERDE_NEON, (int(self.portal_pos.x), int(self.portal_pos.y)), int(raio), 3)
+            centro_saida = (int(self.portal_pos.x), int(self.portal_pos.y))
+            raio_saida = 22 + abs(math.sin(time.time() * 5)) * 4
+
+            desenhar_brilho_neon(surf_jogo, VERDE_NEON, centro_saida[0], centro_saida[1], raio_saida + 2, 4)
+            pygame.draw.circle(surf_jogo, (*VERDE_NEON, 200), centro_saida, int(raio_saida + 3))
+            pygame.draw.circle(surf_jogo, PRETO_FUNDO, centro_saida, int(raio_saida - 5))
+            pygame.draw.circle(surf_jogo, VERDE_NEON, centro_saida, int(raio_saida), 3)
+
+            ang_ini_saida = (time.time() * 5) % (math.pi * 2)
+            ang_fim_saida = ang_ini_saida + (math.pi * 1.25)
+            rect_saida = pygame.Rect(0, 0, int(raio_saida * 2), int(raio_saida * 2))
+            rect_saida.center = centro_saida
+            pygame.draw.arc(surf_jogo, BRANCO, rect_saida, ang_ini_saida, ang_fim_saida, 4)
+
+            orb_x = centro_saida[0] + math.cos(ang_ini_saida) * raio_saida
+            orb_y = centro_saida[1] + math.sin(ang_ini_saida) * raio_saida
+            pygame.draw.circle(surf_jogo, BRANCO, (int(orb_x), int(orb_y)), 4)
 
         for p in self.particulas:
             p.draw(surf_jogo)
@@ -497,10 +539,10 @@ def desenhar(self):
         pygame.draw.rect(self.tela, PRETO_FUNDO, (0, 0, LARGURA_TELA, 60))
         pygame.draw.line(self.tela, CIANO_NEON, (0, 60), (LARGURA_TELA, 60), 2)
 
-        if self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE", "CORRIDA_INFINITA"]:
+        if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
             texto_tempo = f"{self.tempo_corrida:.1f}s"
             desc_hud = self.modo_jogo.replace("_", " ")
-            eh_fase_boss = (self.modo_jogo in ["CORRIDA", "CORRIDA_HARDCORE"] and self.fase_atual == 10) or (
+            eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
                 self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
             )
             if eh_fase_boss:
@@ -585,8 +627,6 @@ def desenhar(self):
 
         if self.modo_jogo == "CORRIDA":
             chave_modo = "Corrida"
-        elif self.modo_jogo == "CORRIDA_HARDCORE":
-            chave_modo = "Corrida_Hardcore"
         elif self.modo_jogo == "SOBREVIVENCIA":
             chave_modo = "Sobrevivencia"
         elif self.modo_jogo == "CORRIDA_INFINITA":

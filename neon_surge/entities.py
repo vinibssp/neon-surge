@@ -225,24 +225,24 @@ class Inimigo:
                 if self.timer_habilidade > 1.0:
                     if self.variante % 3 == 1:
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "explosivo", "vel": 3.5, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "explosivo", "vel": 3.5, "tempo": 0.8}
                         )
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "perseguidor", "vel": 4.5, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "perseguidor", "vel": 4.5, "tempo": 0.8}
                         )
                     elif self.variante % 3 == 2:
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 0.8}
                         )
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 0.8}
                         )
                     else:
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "quique", "vel": 7.0, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "quique", "vel": 7.0, "tempo": 0.8}
                         )
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "quique", "vel": 7.0, "tempo": 1.5}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "quique", "vel": 7.0, "tempo": 0.8}
                         )
 
                     for _ in range(30):

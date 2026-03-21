@@ -9,21 +9,19 @@ def carregar_ranking(self):
     if os.path.exists(ARQUIVO_RANKING):
         with open(ARQUIVO_RANKING, "r") as f:
             dados = json.load(f)
+            if "Corrida_Hardcore" in dados:
+                dados.pop("Corrida_Hardcore", None)
             if "Hardcore" not in dados:
                 dados["Hardcore"] = []
-            if "Corrida_Hardcore" not in dados:
-                dados["Corrida_Hardcore"] = []
             if "Corrida_Infinita" not in dados:
                 dados["Corrida_Infinita"] = []
             return dados
-    return {"Corrida": [], "Corrida_Hardcore": [], "Sobrevivencia": [], "Hardcore": [], "Corrida_Infinita": []}
+    return {"Corrida": [], "Sobrevivencia": [], "Hardcore": [], "Corrida_Infinita": []}
 
 
 def salvar_ranking(self, modo, valor):
     if modo == "CORRIDA":
         chave_modo = "Corrida"
-    elif modo == "CORRIDA_HARDCORE":
-        chave_modo = "Corrida_Hardcore"
     elif modo == "SOBREVIVENCIA":
         chave_modo = "Sobrevivencia"
     elif modo == "CORRIDA_INFINITA":
@@ -41,7 +39,7 @@ def salvar_ranking(self, modo, valor):
         tempo_str = f"{valor:.1f}"
         novo_registro = {"nome": self.nome_jogador, "tempo": float(tempo_str), "id": time.time()}
         self.ranking[chave_modo].append(novo_registro)
-        if chave_modo in ["Corrida", "Corrida_Hardcore"]:
+        if chave_modo == "Corrida":
             self.ranking[chave_modo] = sorted(self.ranking[chave_modo], key=lambda x: x["tempo"])
         else:
             self.ranking[chave_modo] = sorted(self.ranking[chave_modo], key=lambda x: x["tempo"], reverse=True)
