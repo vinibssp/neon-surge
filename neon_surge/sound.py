@@ -2,7 +2,7 @@ import pygame
 
 class SoundManager:
     """
-    Manages all game sound effects (SFX).
+    Manages all game sound effects (SFX) and background music (BGM).
     """
     def __init__(self):
         """
@@ -51,6 +51,7 @@ class SoundManager:
                 # Silent failure as requested
                 pass
 
+        self.current_bgm = None
         self.set_sfx_volume(0.5)
 
     def play(self, sound_name):
@@ -72,3 +73,39 @@ class SoundManager:
                 sound.set_volume(volume)
             except:
                 pass
+
+    def play_bgm(self, track_path, volume=0.2):
+        """
+        Stops any current BGM, then loads and plays a new track looping infinitely.
+        Fails silently if file is missing.
+        """
+        try:
+            if self.current_bgm == track_path and pygame.mixer.music.get_busy():
+                return
+                
+            self.stop_bgm()
+            # The prompt mentions assets/trilha_menu.wav but they are in NeonSurge/assets/
+            full_path = track_path
+            pygame.mixer.music.load(full_path)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)
+            self.current_bgm = track_path
+        except:
+            # Silent failure as requested
+            pass
+
+    def stop_bgm(self):
+        """Stops the current BGM."""
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.unload()
+            self.current_bgm = None
+        except:
+            pass
+
+    def set_bgm_volume(self, volume):
+        """Sets the BGM volume."""
+        try:
+            pygame.mixer.music.set_volume(volume)
+        except:
+            pass
