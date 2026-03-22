@@ -80,6 +80,7 @@ class NeonSurge:
 
         self.player = None
         self.inimigos = []
+        self.projeteis_inimigos = []
         self.portais_inimigos = []
         self.coletaveis = []
         self.particulas = []

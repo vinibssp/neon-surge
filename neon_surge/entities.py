@@ -145,6 +145,11 @@ class Inimigo:
         self.timer_explosao = 0.0
         self.explodiu = False
 
+        self.timer_tiro = 0.0
+        self.timer_rajada = 0.0
+        self.em_rajada = True
+        self.direcao_tiro = pygame.math.Vector2(1, 0)
+
         if self.tipo == "boss":
             self.raio = 40
             self.timer_habilidade = 0.0
@@ -153,6 +158,13 @@ class Inimigo:
         if self.tipo == "quique":
             ang = random.uniform(0, math.pi * 2)
             self.dir = pygame.math.Vector2(math.cos(ang), math.sin(ang)) * self.vel
+
+        if self.tipo == "metralhadora":
+            self.raio = 15
+            self.dir = pygame.math.Vector2(0, 0)
+            self.padrao_tiro = random.randint(0, 2)
+            self.angulo_espiral = random.uniform(0, 360)
+            self.timer_vida = 0.0
 
     def update(self, player, lista_inimigos, dt, lista_particulas, interface_principal):
         if self.tipo == "perseguidor":
@@ -235,7 +247,7 @@ class Inimigo:
                             {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 0.8}
                         )
                         interface_principal.portais_inimigos.append(
-                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "investida", "vel": 6.0, "tempo": 0.8}
+                            {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "metralhadora", "vel": 5.0, "tempo": 0.8}
                         )
                     else:
                         interface_principal.portais_inimigos.append(
@@ -264,6 +276,80 @@ class Inimigo:
                     self.estado_boss = "PERSEGUINDO"
                     self.timer_habilidade = 0.0
 
+        elif self.tipo == "metralhadora":
+            self.dir = pygame.math.Vector2(0, 0)
+            self.timer_vida += dt
+            if self.timer_vida >= 10.0:
+                self.morto = True
+                for _ in range(10):
+                    lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
+                return
+
+            self.timer_tiro += dt
+
+            if self.padrao_tiro == 0:
+                self.em_rajada = True
+                intervalo_tiro = 0.52
+                while self.timer_tiro >= intervalo_tiro:
+                    self.timer_tiro -= intervalo_tiro
+                    for angulo in range(0, 360, 45):
+                        direcao_proj = pygame.math.Vector2(1, 0).rotate(angulo)
+                        interface_principal.projeteis_inimigos.append(
+                            {
+                                "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
+                                "vel": direcao_proj * 9.8,
+                                "raio": 10,
+                                "tempo": 2.4,
+                                "cor": ROXO_NEON,
+                            }
+                        )
+                    self.direcao_tiro = pygame.math.Vector2(1, 0)
+                    for _ in range(8):
+                        lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
+
+            elif self.padrao_tiro == 1:
+                self.em_rajada = False
+                intervalo_tiro = 0.18
+                while self.timer_tiro >= intervalo_tiro:
+                    self.timer_tiro -= intervalo_tiro
+                    fase = int(time.time() * 8) % 2
+                    angulo_base = 45 if fase else 0
+                    for angulo in [angulo_base, angulo_base + 90, angulo_base + 180, angulo_base + 270]:
+                        direcao_proj = pygame.math.Vector2(1, 0).rotate(angulo)
+                        interface_principal.projeteis_inimigos.append(
+                            {
+                                "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
+                                "vel": direcao_proj * 10.6,
+                                "raio": 10,
+                                "tempo": 2.2,
+                                "cor": ROXO_NEON,
+                            }
+                        )
+                    self.direcao_tiro = pygame.math.Vector2(1, 0).rotate(angulo_base)
+                    for _ in range(4):
+                        lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
+
+            else:
+                self.em_rajada = True
+                intervalo_tiro = 0.09
+                while self.timer_tiro >= intervalo_tiro:
+                    self.timer_tiro -= intervalo_tiro
+                    self.angulo_espiral = (self.angulo_espiral + 20) % 360
+                    direcao_a = pygame.math.Vector2(1, 0).rotate(self.angulo_espiral)
+                    direcao_b = pygame.math.Vector2(1, 0).rotate(self.angulo_espiral + 180)
+                    for direcao_proj in [direcao_a, direcao_b]:
+                        interface_principal.projeteis_inimigos.append(
+                            {
+                                "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
+                                "vel": direcao_proj * 11.2,
+                                "raio": 10,
+                                "tempo": 2.0,
+                                "cor": ROXO_NEON,
+                            }
+                        )
+                    self.direcao_tiro = direcao_a
+                    lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
+
         forca_repulsao = pygame.math.Vector2(0, 0)
         for vizinho in lista_inimigos:
             if vizinho != self:
@@ -279,11 +365,14 @@ class Inimigo:
                         diferenca = self.pos - vizinho.pos
                         forca_repulsao += diferenca.normalize() * (distancia_segura - distancia) * 0.1
 
-        self.pos += self.dir + forca_repulsao
+        if self.tipo == "metralhadora":
+            self.dir = pygame.math.Vector2(0, 0)
+        else:
+            self.pos += self.dir + forca_repulsao
 
         if self.pos.x <= self.raio:
             self.pos.x = self.raio
-            if self.tipo in ["quique", "explosivo", "boss"]:
+            if self.tipo in ["quique", "explosivo", "boss", "metralhadora"]:
                 self.dir.x *= -1
             elif self.tipo == "investida":
                 self.dir.x = 0
@@ -292,7 +381,7 @@ class Inimigo:
                     self.timer_investida = 0.0
         elif self.pos.x >= LARGURA_TELA - self.raio:
             self.pos.x = LARGURA_TELA - self.raio
-            if self.tipo in ["quique", "explosivo", "boss"]:
+            if self.tipo in ["quique", "explosivo", "boss", "metralhadora"]:
                 self.dir.x *= -1
             elif self.tipo == "investida":
                 self.dir.x = 0
@@ -302,7 +391,7 @@ class Inimigo:
 
         if self.pos.y <= 60 + self.raio:
             self.pos.y = 60 + self.raio
-            if self.tipo in ["quique", "explosivo", "boss"]:
+            if self.tipo in ["quique", "explosivo", "boss", "metralhadora"]:
                 self.dir.y *= -1
             elif self.tipo == "investida":
                 self.dir.y = 0
@@ -311,7 +400,7 @@ class Inimigo:
                     self.timer_investida = 0.0
         elif self.pos.y >= ALTURA_TELA - self.raio:
             self.pos.y = ALTURA_TELA - self.raio
-            if self.tipo in ["quique", "explosivo", "boss"]:
+            if self.tipo in ["quique", "explosivo", "boss", "metralhadora"]:
                 self.dir.y *= -1
             elif self.tipo == "investida":
                 self.dir.y = 0
@@ -327,6 +416,8 @@ class Inimigo:
             cor_base = LARANJA_NEON
         elif self.tipo == "explosivo":
             cor_base = AMARELO_DADO
+        elif self.tipo == "metralhadora":
+            cor_base = ROXO_NEON
 
         if self.tipo == "investida" and self.estado_investida == "MIRANDO":
             cor_linha = VERMELHO_SANGUE if not self.travado else BRANCO
@@ -380,6 +471,19 @@ class Inimigo:
 
             pulso = abs(math.sin(tempo * 10)) * (self.raio // 1.5)
             pygame.draw.circle(surface, VERMELHO_SANGUE, (int(self.pos.x), int(self.pos.y)), int(pulso))
+
+        elif self.tipo == "metralhadora":
+            pulso = abs(math.sin(time.time() * 8))
+            cor_nucleo = BRANCO if self.em_rajada else CIANO_NEON
+            desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4)
+            pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
+            pygame.draw.circle(surface, AZUL_ESCURO, (int(self.pos.x), int(self.pos.y)), self.raio - 5)
+            pygame.draw.circle(surface, cor_nucleo, (int(self.pos.x), int(self.pos.y)), 5)
+
+            if self.direcao_tiro.length() > 0:
+                ponta = self.pos + self.direcao_tiro.normalize() * (self.raio + 14)
+                pygame.draw.line(surface, cor_nucleo, self.pos, ponta, 4)
+                pygame.draw.circle(surface, cor_nucleo, (int(ponta.x), int(ponta.y)), 4)
 
         else:
             desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=3)

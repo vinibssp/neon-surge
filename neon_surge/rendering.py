@@ -309,112 +309,28 @@ def desenhar(self):
         painel_rect.center = (cx, cy - 20)
         self.tela.blit(surf_painel, painel_rect.topleft)
 
-        espacamento = painel_rect.left + 150
-        espaco_y = 115
+        x_icone = painel_rect.left + 65
+        x_texto = painel_rect.left + 120
+        y_base = painel_rect.top + 30
+        espaco_y = 70
 
-        y_base = painel_rect.top + 45
-        desenhar_brilho_neon(self.tela, ROSA_NEON, painel_rect.left + 80, y_base + 20, 18, 2)
-        pygame.draw.circle(self.tela, ROSA_NEON, (painel_rect.left + 80, y_base + 20), 18)
-        pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-        desenhar_texto(self.tela, "SENTINELA (O Básico):", self.fonte_sub, ROSA_NEON, espacamento, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "Patrulha rebatendo nas paredes. Cuidado com o efeito manada,",
-            self.fonte_desc,
-            BRANCO,
-            espacamento,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "pois eles ricocheteiam uns nos outros.",
-            self.fonte_desc,
-            CINZA_CLARO,
-            espacamento,
-            y_base + 60,
-            alinhamento="esquerda",
-        )
+        ameacas = [
+            (ROSA_NEON, "SENTINELA", "Ricocheteia no cenário e em outros inimigos."),
+            (VERMELHO_SANGUE, "CAÇADOR", "Prevê sua rota e fecha espaço para fuga."),
+            (LARANJA_NEON, "INVESTIDA", "Trava mira e dispara em linha reta."),
+            (AMARELO_DADO, "BOMBA", "Explode em área grande ao final da contagem."),
+            (ROXO_NEON, "ATIRADOR", "Fica parado, dura 10s e atira padrão aleatório."),
+            (LARANJA_NEON, "LAVA SETORIAL", "Avança pelas bordas e elimina ao toque."),
+            (VERMELHO_SANGUE, "PORTAIS", "Avisam o ponto de spawn inimigo."),
+        ]
 
-        y_base += espaco_y
-        desenhar_brilho_neon(self.tela, VERMELHO_SANGUE, painel_rect.left + 80, y_base + 20, 18, 2)
-        pygame.draw.circle(self.tela, VERMELHO_SANGUE, (painel_rect.left + 80, y_base + 20), 18)
-        pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-        desenhar_texto(
-            self.tela,
-            "CAÇADOR (A Sanguessuga):",
-            self.fonte_sub,
-            VERMELHO_SANGUE,
-            espacamento,
-            y_base,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "Persegue a sua posição futura. Ele vai tentar prever os seus",
-            self.fonte_desc,
-            BRANCO,
-            espacamento,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "movimentos e bloquear a sua fuga em ziguezague.",
-            self.fonte_desc,
-            CINZA_CLARO,
-            espacamento,
-            y_base + 60,
-            alinhamento="esquerda",
-        )
-
-        y_base += espaco_y
-        desenhar_brilho_neon(self.tela, LARANJA_NEON, painel_rect.left + 80, y_base + 20, 18, 2)
-        pygame.draw.circle(self.tela, LARANJA_NEON, (painel_rect.left + 80, y_base + 20), 18)
-        pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-        desenhar_texto(self.tela, "SNIPER (O Fuzil):", self.fonte_sub, LARANJA_NEON, espacamento, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "Aguarde o feixe de mira, use o Dash no momento exato do disparo.",
-            self.fonte_desc,
-            BRANCO,
-            espacamento,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "Ele destrói-se automaticamente após a investida.",
-            self.fonte_desc,
-            CINZA_CLARO,
-            espacamento,
-            y_base + 60,
-            alinhamento="esquerda",
-        )
-
-        y_base += espaco_y
-        desenhar_brilho_neon(self.tela, AMARELO_DADO, painel_rect.left + 80, y_base + 20, 18, 2)
-        pygame.draw.circle(self.tela, AMARELO_DADO, (painel_rect.left + 80, y_base + 20), 18)
-        pygame.draw.circle(self.tela, BRANCO, (painel_rect.left + 80, y_base + 20), 6)
-        desenhar_texto(self.tela, "A BOMBA (O Relógio):", self.fonte_sub, AMARELO_DADO, espacamento, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "Segue-o e detona num raio gigantesco quando o relógio expirar.",
-            self.fonte_desc,
-            BRANCO,
-            espacamento,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "Saia de perto assim que ela parar e começar a piscar!",
-            self.fonte_desc,
-            CINZA_CLARO,
-            espacamento,
-            y_base + 60,
-            alinhamento="esquerda",
-        )
+        for i, (cor_ameaca, titulo, descricao) in enumerate(ameacas):
+            y_item = y_base + (i * espaco_y)
+            desenhar_brilho_neon(self.tela, cor_ameaca, x_icone, y_item + 16, 14, 2)
+            pygame.draw.circle(self.tela, cor_ameaca, (x_icone, y_item + 16), 14)
+            pygame.draw.circle(self.tela, BRANCO, (x_icone, y_item + 16), 4)
+            desenhar_texto(self.tela, titulo + ":", self.fonte_sub, cor_ameaca, x_texto, y_item, alinhamento="esquerda")
+            desenhar_texto(self.tela, descricao, self.fonte_desc, BRANCO, x_texto, y_item + 28, alinhamento="esquerda")
 
         btn_iniciar = desenhar_botao_dinamico(
             self.tela, "INICIAR SEQUÊNCIA", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 0
@@ -532,48 +448,60 @@ def desenhar(self):
             p.draw(surf_jogo)
         for ini in self.inimigos:
             ini.draw(surf_jogo)
+<<<<<<< HEAD
         for b in self.buracos_negros:
             b.draw(surf_jogo)
+=======
+        for proj in self.projeteis_inimigos:
+            cor_proj = proj.get("cor", LARANJA_NEON)
+            raio = int(proj.get("raio", 4))
+            desenhar_brilho_neon(surf_jogo, cor_proj, proj["pos"].x, proj["pos"].y, raio + 2, 2)
+            pygame.draw.circle(surf_jogo, cor_proj, (int(proj["pos"].x), int(proj["pos"].y)), raio)
+            pygame.draw.circle(surf_jogo, BRANCO, (int(proj["pos"].x), int(proj["pos"].y)), max(1, raio // 2))
+>>>>>>> 7ff9806 (varias coisas)
         self.player.draw(surf_jogo)
 
         self.tela.blit(surf_jogo, (offset_x, offset_y))
 
-        pygame.draw.rect(self.tela, PRETO_FUNDO, (0, 0, LARGURA_TELA, 60))
-        pygame.draw.line(self.tela, CIANO_NEON, (0, 60), (LARGURA_TELA, 60), 2)
-
-        if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
-            texto_tempo = f"{self.tempo_corrida:.1f}s"
-            desc_hud = self.modo_jogo.replace("_", " ")
-            eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
-                self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
-            )
-            if eh_fase_boss:
-                desenhar_texto(
-                    self.tela,
-                    f"{desc_hud} - FASE FINAL (O SOBERANO!)",
-                    self.fonte_sub,
-                    ROXO_NEON,
-                    20,
-                    30,
-                    alinhamento="esquerda",
-                )
-            else:
-                desenhar_texto(
-                    self.tela,
-                    f"{desc_hud} - FASE {self.fase_atual}",
-                    self.fonte_sub,
-                    BRANCO,
-                    20,
-                    30,
-                    alinhamento="esquerda",
-                )
+        if self.modo_jogo == "CORRIDA":
+            atual = self.tempo_corrida
+            chave_modo = "Corrida"
+            melhor = self.ranking.get(chave_modo, [{}])[0].get("tempo", atual) if self.ranking.get(chave_modo) else atual
+            texto_atual = f"{atual:.1f}s/"
+            texto_melhor = f"{melhor:.1f}s"
+        elif self.modo_jogo == "SOBREVIVENCIA":
+            atual = self.tempo_sobrevivencia
+            chave_modo = "Sobrevivencia"
+            melhor = self.ranking.get(chave_modo, [{}])[0].get("tempo", atual) if self.ranking.get(chave_modo) else atual
+            texto_atual = f"{atual:.1f}s/"
+            texto_melhor = f"{melhor:.1f}s"
+        elif self.modo_jogo == "HARDCORE":
+            atual = self.tempo_sobrevivencia
+            chave_modo = "Hardcore"
+            melhor = self.ranking.get(chave_modo, [{}])[0].get("tempo", atual) if self.ranking.get(chave_modo) else atual
+            texto_atual = f"{atual:.1f}s/"
+            texto_melhor = f"{melhor:.1f}s"
         else:
-            texto_tempo = f"{self.tempo_sobrevivencia:.1f}s"
-            titulo_hud = "MODO SOBREVIVÊNCIA" if self.modo_jogo == "SOBREVIVENCIA" else "SOBREVIVÊNCIA HARDCORE"
-            cor_hud = BRANCO if self.modo_jogo == "SOBREVIVENCIA" else VERMELHO_SANGUE
-            desenhar_texto(self.tela, titulo_hud, self.fonte_sub, cor_hud, 20, 30, alinhamento="esquerda")
+            atual = int(self.fase_atual)
+            chave_modo = "Corrida_Infinita"
+            melhor = self.ranking.get(chave_modo, [{}])[0].get("fase", atual) if self.ranking.get(chave_modo) else atual
+            texto_atual = f"{atual}/"
+            texto_melhor = f"{melhor}"
 
-        desenhar_texto(self.tela, texto_tempo, self.fonte_sub, VERDE_NEON, LARGURA_TELA - 20, 30, alinhamento="direita")
+        surf_melhor = self.fonte_sub.render(texto_melhor, True, BRANCO)
+        surf_atual = self.fonte_sub.render(texto_atual, True, VERDE_NEON)
+        y_hud = 18
+        margem_direita = 20
+
+        rect_melhor = surf_melhor.get_rect()
+        rect_melhor.top = y_hud
+        rect_melhor.right = LARGURA_TELA - margem_direita
+        self.tela.blit(surf_melhor, rect_melhor)
+
+        rect_atual = surf_atual.get_rect()
+        rect_atual.top = y_hud
+        rect_atual.right = rect_melhor.left
+        self.tela.blit(surf_atual, rect_atual)
 
         if self.estado == "PAUSA":
             overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)

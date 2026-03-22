@@ -38,6 +38,7 @@ def obter_pads_menu(self):
 def iniciar_fase(self):
     self.player = Player(LARGURA_TELA // 2, ALTURA_TELA // 2)
     self.inimigos.clear()
+    self.projeteis_inimigos.clear()
     self.portais_inimigos.clear()
     self.coletaveis.clear()
     self.particulas.clear()
@@ -107,8 +108,17 @@ def iniciar_fase(self):
 
 
 def _spawn_inimigos(self, quantidade, velocidade):
+    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "metralhadora"]
+    tipos_sem_atirador = ["quique", "perseguidor", "investida", "explosivo"]
     for _ in range(quantidade):
-        tipo = random.choice(["quique", "perseguidor", "investida", "explosivo"])
+        tipo = random.choice(tipos_spawn)
+
+        if tipo == "metralhadora":
+            atiradores_ativos = sum(1 for ini in self.inimigos if ini.tipo == "metralhadora")
+            atiradores_em_portal = sum(1 for portal in self.portais_inimigos if portal.get("tipo") == "metralhadora")
+            if atiradores_ativos + atiradores_em_portal >= 2:
+                tipo = random.choice(tipos_sem_atirador)
+
         ex, ey = self.player.pos.x, self.player.pos.y
         while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
             ex = random.randint(50, LARGURA_TELA - 50)
@@ -127,9 +137,42 @@ def atualizar_jogo(self):
         if p.raio <= 0:
             self.particulas.remove(p)
 
+    projeteis_ativos = []
+    for proj in self.projeteis_inimigos:
+        proj["pos"] += proj["vel"]
+        proj["tempo"] -= self.dt
+
+        fora_tela = (
+            proj["pos"].x < -30
+            or proj["pos"].x > LARGURA_TELA + 30
+            or proj["pos"].y < 30
+            or proj["pos"].y > ALTURA_TELA + 30
+        )
+        if proj["tempo"] <= 0 or fora_tela:
+            continue
+
+        if random.random() < 0.25:
+            self.particulas.append(Particula(proj["pos"].x, proj["pos"].y, proj.get("cor", LARANJA_NEON)))
+
+        if not self.player.invencivel:
+            raio_colisao = proj.get("raio", 4) + (self.player.tamanho * 0.45)
+            if proj["pos"].distance_to(self.player.pos) < raio_colisao:
+                self._lidar_com_morte()
+                return
+
+        projeteis_ativos.append(proj)
+
+    self.projeteis_inimigos = projeteis_ativos
+
     for p in self.portais_inimigos[:]:
         p["tempo"] -= self.dt
         if p["tempo"] <= 0:
+            if p.get("tipo") == "metralhadora":
+                atiradores_ativos = sum(1 for ini in self.inimigos if ini.tipo == "metralhadora")
+                if atiradores_ativos >= 2:
+                    self.portais_inimigos.remove(p)
+                    continue
+
             inimigo = Inimigo(p["pos"].x, p["pos"].y, p["tipo"], p["vel"])
             if "variante" in p:
                 inimigo.variante = p["variante"]
