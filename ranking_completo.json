@@ -27,7 +27,18 @@
             "id": 1774208484.8143585
         }
     ],
-    "Hardcore": [],
+    "Hardcore": [
+        {
+            "nome": "C",
+            "tempo": 11.7,
+            "id": 1774214461.0642874
+        },
+        {
+            "nome": "C",
+            "tempo": 7.5,
+            "id": 1774214449.271606
+        }
+    ],
     "Corrida_Infinita": [
         {
             "nome": "morteiro",
@@ -35,5 +46,11 @@
             "id": 1774208645.1556203
         }
     ],
-    "Labirinto_Infinito": []
+    "Labirinto_Infinito": [
+        {
+            "nome": "C",
+            "fase": 2,
+            "id": 1774214438.0072181
+        }
+    ]
 }

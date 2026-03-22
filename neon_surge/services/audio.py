@@ -53,7 +53,9 @@ class SoundManager:
                 pass
 
         self.current_bgm = None
-        self.set_sfx_volume(0.5)
+        self.volume_musica = 0.2
+        self.volume_sfx = 0.5
+        self.set_sfx_volume(self.volume_sfx)
 
     def play(self, sound_name):
         """Plays a sound if it exists. Fails silently if key or file is missing."""
@@ -62,37 +64,39 @@ class SoundManager:
         sound = self.sounds.get(sound_name)
         if sound:
             try:
+                # Ensure current sfx volume is applied before playing
+                sound.set_volume(self.volume_sfx)
                 sound.play()
             except:
-                # Silent failure as requested
                 pass
 
     def set_sfx_volume(self, volume):
         """Sets the volume for all loaded sound effects."""
+        self.volume_sfx = volume
         for sound in self.sounds.values():
             try:
                 sound.set_volume(volume)
             except:
                 pass
 
-    def play_bgm(self, track_path, volume=0.2):
+    def play_bgm(self, track_path, volume=None):
         """
         Stops any current BGM, then loads and plays a new track looping infinitely.
-        Fails silently if file is missing.
         """
+        if volume is not None:
+            self.volume_musica = volume
+            
         try:
             if self.current_bgm == track_path and pygame.mixer.music.get_busy():
+                pygame.mixer.music.set_volume(self.volume_musica)
                 return
                 
             self.stop_bgm()
-            # The prompt mentions assets/trilha_menu.wav but they are in NeonSurge/assets/
-            full_path = track_path
-            pygame.mixer.music.load(full_path)
-            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.load(track_path)
+            pygame.mixer.music.set_volume(self.volume_musica)
             pygame.mixer.music.play(-1)
             self.current_bgm = track_path
         except:
-            # Silent failure as requested
             pass
 
     def stop_bgm(self):
@@ -106,6 +110,7 @@ class SoundManager:
 
     def set_bgm_volume(self, volume):
         """Sets the BGM volume."""
+        self.volume_musica = volume
         try:
             pygame.mixer.music.set_volume(volume)
         except:

@@ -70,12 +70,16 @@ def acionar_botao(self):
     elif self.estado == "PAUSA":
         if self.botao_selecionado == 0:
             self.estado = "JOGANDO"
-        elif self.modo_jogo == "CORRIDA" and self.botao_selecionado == 1:
+        elif self.botao_selecionado == 1:
+            self.estado_anterior_config = "PAUSA"
+            self.estado = "CONFIGURACOES"
+            self.botao_selecionado = -1
+        elif self.modo_jogo == "CORRIDA" and self.botao_selecionado == 2:
             self.fase_atual = 1
             self.tempo_corrida = 0.0
             self.iniciar_fase()
-        elif (self.modo_jogo == "CORRIDA" and self.botao_selecionado == 2) or (
-            self.modo_jogo != "CORRIDA" and self.botao_selecionado == 1
+        elif (self.modo_jogo == "CORRIDA" and self.botao_selecionado == 3) or (
+            self.modo_jogo != "CORRIDA" and self.botao_selecionado == 2
         ):
             self.entrar_menu_modo()
 
@@ -95,6 +99,27 @@ def acionar_botao(self):
             self.botao_selecionado = 0
 
 
+    elif self.estado == "CONFIGURACOES":
+        if self.botao_selecionado == 0: # Música -
+            self.alterar_volume_musica(-0.1)
+        elif self.botao_selecionado == 1: # Música +
+            self.alterar_volume_musica(0.1)
+        elif self.botao_selecionado == 2: # SFX -
+            self.alterar_volume_sfx(-0.1)
+        elif self.botao_selecionado == 3: # SFX +
+            self.alterar_volume_sfx(0.1)
+        elif self.botao_selecionado == 4: # Voltar
+            self.voltar_configuracoes()
+
+def voltar_configuracoes(self):
+    origem = getattr(self, "estado_anterior_config", "MENU_MODO")
+    if origem == "PAUSA":
+        self.estado = "PAUSA"
+        self.botao_selecionado = 1 # Volta focado no botão de config da pausa
+    else:
+        self.entrar_menu_modo()
+    self.estado_anterior_config = "MENU_MODO" # Reset
+
 def executar(self):
     while True:
         self.tempo_global = time.time()
@@ -108,27 +133,19 @@ def executar(self):
             if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
                 self.alternar_tela_cheia()
             if event.type == pygame.KEYDOWN:
-                if event.key in [pygame.K_MINUS, pygame.K_KP_MINUS]:
-                    self.alterar_volume(-0.1)
-                elif event.key in [pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS]:
-                    self.alterar_volume(0.1)
-                elif event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE:
                     self.sounds.play('menu_reject')
                     if self.estado == "MENU_MODO":
                         self.estado = "INPUT_NOME"
                         self.botao_selecionado = 0
-                    elif self.estado == "TELA_INFO_MODOS":
+                    elif self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO"]:
                         self.entrar_menu_modo()
+                    elif self.estado == "CONFIGURACOES":
+                        self.voltar_configuracoes()
                     elif self.estado == "TELA_HOTKEYS":
                         self.estado = "TELA_INFO_MODOS"
                         self.guia_aba = "HOTKEYS"
                         self.botao_selecionado = 1
-                    elif self.estado == "TELA_INIMIGOS":
-                        self.entrar_menu_modo()
-                        self.botao_selecionado = 0
-                    elif self.estado == "PERGUNTA_MODO":
-                        self.estado = "INPUT_NOME"
-                        self.botao_selecionado = 0
                     elif self.estado == "JOGANDO":
                         self.estado = "PAUSA"
                         self.botao_selecionado = 0
@@ -144,6 +161,7 @@ def executar(self):
                         "TELA_INIMIGOS",
                         "PAUSA",
                         "RANKING",
+                        "CONFIGURACOES",
                     ]
                     if self.estado in estados_menu_interacao:
                         if self.estado == "MENU_MODO":
@@ -155,10 +173,16 @@ def executar(self):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = self.obter_posicao_mouse()
 
-                if self.estado not in ["JOGANDO", "PAUSA"]:
+                if self.estado not in ["JOGANDO", "PAUSA", "CONFIGURACOES"]:
                     if self.rect_vol_mute.collidepoint(mx, my):
                         self.sounds.play('menu_accept')
                         self.alternar_mute()
+                        continue
+                    elif self.rect_vol_config.collidepoint(mx, my):
+                        self.sounds.play('menu_accept')
+                        self.estado_anterior_config = "MENU_MODO"
+                        self.estado = "CONFIGURACOES"
+                        self.botao_selecionado = -1
                         continue
                     elif self.rect_vol_menos.collidepoint(mx, my):
                         self.sounds.play('menu_accept')
@@ -172,15 +196,9 @@ def executar(self):
                 if self.estado != "JOGANDO":
                     for i, rect in enumerate(self.botoes_hitboxes):
                         if rect.collidepoint(mx, my):
-                            if self.estado == "MENU_MODO":
-                                ids_menu = [item["id"] for item in self.obter_pads_menu()] + [99]
-                                if i < len(ids_menu):
-                                    self.botao_selecionado = ids_menu[i]
-                                else:
-                                    self.botao_selecionado = 0
-                            else:
-                                self.botao_selecionado = i
+                            self.botao_selecionado = i
                             self.acionar_botao()
+
 
             if event.type == pygame.KEYDOWN:
                 num_botoes = len(self.botoes_hitboxes)

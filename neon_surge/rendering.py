@@ -52,7 +52,7 @@ def _desenhar_teclas_menu(self, cx, cy):
 
 
 def desenhar_controle_volume(self, mx, my):
-    largura_painel = 280
+    largura_painel = 340
     altura_painel = 56
     x_painel = LARGURA_TELA - largura_painel - 20
     y_painel = ALTURA_TELA - altura_painel - 20
@@ -67,10 +67,13 @@ def desenhar_controle_volume(self, mx, my):
 
     cx_mais = x_painel + largura_painel - 30
     cx_menos = cx_mais - 45
-    cx_mute = cx_menos - 55
+    cx_config = cx_menos - 55
+    cx_mute = cx_config - 55
 
     self.rect_vol_mais.center = (cx_mais, rect_painel.centery)
     self.rect_vol_menos.center = (cx_menos, rect_painel.centery)
+    self.rect_vol_config = pygame.Rect(0, 0, 45, 45)
+    self.rect_vol_config.center = (cx_config, rect_painel.centery)
     self.rect_vol_mute.center = (cx_mute, rect_painel.centery)
 
     hover_mute = self.rect_vol_mute.collidepoint(mx, my)
@@ -78,31 +81,89 @@ def desenhar_controle_volume(self, mx, my):
     pygame.draw.rect(self.tela, ROSA_NEON if hover_mute else CINZA_ESCURO, self.rect_vol_mute, 2, border_radius=6)
     desenhar_icone_som(self.tela, self.rect_vol_mute.centerx, self.rect_vol_mute.centery, self.mutado, BRANCO)
 
+    # Botão de Configurações (Engrenagem Cyberpunk)
+    hover_config = self.rect_vol_config.collidepoint(mx, my)
+    pygame.draw.rect(self.tela, CINZA_ESCURO if hover_config else (10, 15, 25), self.rect_vol_config, border_radius=6)
+    pygame.draw.rect(self.tela, AMARELO_DADO if hover_config else CINZA_ESCURO, self.rect_vol_config, 2, border_radius=6)
+    
+    # Desenho de engrenagem mais estilizada
+    ex, ey = self.rect_vol_config.center
+    pygame.draw.circle(self.tela, AMARELO_DADO if hover_config else BRANCO, (ex, ey), 9, 2)
+    pygame.draw.circle(self.tela, AMARELO_DADO if hover_config else BRANCO, (ex, ey), 3)
+    for i in range(8):
+        ang = i * (math.pi / 4) + (time.time() * 0.5 if hover_config else 0)
+        p_ext = [(ex + math.cos(ang + a) * 13, ey + math.sin(ang + a) * 13) for a in [-0.2, 0.2]]
+        p_int = [(ex + math.cos(ang + a) * 9, ey + math.sin(ang + a) * 9) for a in [0.2, -0.2]]
+        pygame.draw.polygon(self.tela, AMARELO_DADO if hover_config else BRANCO, p_ext + p_int)
+
     hover_menos = self.rect_vol_menos.collidepoint(mx, my)
     pygame.draw.rect(self.tela, CINZA_ESCURO if hover_menos else (10, 15, 25), self.rect_vol_menos, border_radius=6)
     pygame.draw.rect(self.tela, CIANO_NEON if hover_menos else CINZA_ESCURO, self.rect_vol_menos, 2, border_radius=6)
-    desenhar_texto(
-        self.tela,
-        "-",
-        self.fonte_sub,
-        BRANCO,
-        self.rect_vol_menos.centerx,
-        self.rect_vol_menos.centery,
-        alinhamento="centro",
-    )
+    desenhar_texto(self.tela, "-", self.fonte_sub, BRANCO, self.rect_vol_menos.centerx, self.rect_vol_menos.centery)
 
     hover_mais = self.rect_vol_mais.collidepoint(mx, my)
     pygame.draw.rect(self.tela, CINZA_ESCURO if hover_mais else (10, 15, 25), self.rect_vol_mais, border_radius=6)
     pygame.draw.rect(self.tela, CIANO_NEON if hover_mais else CINZA_ESCURO, self.rect_vol_mais, 2, border_radius=6)
-    desenhar_texto(
-        self.tela,
-        "+",
-        self.fonte_sub,
-        BRANCO,
-        self.rect_vol_mais.centerx,
-        self.rect_vol_mais.centery,
-        alinhamento="centro",
+    desenhar_texto(self.tela, "+", self.fonte_sub, BRANCO, self.rect_vol_mais.centerx, self.rect_vol_mais.centery)
+
+
+def desenhar_menu_configuracoes(self, mx, my):
+    desenhar_fundo_cyberpunk(self.tela, self.tempo_global)
+    cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
+    
+    # Painel Central
+    largura_p, altura_p = 600, 450
+    rect_p = pygame.Rect(cx - largura_p // 2, cy - altura_p // 2, largura_p, altura_p)
+    surf_p = criar_painel_transparente(largura_p, altura_p)
+    self.tela.blit(surf_p, rect_p)
+    pygame.draw.rect(self.tela, CIANO_NEON, rect_p, 2, border_radius=12)
+    
+    desenhar_texto(self.tela, "CONFIGURAÇÕES DE ÁUDIO", self.fonte_titulo, BRANCO, cx, rect_p.top + 60)
+    
+    # Sliders / Marcadores para Música e SFX
+    def desenhar_slider(label, y, volume_atual, cor):
+        desenhar_texto(self.tela, label, self.fonte_sub, cor, cx - 220, y, alinhamento="esquerda")
+        
+        largura_barra = 300
+        x_barra = cx - 50
+        rect_barra = pygame.Rect(x_barra, y - 10, largura_barra, 20)
+        pygame.draw.rect(self.tela, CINZA_ESCURO, rect_barra, border_radius=4)
+        
+        # Quadradinhos marcadores
+        num_quadrados = 10
+        for i in range(num_quadrados):
+            valor_quad = (i + 1) / num_quadrados
+            ativado = volume_atual >= (valor_quad - 0.01)
+            
+            qx = x_barra + (i * (largura_barra // num_quadrados)) + 5
+            rect_q = pygame.Rect(qx, y - 6, (largura_barra // num_quadrados) - 10, 12)
+            
+            cor_q = cor if ativado else (20, 30, 40)
+            pygame.draw.rect(self.tela, cor_q, rect_q, border_radius=2)
+            if ativado:
+                desenhar_brilho_neon(self.tela, cor_q, rect_q.centerx, rect_q.centery, 6, 1)
+
+        # Botões de ajuste ao lado do slider
+        btn_menos = pygame.Rect(x_barra - 45, y - 15, 30, 30)
+        btn_mais = pygame.Rect(x_barra + largura_barra + 15, y - 15, 30, 30)
+        
+        for btn, txt in [(btn_menos, "-"), (btn_mais, "+")]:
+            h = btn.collidepoint(mx, my)
+            pygame.draw.rect(self.tela, cor if h else CINZA_ESCURO, btn, 2, border_radius=6)
+            desenhar_texto(self.tela, txt, self.fonte_sub, BRANCO, btn.centerx, btn.centery)
+            self.botoes_hitboxes.append(btn)
+
+    self.botoes_hitboxes = [] # Reset para mapear botoes de ajuste
+    desenhar_slider("MÚSICA", cy - 20, self.sounds.volume_musica, CIANO_NEON)
+    desenhar_slider("SFX", cy + 60, self.sounds.volume_sfx, ROSA_NEON)
+    
+    # Botão Voltar
+    btn_voltar = desenhar_botao_dinamico(
+        self.tela, "VOLTAR", self.fonte_sub, AMARELO_DADO, cx, rect_p.bottom - 60, 
+        self.botao_selecionado == 4, largura=200, altura=45
     )
+    self.botoes_hitboxes.append(btn_voltar) # Indice 4 (0,1 musica, 2,3 sfx, 4 voltar)
+
 
 
 def _desenhar_contadores_topo_esquerdo(self):
@@ -146,19 +207,23 @@ def desenhar(self):
     cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
     self.botoes_hitboxes = []
 
-    if self.estado in ["INPUT_NOME", "MENU_MODO", "TELA_INFO_MODOS", "TELA_INIMIGOS", "RANKING", "PERGUNTA_MODO"]:
+    if self.estado in ["INPUT_NOME", "MENU_MODO", "TELA_INFO_MODOS", "TELA_INIMIGOS", "RANKING", "PERGUNTA_MODO", "CONFIGURACOES"]:
         desenhar_fundo_cyberpunk(self.tela, self.tempo_global)
 
         for p in self.particulas_menu:
             p.update()
             p.draw(self.tela)
 
-        self.desenhar_controle_volume(mx, my)
-        if self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO"]:
+        if self.estado != "CONFIGURACOES":
+            self.desenhar_controle_volume(mx, my)
+        
+        if self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO", "CONFIGURACOES"]:
             pygame.draw.rect(self.tela, CINZA_ESCURO, (20, 20, 140, 40), border_radius=5)
             desenhar_texto(self.tela, "< ESC VOLTAR", self.fonte_texto, BRANCO, 90, 40, alinhamento="centro")
 
-    if self.estado == "INPUT_NOME":
+    if self.estado == "CONFIGURACOES":
+        self.desenhar_menu_configuracoes(mx, my)
+    elif self.estado == "INPUT_NOME":
         desenhar_texto(self.tela, "NEON SURGE", self.fonte_titulo, CIANO_NEON, cx, cy - 120)
         desenhar_texto(self.tela, "IDENTIFICAÇÃO DO PLAYER:", self.fonte_texto, BRANCO, cx, cy)
 
@@ -648,41 +713,28 @@ def desenhar(self):
             overlay.fill((0, 0, 0, 180))
             self.tela.blit(overlay, (0, 0))
 
-            desenhar_texto(self.tela, "SISTEMA PAUSADO", self.fonte_titulo, BRANCO, cx, cy - 100)
+            desenhar_texto(self.tela, "SISTEMA PAUSADO", self.fonte_titulo, BRANCO, cx, cy - 120)
             btn_cont = desenhar_botao_dinamico(
-                self.tela, "CONTINUAR [ESC]", self.fonte_sub, VERDE_NEON, cx, cy + 30, self.botao_selecionado == 0
+                self.tela, "CONTINUAR [ESC]", self.fonte_sub, VERDE_NEON, cx, cy - 10, self.botao_selecionado == 0
             )
-            self.botoes_hitboxes.append(btn_cont)
+            btn_config = desenhar_botao_dinamico(
+                self.tela, "CONFIGURAÇÕES", self.fonte_sub, AMARELO_DADO, cx, cy + 60, self.botao_selecionado == 1
+            )
+            self.botoes_hitboxes.extend([btn_cont, btn_config])
 
+            esp_y = 70
+            y_base_p = cy + 130
             if self.modo_jogo == "CORRIDA":
                 btn_reiniciar = desenhar_botao_dinamico(
-                    self.tela,
-                    "REINICIAR CORRIDA",
-                    self.fonte_sub,
-                    AMARELO_DADO,
-                    cx,
-                    cy + 110,
-                    self.botao_selecionado == 1,
+                    self.tela, "REINICIAR CORRIDA", self.fonte_sub, CIANO_NEON, cx, y_base_p, self.botao_selecionado == 2
                 )
                 btn_sair = desenhar_botao_dinamico(
-                    self.tela,
-                    "ABANDONAR PARTIDA",
-                    self.fonte_sub,
-                    VERMELHO_SANGUE,
-                    cx,
-                    cy + 190,
-                    self.botao_selecionado == 2,
+                    self.tela, "ABANDONAR PARTIDA", self.fonte_sub, VERMELHO_SANGUE, cx, y_base_p + esp_y, self.botao_selecionado == 3
                 )
                 self.botoes_hitboxes.extend([btn_reiniciar, btn_sair])
             else:
                 btn_sair = desenhar_botao_dinamico(
-                    self.tela,
-                    "ABANDONAR PARTIDA",
-                    self.fonte_sub,
-                    VERMELHO_SANGUE,
-                    cx,
-                    cy + 110,
-                    self.botao_selecionado == 1,
+                    self.tela, "ABANDONAR PARTIDA", self.fonte_sub, VERMELHO_SANGUE, cx, y_base_p, self.botao_selecionado == 2
                 )
                 self.botoes_hitboxes.append(btn_sair)
 

@@ -16,8 +16,8 @@ from .systems.gameplay import (
     obter_pads_menu,
 )
 from .services.ranking import carregar_ranking, salvar_ranking
-from .rendering import desenhar, desenhar_controle_volume
-from .runtime import acionar_botao, executar
+from .rendering import desenhar, desenhar_controle_volume, desenhar_menu_configuracoes
+from .runtime import acionar_botao, executar, voltar_configuracoes
 from .services.audio import SoundManager
 
 
@@ -36,8 +36,10 @@ class NeonSurge:
     atualizar_menu_interativo = atualizar_menu_interativo
     _lidar_com_morte = _lidar_com_morte
     desenhar_controle_volume = desenhar_controle_volume
+    desenhar_menu_configuracoes = desenhar_menu_configuracoes
     desenhar = desenhar
     acionar_botao = acionar_botao
+    voltar_configuracoes = voltar_configuracoes
     executar = executar
 
     def __init__(self):
@@ -54,6 +56,7 @@ class NeonSurge:
         self.rect_vol_mute = pygame.Rect(0, 0, 45, 45)
         self.rect_vol_menos = pygame.Rect(0, 0, 35, 35)
         self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
+        self.estado_anterior_config = "MENU_MODO"
 
         self.info = pygame.display.Info()
         self.is_fullscreen = True
@@ -143,11 +146,22 @@ class NeonSurge:
         if self.mutado:
             self.alternar_mute()
         self.volume_musica = max(0.0, min(1.0, self.volume_musica + delta))
-        try:
-            pygame.mixer.music.set_volume(self.volume_musica)
-            self.sounds.set_sfx_volume(self.volume_musica)
-        except:
-            pass
+        self.sounds.set_bgm_volume(self.volume_musica)
+        self.sounds.set_sfx_volume(self.volume_musica)
+
+    def alterar_volume_musica(self, delta):
+        if self.mutado:
+            self.alternar_mute()
+        novo = max(0.0, min(1.0, self.sounds.volume_musica + delta))
+        self.volume_musica = novo
+        self.sounds.set_bgm_volume(novo)
+
+    def alterar_volume_sfx(self, delta):
+        if self.mutado:
+            self.alternar_mute()
+        novo = max(0.0, min(1.0, self.sounds.volume_sfx + delta))
+        self.sounds.set_sfx_volume(novo)
+        self.sounds.play('menu_button')
 
     def alternar_mute(self):
         self.mutado = not self.mutado
