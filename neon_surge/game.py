@@ -59,8 +59,8 @@ class NeonSurge:
         self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
 
         self.info = pygame.display.Info()
-        self.is_fullscreen = False
-        self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
+        self.is_fullscreen = True
+        self.tela_real = pygame.display.set_mode((self.info.current_w, self.info.current_h), pygame.FULLSCREEN)
         self.tela = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
         pygame.display.set_caption("Neon Surge - Hardcore Edition")
 
@@ -85,6 +85,7 @@ class NeonSurge:
 
         self.botao_selecionado = 0
         self.botoes_hitboxes = []
+        self.guia_aba = "MODOS"
 
         self.player = None
         self.inimigos = []

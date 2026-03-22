@@ -110,7 +110,6 @@ def _desenhar_contadores_topo_esquerdo(self):
         "INPUT_NOME",
         "MENU_MODO",
         "TELA_INFO_MODOS",
-        "TELA_HOTKEYS",
         "TELA_INIMIGOS",
         "PERGUNTA_MODO",
         "JOGANDO",
@@ -120,7 +119,7 @@ def _desenhar_contadores_topo_esquerdo(self):
     if self.estado not in estados_visiveis:
         return
 
-    x_base = 170 if self.estado in ["TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "PERGUNTA_MODO"] else 20
+    x_base = 170 if self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO"] else 20
     y_base = 16
 
     mortes = int(getattr(self, "mortes_total_jogador", 0))
@@ -147,7 +146,7 @@ def desenhar(self):
     cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
     self.botoes_hitboxes = []
 
-    if self.estado in ["INPUT_NOME", "MENU_MODO", "TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "RANKING", "PERGUNTA_MODO"]:
+    if self.estado in ["INPUT_NOME", "MENU_MODO", "TELA_INFO_MODOS", "TELA_INIMIGOS", "RANKING", "PERGUNTA_MODO"]:
         desenhar_fundo_cyberpunk(self.tela, self.tempo_global)
 
         for p in self.particulas_menu:
@@ -155,7 +154,7 @@ def desenhar(self):
             p.draw(self.tela)
 
         self.desenhar_controle_volume(mx, my)
-        if self.estado in ["TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "PERGUNTA_MODO"]:
+        if self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO"]:
             pygame.draw.rect(self.tela, CINZA_ESCURO, (20, 20, 140, 40), border_radius=5)
             desenhar_texto(self.tela, "< ESC VOLTAR", self.fonte_texto, BRANCO, 90, 40, alinhamento="centro")
 
@@ -195,11 +194,19 @@ def desenhar(self):
 
     elif self.estado == "MENU_MODO":
         modos = self.obter_pads_menu()
-        ids_menu = [m["id"] for m in modos]
+        ids_menu = [m["id"] for m in modos] + [99]
         if self.botao_selecionado not in ids_menu:
             self.botao_selecionado = ids_menu[0]
 
-        selecionado = next((m for m in modos if m["id"] == self.botao_selecionado), modos[0])
+        if self.botao_selecionado == 99:
+            selecionado = {
+                "texto": "TELA",
+                "tag": "FULLSCREEN / WINDOWED",
+                "descricao": "Alterne o modo de exibição da janela do jogo.",
+                "cor": AMARELO_DADO,
+            }
+        else:
+            selecionado = next((m for m in modos if m["id"] == self.botao_selecionado), modos[0])
         cor_sel = selecionado["cor"]
 
         painel_largura = min(980, LARGURA_TELA - 120)
@@ -245,11 +252,51 @@ def desenhar(self):
 
             self.botoes_hitboxes.append(rect_card)
 
+        texto_tela = "MUDAR PARA WINDOWED" if self.is_fullscreen else "MUDAR PARA FULLSCREEN"
+        btn_tela = desenhar_botao_dinamico(
+            self.tela,
+            texto_tela,
+            self.fonte_sub,
+            AMARELO_DADO,
+            cx,
+            y_cards + (2 * (card_h + gap_y)) + 28,
+            self.botao_selecionado == 99,
+        )
+        self.botoes_hitboxes.append(btn_tela)
+
         for p in self.particulas:
             p.draw(self.tela)
 
     elif self.estado == "TELA_INFO_MODOS":
-        desenhar_texto(self.tela, "MANUAL DOS MODOS DE JOGO", self.fonte_titulo, AMARELO_DADO, cx, 80)
+        aba_atual = getattr(self, "guia_aba", "MODOS")
+        titulo = "GUIA DO PILOTO"
+        cor_titulo = AMARELO_DADO if aba_atual == "MODOS" else VERDE_NEON
+        desenhar_texto(self.tela, titulo, self.fonte_titulo, cor_titulo, cx, 80)
+
+        btn_aba_modos = desenhar_botao_dinamico(
+            self.tela,
+            "ABA: MODOS",
+            self.fonte_texto,
+            AMARELO_DADO,
+            cx - 180,
+            130,
+            self.botao_selecionado == 0,
+            largura=220,
+            altura=44,
+        )
+        btn_aba_hotkeys = desenhar_botao_dinamico(
+            self.tela,
+            "ABA: HOTKEYS",
+            self.fonte_texto,
+            VERDE_NEON,
+            cx + 180,
+            130,
+            self.botao_selecionado == 1,
+            largura=220,
+            altura=44,
+        )
+        self.botoes_hitboxes.extend([btn_aba_modos, btn_aba_hotkeys])
+
         largura_painel, altura_painel = min(1150, LARGURA_TELA - 40), min(500, ALTURA_TELA - 160)
         surf_painel = criar_painel_transparente(largura_painel, altura_painel)
         painel_rect = pygame.Rect(0, 0, largura_painel, altura_painel)
@@ -257,84 +304,79 @@ def desenhar(self):
         self.tela.blit(surf_painel, painel_rect.topleft)
         x_esq = painel_rect.left + 50
 
-        y_base = painel_rect.top + 30
-        desenhar_texto(self.tela, "CORRIDA:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "Complete 10 fases no menor tempo possível.",
-            self.fonte_desc,
-            BRANCO,
-            x_esq,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
+        if aba_atual == "HOTKEYS":
+            comandos = [
+                ("W A S D / SETAS", "Mover a Nave"),
+                ("BARRA DE ESPAÇO", "DASH (Invencibilidade Rápida)"),
+                ("TECLA ESC", "Pausar, voltar ou abrir pausa"),
+                ("TECLA F11", "Alternar fullscreen/windowed"),
+                ("ENTER / ESPAÇO", "Confirmar opções dos menus"),
+            ]
+            for i, (tecla, desc) in enumerate(comandos):
+                y_pos = painel_rect.top + 65 + (i * 72)
+                desenhar_texto(self.tela, tecla, self.fonte_sub, CIANO_NEON, cx - 50, y_pos, alinhamento="direita")
+                desenhar_texto(self.tela, "- " + desc, self.fonte_texto, BRANCO, cx + 50, y_pos, alinhamento="esquerda")
+        else:
+            y_base = painel_rect.top + 30
+            desenhar_texto(self.tela, "CORRIDA:", self.fonte_sub, CIANO_NEON, x_esq, y_base, alinhamento="esquerda")
+            desenhar_texto(
+                self.tela,
+                "Complete 10 fases no menor tempo possível.",
+                self.fonte_desc,
+                BRANCO,
+                x_esq,
+                y_base + 35,
+                alinhamento="esquerda",
+            )
 
-        y_base = painel_rect.top + 130
-        desenhar_texto(self.tela, "CORRIDA INFINITA:", self.fonte_sub, ROXO_NEON, x_esq, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "Fases não têm fim. A cada 10 fases o Boss muda de forma, cor e dificuldade!",
-            self.fonte_desc,
-            BRANCO,
-            x_esq,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
+            y_base = painel_rect.top + 130
+            desenhar_texto(self.tela, "CORRIDA INFINITA:", self.fonte_sub, ROXO_NEON, x_esq, y_base, alinhamento="esquerda")
+            desenhar_texto(
+                self.tela,
+                "Fases não têm fim. A cada 10 fases o Boss muda de forma, cor e dificuldade!",
+                self.fonte_desc,
+                BRANCO,
+                x_esq,
+                y_base + 35,
+                alinhamento="esquerda",
+            )
 
-        y_base = painel_rect.top + 230
-        desenhar_texto(self.tela, "SOBREVIVÊNCIA / HARDCORE:", self.fonte_sub, ROSA_NEON, x_esq, y_base, alinhamento="esquerda")
-        desenhar_texto(
-            self.tela,
-            "A cada 30 segundos, o cenário vai ser invadido por LAVA! Fuja das zonas de aviso.",
-            self.fonte_desc,
-            BRANCO,
-            x_esq,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
+            y_base = painel_rect.top + 230
+            desenhar_texto(self.tela, "SOBREVIVÊNCIA / HARDCORE:", self.fonte_sub, ROSA_NEON, x_esq, y_base, alinhamento="esquerda")
+            desenhar_texto(
+                self.tela,
+                "A cada 30 segundos, o cenário vai ser invadido por LAVA! Fuja das zonas de aviso.",
+                self.fonte_desc,
+                BRANCO,
+                x_esq,
+                y_base + 35,
+                alinhamento="esquerda",
+            )
 
-        y_base = painel_rect.top + 330
-        desenhar_texto(
-            self.tela,
-            "OS PORTAIS VERMELHOS (Aviso de Inimigo):",
-            self.fonte_sub,
-            VERMELHO_SANGUE,
-            x_esq,
-            y_base,
-            alinhamento="esquerda",
-        )
-        desenhar_texto(
-            self.tela,
-            "Antes de um inimigo materializar-se, um portal indica onde ele vai surgir, permitindo que escape.",
-            self.fonte_desc,
-            BRANCO,
-            x_esq,
-            y_base + 35,
-            alinhamento="esquerda",
-        )
+            y_base = painel_rect.top + 330
+            desenhar_texto(
+                self.tela,
+                "OS PORTAIS VERMELHOS (Aviso de Inimigo):",
+                self.fonte_sub,
+                VERMELHO_SANGUE,
+                x_esq,
+                y_base,
+                alinhamento="esquerda",
+            )
+            desenhar_texto(
+                self.tela,
+                "Antes de um inimigo materializar-se, um portal indica onde ele vai surgir, permitindo que escape.",
+                self.fonte_desc,
+                BRANCO,
+                x_esq,
+                y_base + 35,
+                alinhamento="esquerda",
+            )
 
         btn_voltar = desenhar_botao_dinamico(
-            self.tela, "VOLTAR PARA O MENU", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 0
+            self.tela, "VOLTAR PARA O MENU", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 2
         )
         self.botoes_hitboxes.append(btn_voltar)
-
-    elif self.estado == "TELA_HOTKEYS":
-        desenhar_texto(self.tela, "CONTROLES DO SISTEMA", self.fonte_titulo, VERDE_NEON, cx, 100)
-        comandos = [
-            ("W A S D / SETAS", "Mover a Nave"),
-            ("BARRA DE ESPAÇO", "DASH (Invencibilidade Rápida)"),
-            ("TECLA ESC", "Pausar ou Voltar Menus"),
-            ("TECLA F11", "Ativar/Desativar Ecrã Inteiro"),
-        ]
-        for i, (tecla, desc) in enumerate(comandos):
-            y_pos = 240 + (i * 70)
-            desenhar_texto(self.tela, tecla, self.fonte_sub, CIANO_NEON, cx - 40, y_pos, alinhamento="direita")
-            desenhar_texto(self.tela, "- " + desc, self.fonte_texto, BRANCO, cx + 40, y_pos, alinhamento="esquerda")
-
-        btn_prox = desenhar_botao_dinamico(
-            self.tela, "AVANÇAR PARA AMEAÇAS", self.fonte_sub, ROSA_NEON, cx, cy + 240, self.botao_selecionado == 0
-        )
-        self.botoes_hitboxes.append(btn_prox)
 
     elif self.estado == "TELA_INIMIGOS":
         desenhar_texto(self.tela, "ARQUIVO DE AMEAÇAS", self.fonte_titulo, VERMELHO_SANGUE, cx, 60)
@@ -414,9 +456,19 @@ def desenhar(self):
                 pygame.draw.circle(surf_jogo, BRANCO, (int(gx), int(gy)), max(2, raio_g // 3))
 
         for p in self.portais_inimigos:
-            cor_portal = ROXO_NEON if p["tipo"] == "boss" else VERMELHO_SANGUE
+            if p["tipo"] == "boss":
+                cor_portal = ROXO_NEON
+            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador"]:
+                cor_portal = AMARELO_DADO
+            else:
+                cor_portal = VERMELHO_SANGUE
             centro = (int(p["pos"].x), int(p["pos"].y))
-            raio_base = 20 if p["tipo"] == "boss" else 16
+            if p["tipo"] == "boss":
+                raio_base = 20
+            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador"]:
+                raio_base = 18
+            else:
+                raio_base = 16
             pulso = abs(math.sin(time.time() * 6)) * 3
             raio = raio_base + pulso
 
@@ -581,12 +633,39 @@ def desenhar(self):
             btn_cont = desenhar_botao_dinamico(
                 self.tela, "CONTINUAR [ESC]", self.fonte_sub, VERDE_NEON, cx, cy + 30, self.botao_selecionado == 0
             )
-            btn_sair = desenhar_botao_dinamico(
-                self.tela, "ABANDONAR PARTIDA", self.fonte_sub, VERMELHO_SANGUE, cx, cy + 110, self.botao_selecionado == 1
-            )
-
             self.botoes_hitboxes.append(btn_cont)
-            self.botoes_hitboxes.append(btn_sair)
+
+            if self.modo_jogo == "CORRIDA":
+                btn_reiniciar = desenhar_botao_dinamico(
+                    self.tela,
+                    "REINICIAR CORRIDA",
+                    self.fonte_sub,
+                    AMARELO_DADO,
+                    cx,
+                    cy + 110,
+                    self.botao_selecionado == 1,
+                )
+                btn_sair = desenhar_botao_dinamico(
+                    self.tela,
+                    "ABANDONAR PARTIDA",
+                    self.fonte_sub,
+                    VERMELHO_SANGUE,
+                    cx,
+                    cy + 190,
+                    self.botao_selecionado == 2,
+                )
+                self.botoes_hitboxes.extend([btn_reiniciar, btn_sair])
+            else:
+                btn_sair = desenhar_botao_dinamico(
+                    self.tela,
+                    "ABANDONAR PARTIDA",
+                    self.fonte_sub,
+                    VERMELHO_SANGUE,
+                    cx,
+                    cy + 110,
+                    self.botao_selecionado == 1,
+                )
+                self.botoes_hitboxes.append(btn_sair)
 
     elif self.estado == "RANKING":
         titulo = f"GAME OVER - {self.modo_jogo.replace('_', ' ')}"

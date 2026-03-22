@@ -13,6 +13,7 @@ MAX_INIMIGOS_HARDCORE = 24
 LABIRINTO_ESPESSURA_PAREDE = 8
 MAX_FANTASMAS_LABIRINTO = 6
 FANTASMA_INTERVALO_DECISAO = 0.12
+MINIBOSS_TIPOS = ["miniboss_espiral", "miniboss_cacador"]
 
 
 def entrar_menu_modo(self):
@@ -385,9 +386,10 @@ def iniciar_fase(self):
         eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
             self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
         )
+        fase_miniboss_corrida = self.modo_jogo == "CORRIDA" and self.fase_atual > 0 and self.fase_atual % 5 == 0
 
         if eh_fase_boss:
-            for _ in range(8):
+            for _ in range(9):
                 x = random.randint(50, LARGURA_TELA - 50)
                 y = random.randint(110, ALTURA_TELA - 50)
                 self.coletaveis.append(pygame.math.Vector2(x, y))
@@ -397,17 +399,37 @@ def iniciar_fase(self):
                 ex = random.randint(50, LARGURA_TELA - 50)
                 ey = random.randint(110, ALTURA_TELA - 50)
 
-            variante_boss = (self.fase_atual // 10) if self.modo_jogo == "CORRIDA_INFINITA" else 1
+            if self.modo_jogo == "CORRIDA_INFINITA":
+                variante_boss = max(1, self.fase_atual // 10)
+            else:
+                variante_boss = 1 + (self.fase_atual // 5)
             self.portais_inimigos.append(
                 {
                     "pos": pygame.math.Vector2(ex, ey),
                     "tipo": "boss",
-                    "vel": 4.0 + (variante_boss * 0.2),
+                    "vel": 4.2 + (variante_boss * 0.28),
                     "tempo": 1.1,
                     "variante": variante_boss,
                 }
             )
-            self._spawn_inimigos(3 + variante_boss, 4.5 + (variante_boss * 0.3))
+            self._spawn_inimigos(4 + variante_boss, 4.8 + (variante_boss * 0.32))
+
+            if fase_miniboss_corrida:
+                ex_mini, ey_mini = ex, ey
+                tentativas = 0
+                while tentativas < 40 and abs(ex_mini - ex) < 180 and abs(ey_mini - ey) < 140:
+                    tentativas += 1
+                    ex_mini = random.randint(70, LARGURA_TELA - 70)
+                    ey_mini = random.randint(130, ALTURA_TELA - 70)
+
+                self.portais_inimigos.append(
+                    {
+                        "pos": pygame.math.Vector2(ex_mini, ey_mini),
+                        "tipo": random.choice(MINIBOSS_TIPOS),
+                        "vel": 5.6 + (0.2 * variante_boss),
+                        "tempo": 0.95,
+                    }
+                )
 
         else:
             for _ in range(5):
@@ -418,6 +440,21 @@ def iniciar_fase(self):
             limite_inimigos = 2 + min(self.fase_atual, 14)
             vel_inimigo = 4.0 + min((self.fase_atual * 0.18), 6.8)
             self._spawn_inimigos(limite_inimigos, vel_inimigo)
+
+            if fase_miniboss_corrida:
+                ex, ey = self.player.pos.x, self.player.pos.y
+                while abs(ex - self.player.pos.x) < 280 and abs(ey - self.player.pos.y) < 240:
+                    ex = random.randint(70, LARGURA_TELA - 70)
+                    ey = random.randint(130, ALTURA_TELA - 70)
+
+                self.portais_inimigos.append(
+                    {
+                        "pos": pygame.math.Vector2(ex, ey),
+                        "tipo": random.choice(MINIBOSS_TIPOS),
+                        "vel": 5.4 + min(2.4, self.fase_atual * 0.22),
+                        "tempo": 0.95,
+                    }
+                )
 
     elif self.modo_jogo == "SOBREVIVENCIA":
         self._spawn_inimigos(2, 4)
@@ -432,15 +469,23 @@ def iniciar_fase(self):
 
 
 def _spawn_inimigos(self, quantidade, velocidade):
-    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "metralhadora"]
+    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora"]
     tipos_sem_atirador = ["quique", "perseguidor", "investida", "explosivo"]
     for _ in range(quantidade):
         tipo = random.choice(tipos_spawn)
+
+        if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"] and random.random() < 0.055:
+            tipo = random.choice(MINIBOSS_TIPOS)
 
         if tipo == "metralhadora":
             atiradores_ativos = sum(1 for ini in self.inimigos if ini.tipo == "metralhadora")
             atiradores_em_portal = sum(1 for portal in self.portais_inimigos if portal.get("tipo") == "metralhadora")
             if atiradores_ativos + atiradores_em_portal >= 2:
+                tipo = random.choice(tipos_sem_atirador)
+        elif tipo in MINIBOSS_TIPOS:
+            miniboss_ativos = sum(1 for ini in self.inimigos if ini.tipo in MINIBOSS_TIPOS)
+            miniboss_em_portal = sum(1 for portal in self.portais_inimigos if portal.get("tipo") in MINIBOSS_TIPOS)
+            if miniboss_ativos + miniboss_em_portal >= 1:
                 tipo = random.choice(tipos_sem_atirador)
 
         ex, ey = self.player.pos.x, self.player.pos.y
@@ -448,7 +493,13 @@ def _spawn_inimigos(self, quantidade, velocidade):
             ex = random.randint(50, LARGURA_TELA - 50)
             ey = random.randint(110, ALTURA_TELA - 50)
 
-        self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": velocidade, "tempo": 0.8})
+        vel_spawn = velocidade
+        if tipo == "metralhadora":
+            vel_spawn = max(0.0, velocidade * 0.9)
+        elif tipo in MINIBOSS_TIPOS:
+            vel_spawn = max(5.0, velocidade * 1.12)
+
+        self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_spawn, "tempo": 0.8})
 
 
 def atualizar_jogo(self):
@@ -499,7 +550,12 @@ def atualizar_jogo(self):
 
     for p in self.portais_inimigos[:]:
         if self.player.dash_timer > 0:
-            raio_portal = 20 if p.get("tipo") == "boss" else 16
+            if p.get("tipo") == "boss":
+                raio_portal = 20
+            elif p.get("tipo") in MINIBOSS_TIPOS:
+                raio_portal = 18
+            else:
+                raio_portal = 16
             raio_interacao = raio_portal + (self.player.tamanho * 0.7)
             if p["pos"].distance_to(self.player.pos) <= raio_interacao:
                 self.portais_inimigos.remove(p)
@@ -513,6 +569,11 @@ def atualizar_jogo(self):
             if p.get("tipo") == "metralhadora":
                 atiradores_ativos = sum(1 for ini in self.inimigos if ini.tipo == "metralhadora")
                 if atiradores_ativos >= 2:
+                    self.portais_inimigos.remove(p)
+                    continue
+            elif p.get("tipo") in MINIBOSS_TIPOS:
+                miniboss_ativos = sum(1 for ini in self.inimigos if ini.tipo in MINIBOSS_TIPOS)
+                if miniboss_ativos >= 1:
                     self.portais_inimigos.remove(p)
                     continue
 
@@ -702,7 +763,7 @@ def atualizar_menu_interativo(self):
     self.particulas = particulas_ativas[-MAX_PARTICULAS:]
 
     opcoes = self.obter_pads_menu()
-    ids_validos = [item["id"] for item in opcoes]
+    ids_validos = [item["id"] for item in opcoes] + [99]
     if self.botao_selecionado not in ids_validos:
         self.botao_selecionado = ids_validos[0]
 

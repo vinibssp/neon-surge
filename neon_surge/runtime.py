@@ -38,18 +38,29 @@ def acionar_botao(self):
             self.modo_jogo = "LABIRINTO"
         elif self.botao_selecionado == 4:
             self.estado = "TELA_INFO_MODOS"
+            self.guia_aba = "MODOS"
             self.botao_selecionado = 0
             return
+        elif self.botao_selecionado == 99:
+            self.alternar_tela_cheia()
+            return
 
-        self.estado = "TELA_HOTKEYS"
-        self.botao_selecionado = 0
-
-    elif self.estado == "TELA_INFO_MODOS" and self.botao_selecionado == 0:
-        self.entrar_menu_modo()
-
-    elif self.estado == "TELA_HOTKEYS" and self.botao_selecionado == 0:
         self.estado = "TELA_INIMIGOS"
         self.botao_selecionado = 0
+
+    elif self.estado == "TELA_INFO_MODOS":
+        if self.botao_selecionado == 0:
+            self.guia_aba = "MODOS"
+        elif self.botao_selecionado == 1:
+            self.guia_aba = "HOTKEYS"
+        elif self.botao_selecionado == 2:
+            self.entrar_menu_modo()
+
+    elif self.estado == "TELA_HOTKEYS":
+        self.estado = "TELA_INFO_MODOS"
+        self.guia_aba = "HOTKEYS"
+        self.botao_selecionado = 1
+
 
     elif self.estado == "TELA_INIMIGOS" and self.botao_selecionado == 0:
         self.fase_atual = 1
@@ -58,7 +69,13 @@ def acionar_botao(self):
     elif self.estado == "PAUSA":
         if self.botao_selecionado == 0:
             self.estado = "JOGANDO"
-        elif self.botao_selecionado == 1:
+        elif self.modo_jogo == "CORRIDA" and self.botao_selecionado == 1:
+            self.fase_atual = 1
+            self.tempo_corrida = 0.0
+            self.iniciar_fase()
+        elif (self.modo_jogo == "CORRIDA" and self.botao_selecionado == 2) or (
+            self.modo_jogo != "CORRIDA" and self.botao_selecionado == 1
+        ):
             self.entrar_menu_modo()
 
     elif self.estado == "RANKING":
@@ -100,9 +117,11 @@ def executar(self):
                     elif self.estado == "TELA_INFO_MODOS":
                         self.entrar_menu_modo()
                     elif self.estado == "TELA_HOTKEYS":
-                        self.entrar_menu_modo()
+                        self.estado = "TELA_INFO_MODOS"
+                        self.guia_aba = "HOTKEYS"
+                        self.botao_selecionado = 1
                     elif self.estado == "TELA_INIMIGOS":
-                        self.estado = "TELA_HOTKEYS"
+                        self.entrar_menu_modo()
                         self.botao_selecionado = 0
                     elif self.estado == "PERGUNTA_MODO":
                         self.estado = "INPUT_NOME"
@@ -148,9 +167,9 @@ def executar(self):
                     for i, rect in enumerate(self.botoes_hitboxes):
                         if rect.collidepoint(mx, my):
                             if self.estado == "MENU_MODO":
-                                opcoes_menu = self.obter_pads_menu()
-                                if i < len(opcoes_menu):
-                                    self.botao_selecionado = opcoes_menu[i]["id"]
+                                ids_menu = [item["id"] for item in self.obter_pads_menu()] + [99]
+                                if i < len(ids_menu):
+                                    self.botao_selecionado = ids_menu[i]
                                 else:
                                     self.botao_selecionado = 0
                             else:
@@ -170,7 +189,7 @@ def executar(self):
                         self.nome_jogador += event.unicode
 
                 if self.estado == "MENU_MODO":
-                    ids_menu = [item["id"] for item in self.obter_pads_menu()]
+                    ids_menu = [item["id"] for item in self.obter_pads_menu()] + [99]
                     if self.botao_selecionado not in ids_menu:
                         self.botao_selecionado = ids_menu[0]
 
