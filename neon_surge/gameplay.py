@@ -1,38 +1,351 @@
-import math
 import random
 
 import pygame
 
-from .config import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERMELHO_SANGUE
+from .config import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
 from .entities import BlackHole, Inimigo, Particula, Player
+
+
+MAX_PARTICULAS = 650
+MAX_PROJETEIS_INIMIGOS = 240
+MAX_INIMIGOS_SOBREVIVENCIA = 18
+MAX_INIMIGOS_HARDCORE = 24
+LABIRINTO_ESPESSURA_PAREDE = 8
+MAX_FANTASMAS_LABIRINTO = 6
+FANTASMA_INTERVALO_DECISAO = 0.12
 
 
 def entrar_menu_modo(self):
     self.estado = "MENU_MODO"
-    self.player = Player(LARGURA_TELA // 2, ALTURA_TELA // 2 + 150)
+    self.player = None
     self.particulas.clear()
-    self.botao_selecionado = -1
+    self.botao_selecionado = 0
 
 
 def obter_pads_menu(self):
-    cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2 + 10
-    raio = min(LARGURA_TELA, ALTURA_TELA) * 0.34
-
     modos = [
-        {"id": 5, "modo": "CORRIDA_INFINITA", "texto": "CORRIDA INFINITA", "cor": ROXO_NEON},
-        {"id": 3, "modo": "HARDCORE", "texto": "SOBREV. HARDCORE", "cor": LARANJA_NEON},
-        {"id": 4, "modo": "INFO", "texto": "TUTORIAL / INFO", "cor": AMARELO_DADO},
-        {"id": 2, "modo": "SOBREVIVENCIA", "texto": "SOBREVIVÊNCIA", "cor": ROSA_NEON},
-        {"id": 0, "modo": "CORRIDA", "texto": "CORRIDA 10 FASES", "cor": CIANO_NEON},
+        {
+            "id": 0,
+            "modo": "CORRIDA",
+            "texto": "CORRIDA",
+            "cor": CIANO_NEON,
+            "descricao": "Complete 10 fases no menor tempo possível.",
+            "tag": "10 FASES",
+        },
+        {
+            "id": 5,
+            "modo": "CORRIDA_INFINITA",
+            "texto": "INFINITA",
+            "cor": ROXO_NEON,
+            "descricao": "Escalada infinita de fases com bosses evolutivos.",
+            "tag": "SEM FIM",
+        },
+        {
+            "id": 6,
+            "modo": "LABIRINTO",
+            "texto": "LABIRINTO",
+            "cor": VERDE_NEON,
+            "descricao": "Fases infinitas em um labirinto procedural com saída dinâmica.",
+            "tag": "PROCEDURAL",
+        },
+        {
+            "id": 2,
+            "modo": "SOBREVIVENCIA",
+            "texto": "SOBREV.",
+            "cor": ROSA_NEON,
+            "descricao": "Resista ao caos crescente e fuja da lava setorial.",
+            "tag": "RESISTIR",
+        },
+        {
+            "id": 3,
+            "modo": "HARDCORE",
+            "texto": "HARDCORE",
+            "cor": LARANJA_NEON,
+            "descricao": "Versão extrema da sobrevivência, com pressão máxima.",
+            "tag": "EXTREMO",
+        },
+        {
+            "id": 4,
+            "modo": "INFO",
+            "texto": "GUIA",
+            "cor": AMARELO_DADO,
+            "descricao": "Revise modos, ameaças e regras principais.",
+            "tag": "AJUDA",
+        },
     ]
 
-    for i, pad in enumerate(modos):
-        angulo = (-math.pi / 2) + (i * (2 * math.pi / len(modos)))
-        px = cx + math.cos(angulo) * raio
-        py = cy + math.sin(angulo) * raio
-        pad["pos"] = (px, py)
-
     return modos
+
+
+def _gerar_layout_labirinto(self):
+    cols = min(20, 10 + (self.fase_atual // 2))
+    rows = min(14, 7 + (self.fase_atual // 3))
+
+    margem_x = 36
+    margem_y_topo = 86
+    margem_y_base = 30
+    largura_disp = LARGURA_TELA - (margem_x * 2)
+    altura_disp = ALTURA_TELA - margem_y_topo - margem_y_base
+
+    cell = max(34, min(largura_disp // cols, altura_disp // rows))
+    area_largura = cols * cell
+    area_altura = rows * cell
+    area_x = (LARGURA_TELA - area_largura) // 2
+    area_y = margem_y_topo + ((altura_disp - area_altura) // 2)
+
+    paredes = {(cx, cy): [True, True, True, True] for cy in range(rows) for cx in range(cols)}
+    visitados = {(0, 0)}
+    pilha = [(0, 0)]
+    dirs = [(0, -1, 0, 2), (1, 0, 1, 3), (0, 1, 2, 0), (-1, 0, 3, 1)]
+
+    while pilha:
+        cx, cy = pilha[-1]
+        candidatos = []
+        for dx, dy, lado_atual, lado_vizinho in dirs:
+            nx, ny = cx + dx, cy + dy
+            if 0 <= nx < cols and 0 <= ny < rows and (nx, ny) not in visitados:
+                candidatos.append((nx, ny, lado_atual, lado_vizinho))
+
+        if candidatos:
+            nx, ny, lado_atual, lado_vizinho = random.choice(candidatos)
+            paredes[(cx, cy)][lado_atual] = False
+            paredes[(nx, ny)][lado_vizinho] = False
+            visitados.add((nx, ny))
+            pilha.append((nx, ny))
+        else:
+            pilha.pop()
+
+    segmentos = set()
+    for cy in range(rows):
+        for cx in range(cols):
+            px = area_x + (cx * cell)
+            py = area_y + (cy * cell)
+            n, l, s, o = paredes[(cx, cy)]
+            if n:
+                segmentos.add((px, py, px + cell, py))
+            if l:
+                segmentos.add((px + cell, py, px + cell, py + cell))
+            if s:
+                segmentos.add((px, py + cell, px + cell, py + cell))
+            if o:
+                segmentos.add((px, py, px, py + cell))
+
+    hitboxes = []
+    esp = LABIRINTO_ESPESSURA_PAREDE
+    for x1, y1, x2, y2 in segmentos:
+        if y1 == y2:
+            x_ini = min(x1, x2)
+            largura = abs(x2 - x1)
+            hitboxes.append(pygame.Rect(int(x_ini), int(y1 - (esp // 2)), int(largura), esp))
+        else:
+            y_ini = min(y1, y2)
+            altura = abs(y2 - y1)
+            hitboxes.append(pygame.Rect(int(x1 - (esp // 2)), int(y_ini), esp, int(altura)))
+
+    inicio = (0, 0)
+    fim = (cols - 1, rows - 1)
+    inicio_pos = pygame.math.Vector2(area_x + (inicio[0] * cell) + (cell * 0.5), area_y + (inicio[1] * cell) + (cell * 0.5))
+    fim_pos = pygame.math.Vector2(area_x + (fim[0] * cell) + (cell * 0.5), area_y + (fim[1] * cell) + (cell * 0.5))
+
+    self.labirinto_paredes = hitboxes
+    self.labirinto_area = pygame.Rect(area_x, area_y, area_largura, area_altura)
+    self.labirinto_info = {"cols": cols, "rows": rows, "cell": cell}
+
+    qtd_armadilhas = min(22, 4 + (self.fase_atual // 2))
+    ocupadas = {inicio, fim}
+    armadilhas = []
+    tentativas = 0
+
+    while len(armadilhas) < qtd_armadilhas and tentativas < (qtd_armadilhas * 30):
+        tentativas += 1
+        gx = random.randint(0, cols - 1)
+        gy = random.randint(0, rows - 1)
+        cel = (gx, gy)
+        if cel in ocupadas:
+            continue
+
+        ocupadas.add(cel)
+        trap_pos = pygame.math.Vector2(area_x + (gx * cell) + (cell * 0.5), area_y + (gy * cell) + (cell * 0.5))
+        armadilhas.append({"pos": trap_pos, "raio": 8 + min(4, self.fase_atual // 8), "fase": random.uniform(0, 6.28)})
+
+    self.labirinto_armadilhas = armadilhas
+
+    cores_fantasma = [ROSA_NEON, CIANO_NEON, LARANJA_NEON, ROXO_NEON, AMARELO_DADO, VERMELHO_SANGUE]
+    qtd_fantasmas = min(MAX_FANTASMAS_LABIRINTO, 3 + (self.fase_atual // 3))
+    fantasmas = []
+
+    for idx in range(qtd_fantasmas):
+        tentativas_spawn = 0
+        spawn_cell = None
+        while tentativas_spawn < 80:
+            tentativas_spawn += 1
+            gx = random.randint(0, cols - 1)
+            gy = random.randint(0, rows - 1)
+            manhattan_inicio = abs(gx - inicio[0]) + abs(gy - inicio[1])
+            cel = (gx, gy)
+            if cel in ocupadas:
+                continue
+            if manhattan_inicio < max(4, (cols + rows) // 4):
+                continue
+            spawn_cell = cel
+            ocupadas.add(cel)
+            break
+
+        if spawn_cell is None:
+            continue
+
+        gx, gy = spawn_cell
+        pos_fantasma = pygame.math.Vector2(area_x + (gx * cell) + (cell * 0.5), area_y + (gy * cell) + (cell * 0.5))
+
+        cantos_scatter = [
+            pygame.math.Vector2(area_x + (cell * 0.5), area_y + (cell * 0.5)),
+            pygame.math.Vector2(area_x + area_largura - (cell * 0.5), area_y + (cell * 0.5)),
+            pygame.math.Vector2(area_x + (cell * 0.5), area_y + area_altura - (cell * 0.5)),
+            pygame.math.Vector2(area_x + area_largura - (cell * 0.5), area_y + area_altura - (cell * 0.5)),
+        ]
+
+        fantasmas.append(
+            {
+                "pos": pos_fantasma,
+                "dir": pygame.math.Vector2(random.choice([(1, 0), (-1, 0), (0, 1), (0, -1)])),
+                "speed": min(10.8, 5.2 + (self.fase_atual * 0.28)),
+                "raio": 10,
+                "cor": cores_fantasma[idx % len(cores_fantasma)],
+                "mode": "CHASE",
+                "mode_timer": random.uniform(2.6, 4.4),
+                "decision_timer": random.uniform(0.0, FANTASMA_INTERVALO_DECISAO),
+                "scatter_target": cantos_scatter[idx % len(cantos_scatter)],
+            }
+        )
+
+    self.labirinto_fantasmas = fantasmas
+
+    tempo_base = 38.0 - min(22.0, (self.fase_atual - 1) * 1.35)
+    self.labirinto_tempo_max = max(16.0, tempo_base)
+    self.labirinto_tempo_restante = self.labirinto_tempo_max
+
+    self.player.pos = pygame.math.Vector2(inicio_pos.x, inicio_pos.y)
+    self.player.vel = pygame.math.Vector2(0, 0)
+    self.portal_pos = pygame.math.Vector2(fim_pos.x, fim_pos.y)
+    self.portal_aberto = True
+
+
+def _resolver_colisao_labirinto(self, pos_anterior):
+    if not self.labirinto_paredes:
+        return
+
+    raio = self.player.tamanho * 0.45
+
+    alvo = pygame.math.Vector2(self.player.pos.x, self.player.pos.y)
+    delta = alvo - pos_anterior
+    dist = delta.length()
+
+    if dist == 0:
+        self.player.pos = pygame.math.Vector2(pos_anterior.x, pos_anterior.y)
+        return
+
+    passos = max(1, int(dist / 3.0))
+    passo = delta / passos
+    atual = pygame.math.Vector2(pos_anterior.x, pos_anterior.y)
+
+    for _ in range(passos):
+        alvo_passo = atual + passo
+        teste_x = pygame.math.Vector2(alvo_passo.x, atual.y)
+        if not self._colide_com_paredes_labirinto(teste_x, raio):
+            atual.x = teste_x.x
+
+        teste_y = pygame.math.Vector2(atual.x, alvo_passo.y)
+        if not self._colide_com_paredes_labirinto(teste_y, raio):
+            atual.y = teste_y.y
+
+    self.player.pos = atual
+
+
+def _colide_com_paredes_labirinto(self, pos, raio):
+    rect = pygame.Rect(pos.x - raio, pos.y - raio, raio * 2, raio * 2)
+    return any(rect.colliderect(w) for w in self.labirinto_paredes)
+
+
+def _atualizar_fantasmas_labirinto(self):
+    if not self.labirinto_fantasmas:
+        return False
+
+    direcoes = [
+        pygame.math.Vector2(1, 0),
+        pygame.math.Vector2(-1, 0),
+        pygame.math.Vector2(0, 1),
+        pygame.math.Vector2(0, -1),
+    ]
+
+    raio_player = self.player.tamanho * 0.45
+
+    for fantasma in self.labirinto_fantasmas:
+        fantasma["mode_timer"] -= self.dt
+        if fantasma["mode_timer"] <= 0:
+            if fantasma["mode"] == "CHASE":
+                fantasma["mode"] = "SCATTER"
+                fantasma["mode_timer"] = random.uniform(1.2, 2.0)
+            else:
+                fantasma["mode"] = "CHASE"
+                fantasma["mode_timer"] = random.uniform(2.2, 3.8)
+
+        fantasma["decision_timer"] -= self.dt
+        if fantasma["decision_timer"] <= 0:
+            fantasma["decision_timer"] = FANTASMA_INTERVALO_DECISAO
+
+            alvo = self.player.pos if fantasma["mode"] == "CHASE" else fantasma["scatter_target"]
+            reverse = -fantasma["dir"] if fantasma["dir"].length_squared() > 0 else pygame.math.Vector2(0, 0)
+
+            opcoes = []
+            for direcao in direcoes:
+                if reverse.length_squared() > 0 and direcao.dot(reverse) > 0.99:
+                    continue
+                prox = fantasma["pos"] + (direcao * (fantasma["speed"] + 2))
+                if not self._colide_com_paredes_labirinto(prox, fantasma["raio"]):
+                    opcoes.append((prox.distance_to(alvo), direcao))
+
+            if not opcoes:
+                for direcao in direcoes:
+                    prox = fantasma["pos"] + (direcao * (fantasma["speed"] + 2))
+                    if not self._colide_com_paredes_labirinto(prox, fantasma["raio"]):
+                        opcoes.append((prox.distance_to(alvo), direcao))
+
+            if opcoes:
+                opcoes.sort(key=lambda item: item[0])
+                fantasma["dir"] = opcoes[0][1]
+
+        proposed = fantasma["pos"] + (fantasma["dir"] * fantasma["speed"])
+        delta = proposed - fantasma["pos"]
+        dist = delta.length()
+        passos = max(1, int(dist / 3.0))
+        passo = delta / passos
+        bloqueado_total = True
+
+        for _ in range(passos):
+            alvo_passo = fantasma["pos"] + passo
+            moveu = False
+
+            test_x = pygame.math.Vector2(alvo_passo.x, fantasma["pos"].y)
+            if not self._colide_com_paredes_labirinto(test_x, fantasma["raio"]):
+                fantasma["pos"].x = test_x.x
+                moveu = True
+
+            test_y = pygame.math.Vector2(fantasma["pos"].x, alvo_passo.y)
+            if not self._colide_com_paredes_labirinto(test_y, fantasma["raio"]):
+                fantasma["pos"].y = test_y.y
+                moveu = True
+
+            if moveu:
+                bloqueado_total = False
+
+        if bloqueado_total:
+            fantasma["dir"] = pygame.math.Vector2(0, 0)
+
+        if not self.player.invencivel:
+            if fantasma["pos"].distance_to(self.player.pos) < (fantasma["raio"] + raio_player):
+                return True
+
+    return False
 
 
 def iniciar_fase(self):
@@ -52,13 +365,21 @@ def iniciar_fase(self):
     self.aviso_lava = 0.0
     self.lava_lado_horizontal = None
     self.lava_lado_vertical = None
+    self.temporizador_buraco_negro = 8.0
+    self.buracos_negros.clear()
+    self.labirinto_paredes = []
+    self.labirinto_area = None
+    self.labirinto_info = {}
+    self.labirinto_armadilhas = []
+    self.labirinto_fantasmas = []
+    self.labirinto_tempo_restante = 0.0
+    self.labirinto_tempo_max = 0.0
 
     if self.fase_atual == 1:
         self.tempo_corrida = 0.0
         self.tempo_sobrevivencia = 0.0
         self.temporizador_spawn = 0.0
         self.temporizador_buraco_negro = 8.0
-        self.buracos_negros.clear()
 
     if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
@@ -94,8 +415,8 @@ def iniciar_fase(self):
                 y = random.randint(110, ALTURA_TELA - 50)
                 self.coletaveis.append(pygame.math.Vector2(x, y))
 
-            limite_inimigos = 3 + min(self.fase_atual, 20)
-            vel_inimigo = 4 + min((self.fase_atual * 0.25), 8.0)
+            limite_inimigos = 2 + min(self.fase_atual, 14)
+            vel_inimigo = 4.0 + min((self.fase_atual * 0.18), 6.8)
             self._spawn_inimigos(limite_inimigos, vel_inimigo)
 
     elif self.modo_jogo == "SOBREVIVENCIA":
@@ -103,6 +424,9 @@ def iniciar_fase(self):
 
     elif self.modo_jogo == "HARDCORE":
         self._spawn_inimigos(4, 6)
+
+    elif self.modo_jogo == "LABIRINTO":
+        self._gerar_layout_labirinto()
 
     self.estado = "JOGANDO"
 
@@ -129,13 +453,22 @@ def _spawn_inimigos(self, quantidade, velocidade):
 
 def atualizar_jogo(self):
     teclas = pygame.key.get_pressed()
+    pos_player_anterior = pygame.math.Vector2(self.player.pos.x, self.player.pos.y)
     if self.player.update(teclas, self.particulas):
         self.shake_frames = 6
 
-    for p in self.particulas[:]:
+    if self.modo_jogo == "LABIRINTO":
+        self._resolver_colisao_labirinto(pos_player_anterior)
+        if self._atualizar_fantasmas_labirinto():
+            self._lidar_com_morte()
+            return
+
+    particulas_ativas = []
+    for p in self.particulas:
         p.update()
-        if p.raio <= 0:
-            self.particulas.remove(p)
+        if p.raio > 0:
+            particulas_ativas.append(p)
+    self.particulas = particulas_ativas[-MAX_PARTICULAS:]
 
     projeteis_ativos = []
     for proj in self.projeteis_inimigos:
@@ -162,9 +495,19 @@ def atualizar_jogo(self):
 
         projeteis_ativos.append(proj)
 
-    self.projeteis_inimigos = projeteis_ativos
+    self.projeteis_inimigos = projeteis_ativos[-MAX_PROJETEIS_INIMIGOS:]
 
     for p in self.portais_inimigos[:]:
+        if self.player.dash_timer > 0:
+            raio_portal = 20 if p.get("tipo") == "boss" else 16
+            raio_interacao = raio_portal + (self.player.tamanho * 0.7)
+            if p["pos"].distance_to(self.player.pos) <= raio_interacao:
+                self.portais_inimigos.remove(p)
+                self.shake_frames = 5
+                for _ in range(32):
+                    self.particulas.append(Particula(p["pos"].x, p["pos"].y, VERMELHO_SANGUE))
+                continue
+
         p["tempo"] -= self.dt
         if p["tempo"] <= 0:
             if p.get("tipo") == "metralhadora":
@@ -184,9 +527,8 @@ def atualizar_jogo(self):
             for _ in range(15):
                 self.particulas.append(Particula(p["pos"].x, p["pos"].y, VERMELHO_SANGUE))
 
-    inimigos_atuais = self.inimigos.copy()
     novos_inimigos = []
-    for ini in self.inimigos:
+    for ini in self.inimigos[:]:
         ini.update(self.player, self.inimigos, self.dt, self.particulas, self)
 
         if ini.morto:
@@ -204,27 +546,44 @@ def atualizar_jogo(self):
 
         novos_inimigos.append(ini)
 
-    for ini in self.inimigos:
-        if ini not in inimigos_atuais:
-            novos_inimigos.append(ini)
-
     self.inimigos = novos_inimigos
 
     # -- Atualização do Buraco Negro --
-    self.temporizador_buraco_negro -= self.dt
-    if self.temporizador_buraco_negro <= 0:
-        bx = random.randint(100, LARGURA_TELA - 100)
-        by = random.randint(110, ALTURA_TELA - 100)
-        self.buracos_negros.append(BlackHole(bx, by))
-        # Tempo de spawn entre 8 e 15 segundos
-        self.temporizador_buraco_negro = random.uniform(8.0, 15.0)
+    if self.modo_jogo != "LABIRINTO":
+        self.temporizador_buraco_negro -= self.dt
+        if self.temporizador_buraco_negro <= 0:
+            bx = random.randint(100, LARGURA_TELA - 100)
+            by = random.randint(110, ALTURA_TELA - 100)
+            self.buracos_negros.append(BlackHole(bx, by))
+            self.temporizador_buraco_negro = random.uniform(8.0, 15.0)
 
-    for b in self.buracos_negros:
-        b.update(self.player, self.dt, self._lidar_com_morte)
-    
-    self.buracos_negros = [b for b in self.buracos_negros if not b.expirado]
+        for b in self.buracos_negros:
+            if b.update(self.player, self.dt):
+                self._lidar_com_morte()
+                return
 
-    if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
+        self.buracos_negros = [b for b in self.buracos_negros if not b.expirado]
+
+    if self.modo_jogo == "LABIRINTO":
+        self.labirinto_tempo_restante -= self.dt
+        if self.labirinto_tempo_restante <= 0:
+            self._lidar_com_morte()
+            return
+
+        if not self.player.invencivel:
+            raio_player = self.player.tamanho * 0.45
+            for arm in self.labirinto_armadilhas:
+                if self.player.pos.distance_to(arm["pos"]) < (raio_player + arm["raio"]):
+                    self._lidar_com_morte()
+                    return
+
+        if self.player.pos.distance_to(self.portal_pos) < 30:
+            self.fase_atual += 1
+            self.shake_frames = 10
+            self.iniciar_fase()
+            return
+
+    elif self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         self.tempo_corrida += self.dt
         raio_coleta = 28 if self.modo_jogo == "CORRIDA" else 20
         for d in self.coletaveis[:]:
@@ -320,12 +679,14 @@ def atualizar_jogo(self):
                     self._lidar_com_morte()
                     return
 
-        limite_spawn = 3.0 if self.modo_jogo == "SOBREVIVENCIA" else 1.5
-        taxa_vel = 0.05 if self.modo_jogo == "SOBREVIVENCIA" else 0.1
+        limite_spawn = 3.2 if self.modo_jogo == "SOBREVIVENCIA" else 1.8
+        taxa_vel = 0.045 if self.modo_jogo == "SOBREVIVENCIA" else 0.08
         vel_base = 4 if self.modo_jogo == "SOBREVIVENCIA" else 6
-        vel_max = 8 if self.modo_jogo == "SOBREVIVENCIA" else 12
+        vel_max = 7.5 if self.modo_jogo == "SOBREVIVENCIA" else 10.5
 
-        if self.temporizador_spawn > limite_spawn:
+        limite_inimigos_ativos = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else MAX_INIMIGOS_HARDCORE
+
+        if self.temporizador_spawn > limite_spawn and len(self.inimigos) < limite_inimigos_ativos:
             vel_progressiva = min(vel_max, vel_base + (self.tempo_sobrevivencia * taxa_vel))
             self._spawn_inimigos(1, vel_progressiva)
             self.temporizador_spawn = 0.0
@@ -333,25 +694,17 @@ def atualizar_jogo(self):
 
 
 def atualizar_menu_interativo(self):
-    teclas = pygame.key.get_pressed()
-    self.player.update(teclas, self.particulas)
-
-    for p in self.particulas[:]:
+    particulas_ativas = []
+    for p in self.particulas:
         p.update()
-        if p.raio <= 0:
-            self.particulas.remove(p)
+        if p.raio > 0:
+            particulas_ativas.append(p)
+    self.particulas = particulas_ativas[-MAX_PARTICULAS:]
 
-    pads = self.obter_pads_menu()
-    self.botao_selecionado = -1
-    dist_min = 180
-
-    for pad in pads:
-        pad_vec = pygame.math.Vector2(pad["pos"])
-        dist = self.player.pos.distance_to(pad_vec)
-
-        if dist < dist_min:
-            dist_min = dist
-            self.botao_selecionado = pad["id"]
+    opcoes = self.obter_pads_menu()
+    ids_validos = [item["id"] for item in opcoes]
+    if self.botao_selecionado not in ids_validos:
+        self.botao_selecionado = ids_validos[0]
 
 
 def _lidar_com_morte(self):
@@ -360,6 +713,10 @@ def _lidar_com_morte(self):
     if self.modo_jogo == "CORRIDA":
         self.iniciar_fase()
     elif self.modo_jogo == "CORRIDA_INFINITA":
+        self.salvar_ranking(self.modo_jogo, self.fase_atual)
+        self.estado = "RANKING"
+        self.botao_selecionado = 0
+    elif self.modo_jogo == "LABIRINTO":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
         self.estado = "RANKING"
         self.botao_selecionado = 0

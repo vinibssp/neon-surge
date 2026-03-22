@@ -3,7 +3,11 @@ import pygame
 from .config import ALTURA_TELA, LARGURA_TELA
 from .entities import ParticulaMenu
 from .gameplay import (
+    _atualizar_fantasmas_labirinto,
+    _colide_com_paredes_labirinto,
+    _gerar_layout_labirinto,
     _lidar_com_morte,
+    _resolver_colisao_labirinto,
     _spawn_inimigos,
     atualizar_jogo,
     atualizar_menu_interativo,
@@ -22,6 +26,10 @@ class NeonSurge:
     entrar_menu_modo = entrar_menu_modo
     obter_pads_menu = obter_pads_menu
     iniciar_fase = iniciar_fase
+    _colide_com_paredes_labirinto = _colide_com_paredes_labirinto
+    _atualizar_fantasmas_labirinto = _atualizar_fantasmas_labirinto
+    _gerar_layout_labirinto = _gerar_layout_labirinto
+    _resolver_colisao_labirinto = _resolver_colisao_labirinto
     _spawn_inimigos = _spawn_inimigos
     atualizar_jogo = atualizar_jogo
     atualizar_menu_interativo = atualizar_menu_interativo
@@ -92,6 +100,13 @@ class NeonSurge:
         self.temporizador_spawn = 0.0
         self.temporizador_buraco_negro = 8.0
         self.buracos_negros = []
+        self.labirinto_paredes = []
+        self.labirinto_area = None
+        self.labirinto_info = {}
+        self.labirinto_armadilhas = []
+        self.labirinto_fantasmas = []
+        self.labirinto_tempo_restante = 0.0
+        self.labirinto_tempo_max = 0.0
         self.shake_frames = 0
         self.tempo_global = 0
 

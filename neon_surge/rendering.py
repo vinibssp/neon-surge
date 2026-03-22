@@ -194,52 +194,59 @@ def desenhar(self):
         self.botoes_hitboxes.extend([btn_manter_modo, btn_mudar_modo])
 
     elif self.estado == "MENU_MODO":
-        offset_x = random.randint(-4, 4) if self.shake_frames > 0 else 0
-        offset_y = random.randint(-4, 4) if self.shake_frames > 0 else 0
-        if self.shake_frames > 0:
-            self.shake_frames -= 1
+        modos = self.obter_pads_menu()
+        ids_menu = [m["id"] for m in modos]
+        if self.botao_selecionado not in ids_menu:
+            self.botao_selecionado = ids_menu[0]
 
-        # desenhar_texto(self.tela, "SISTEMA PRINCIPAL", self.fonte_titulo, BRANCO, cx + offset_x, 60 + offset_y)
-        # desenhar_texto(
-        #     self.tela,
-        #     "SELECIONE UM MODO PELO CÍRCULO E USE SPACE PARA DASH/CONFIRMAR",
-        #     self.fonte_texto,
-        #     VERDE_NEON,
-        #     cx + offset_x,
-        #     120 + offset_y,
-        # )
+        selecionado = next((m for m in modos if m["id"] == self.botao_selecionado), modos[0])
+        cor_sel = selecionado["cor"]
 
-        pads = self.obter_pads_menu()
-        centro_menu = pygame.math.Vector2(cx, cy + 10)
-        _desenhar_teclas_menu(self, cx, cy + 8)
-        # desenhar_texto(self.tela, "Mover", self.fonte_desc, CINZA_CLARO, cx, cy + 66)
-        # desenhar_texto(self.tela, "SPACE: dash / selecionar", self.fonte_desc, AMARELO_DADO, cx, cy + 88)
+        painel_largura = min(980, LARGURA_TELA - 120)
+        painel_altura = 220
+        painel = criar_painel_transparente(painel_largura, painel_altura)
+        painel_rect = pygame.Rect(0, 0, painel_largura, painel_altura)
+        painel_rect.center = (cx, cy - 92)
+        self.tela.blit(painel, painel_rect.topleft)
 
-        for pad in pads:
-            px, py = pad["pos"]
-            cor = pad["cor"]
-            is_hovered = self.botao_selecionado == pad["id"]
+        desenhar_texto(self.tela, selecionado["texto"], self.fonte_titulo, cor_sel, cx, painel_rect.top + 58)
+        desenhar_texto(self.tela, selecionado["tag"], self.fonte_sub, BRANCO, cx, painel_rect.top + 108)
+        desenhar_texto(self.tela, selecionado["descricao"], self.fonte_texto, BRANCO, cx, painel_rect.top + 146)
 
-            raio_pad = 45 + (math.sin(time.time() * 12) * 8 if is_hovered else math.sin(time.time() * 4) * 3)
+        hint = "WASD/SETAS: trocar   |   ESPAÇO/ENTER: confirmar   |   ESC: voltar"
+        desenhar_texto(self.tela, hint, self.fonte_desc, CIANO_NEON, cx, painel_rect.bottom - 20)
 
-            desenhar_brilho_neon(self.tela, cor, px, py, raio_pad, 4)
-            pygame.draw.circle(self.tela, PRETO_FUNDO, (int(px), int(py)), int(raio_pad - 6))
-            pygame.draw.circle(self.tela, cor, (int(px), int(py)), int(raio_pad), 5)
+        card_w, card_h = 230, 84
+        gap_x, gap_y = 18, 16
+        cols = 3
+        grid_w = (cols * card_w) + ((cols - 1) * gap_x)
+        inicio_x = cx - (grid_w // 2)
+        y_cards = cy + 58
 
-            if is_hovered:
-                pygame.draw.circle(self.tela, cor, (int(px), int(py)), int(raio_pad // 2))
+        for i, modo in enumerate(modos):
+            linha = i // cols
+            col = i % cols
+            x_card = inicio_x + col * (card_w + gap_x)
+            y_card = y_cards + linha * (card_h + gap_y)
+            rect_card = pygame.Rect(x_card, y_card, card_w, card_h)
+            ativo = modo["id"] == self.botao_selecionado
 
-            vetor = pygame.math.Vector2(px, py) - centro_menu
-            if vetor.length() > 0:
-                vetor = vetor.normalize()
-            label_x = px + (vetor.x * 78)
-            label_y = py + (vetor.y * 78)
-            desenhar_texto(self.tela, pad["texto"], self.fonte_sub, BRANCO if is_hovered else cor, label_x, label_y)
+            cor_borda = modo["cor"] if ativo else CINZA_ESCURO
+            cor_fundo = (18, 26, 40) if ativo else (12, 17, 28)
+
+            if ativo:
+                desenhar_brilho_neon(self.tela, modo["cor"], rect_card.centerx, rect_card.centery, 58, 2)
+
+            pygame.draw.rect(self.tela, cor_fundo, rect_card, border_radius=10)
+            pygame.draw.rect(self.tela, cor_borda, rect_card, 3 if ativo else 2, border_radius=10)
+
+            desenhar_texto(self.tela, modo["texto"], self.fonte_sub, BRANCO if ativo else modo["cor"], rect_card.centerx, rect_card.y + 30)
+            desenhar_texto(self.tela, modo["tag"], self.fonte_desc, modo["cor"], rect_card.centerx, rect_card.y + 56)
+
+            self.botoes_hitboxes.append(rect_card)
 
         for p in self.particulas:
             p.draw(self.tela)
-        if self.player:
-            self.player.draw(self.tela)
 
     elif self.estado == "TELA_INFO_MODOS":
         desenhar_texto(self.tela, "MANUAL DOS MODOS DE JOGO", self.fonte_titulo, AMARELO_DADO, cx, 80)
@@ -376,6 +383,36 @@ def desenhar(self):
         surf_jogo = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
         desenhar_grade_jogo(surf_jogo)
 
+        if self.modo_jogo == "LABIRINTO":
+            for wall in self.labirinto_paredes:
+                pygame.draw.rect(surf_jogo, (22, 34, 58), wall)
+                pygame.draw.rect(surf_jogo, CIANO_NEON, wall, 1)
+
+            tempo_restante = max(0.0, float(getattr(self, "labirinto_tempo_restante", 0.0)))
+            if tempo_restante <= 8.0:
+                cor_tempo = VERMELHO_SANGUE
+            elif tempo_restante <= 15.0:
+                cor_tempo = AMARELO_DADO
+            else:
+                cor_tempo = CIANO_NEON
+            desenhar_texto(surf_jogo, f"TEMPO: {tempo_restante:04.1f}s", self.fonte_sub, cor_tempo, LARGURA_TELA // 2, 90)
+
+            for arm in self.labirinto_armadilhas:
+                pulso = abs(math.sin((time.time() * 8) + arm.get("fase", 0.0)))
+                raio = arm["raio"] + (pulso * 2.5)
+                desenhar_brilho_neon(surf_jogo, VERMELHO_SANGUE, arm["pos"].x, arm["pos"].y, raio + 4, 2)
+                pygame.draw.circle(surf_jogo, VERMELHO_SANGUE, (int(arm["pos"].x), int(arm["pos"].y)), int(raio))
+                pygame.draw.circle(surf_jogo, BRANCO, (int(arm["pos"].x), int(arm["pos"].y)), max(1, int(raio // 3)))
+
+            for ghost in self.labirinto_fantasmas:
+                gx, gy = ghost["pos"].x, ghost["pos"].y
+                raio_g = int(ghost.get("raio", 10))
+                cor_g = ghost.get("cor", ROSA_NEON)
+
+                desenhar_brilho_neon(surf_jogo, cor_g, gx, gy, raio_g + 6, 2)
+                pygame.draw.circle(surf_jogo, cor_g, (int(gx), int(gy)), raio_g)
+                pygame.draw.circle(surf_jogo, BRANCO, (int(gx), int(gy)), max(2, raio_g // 3))
+
         for p in self.portais_inimigos:
             cor_portal = ROXO_NEON if p["tipo"] == "boss" else VERMELHO_SANGUE
             centro = (int(p["pos"].x), int(p["pos"].y))
@@ -495,6 +532,12 @@ def desenhar(self):
             melhor = self.ranking.get(chave_modo, [{}])[0].get("tempo", atual) if self.ranking.get(chave_modo) else atual
             texto_atual = f"{atual:.1f}s/"
             texto_melhor = f"{melhor:.1f}s"
+        elif self.modo_jogo == "LABIRINTO":
+            atual = int(self.fase_atual)
+            chave_modo = "Labirinto_Infinito"
+            melhor = self.ranking.get(chave_modo, [{}])[0].get("fase", atual) if self.ranking.get(chave_modo) else atual
+            texto_atual = f"{atual}/"
+            texto_melhor = f"{melhor}"
         elif self.modo_jogo == "SOBREVIVENCIA":
             atual = self.tempo_sobrevivencia
             chave_modo = "Sobrevivencia"
@@ -559,7 +602,7 @@ def desenhar(self):
         self.tela.blit(surf_rank, rect_ranking.topleft)
         desenhar_texto(self.tela, "DESEMPENHO DA MISSÃO:", self.fonte_sub, VERDE_NEON, cx, rect_ranking.top + 20)
 
-        if self.modo_jogo == "CORRIDA_INFINITA":
+        if self.modo_jogo in ["CORRIDA_INFINITA", "LABIRINTO"]:
             texto_desempenho = f"Fase Alcançada: {int(self.ultimo_tempo)}    |    Sua Posição: {self.ultima_posicao}º Lugar"
         else:
             texto_desempenho = f"Tempo: {self.ultimo_tempo:.1f}s    |    Sua Posição: {self.ultima_posicao}º Lugar"
@@ -587,6 +630,8 @@ def desenhar(self):
             chave_modo = "Sobrevivencia"
         elif self.modo_jogo == "CORRIDA_INFINITA":
             chave_modo = "Corrida_Infinita"
+        elif self.modo_jogo == "LABIRINTO":
+            chave_modo = "Labirinto_Infinito"
         else:
             chave_modo = "Hardcore"
         top5 = self.ranking.get(chave_modo, [])
@@ -599,7 +644,7 @@ def desenhar(self):
             y_pos = rect_ranking.top + 155 + (i * 35)
             desenhar_texto(self.tela, f"{i + 1}º {reg['nome']}", self.fonte_sub, cor, margem_esq, y_pos, alinhamento="esquerda")
 
-            texto_valor = f"Fase {reg.get('fase', 0)}" if chave_modo == "Corrida_Infinita" else f"{reg.get('tempo', 0):.1f}s"
+            texto_valor = f"Fase {reg.get('fase', 0)}" if chave_modo in ["Corrida_Infinita", "Labirinto_Infinito"] else f"{reg.get('tempo', 0):.1f}s"
             desenhar_texto(self.tela, texto_valor, self.fonte_sub, cor, margem_dir, y_pos, alinhamento="direita")
 
         espaco_y = 65

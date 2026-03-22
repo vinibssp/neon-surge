@@ -61,9 +61,13 @@ class Player:
         self.vel = pygame.math.Vector2(0, 0)
         self.aceleracao = 1.8
         self.atrito = 0.82
+        self.velocidade_maxima = 10.0
+        self.velocidade_dash = 25.0
         self.tamanho = 16
         self.dash_cooldown = 0
         self.dash_timer = 0
+        self.pos_dash_invuln_timer = 0
+        self.ultima_direcao = pygame.math.Vector2(1, 0)
         self.invencivel = False
 
     def update(self, teclas, lista_particulas):
@@ -77,12 +81,20 @@ class Player:
         if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
             dir_x = 1
 
+        move_vec = pygame.math.Vector2(0, 0)
         if dir_x != 0 or dir_y != 0:
             move_vec = pygame.math.Vector2(dir_x, dir_y).normalize()
-            self.vel += move_vec * self.aceleracao
+            self.ultima_direcao = pygame.math.Vector2(move_vec.x, move_vec.y)
 
-        if teclas[pygame.K_SPACE] and self.dash_cooldown <= 0 and self.vel.length() > 0:
-            self.vel = self.vel.normalize() * 25
+        if teclas[pygame.K_SPACE] and self.dash_cooldown <= 0:
+            if move_vec.length_squared() > 0:
+                direcao_dash = move_vec
+            elif self.vel.length_squared() > 0:
+                direcao_dash = self.vel.normalize()
+            else:
+                direcao_dash = self.ultima_direcao
+
+            self.vel = direcao_dash * self.velocidade_dash
             self.dash_timer = 10
             self.dash_cooldown = 45
             return True
@@ -90,15 +102,25 @@ class Player:
         if self.dash_timer > 0:
             self.dash_timer -= 1
             self.invencivel = True
+            if self.dash_timer == 0:
+                self.pos_dash_invuln_timer = 12
             for _ in range(3):
                 lista_particulas.append(Particula(self.pos.x, self.pos.y, CIANO_NEON))
         else:
-            self.invencivel = False
+            if move_vec.length_squared() > 0:
+                self.vel = move_vec * self.velocidade_maxima
+            else:
+                self.vel = pygame.math.Vector2(0, 0)
+
+            if self.pos_dash_invuln_timer > 0:
+                self.pos_dash_invuln_timer -= 1
+                self.invencivel = True
+            else:
+                self.invencivel = False
 
         if self.dash_cooldown > 0:
             self.dash_cooldown -= 1
 
-        self.vel *= self.atrito
         self.pos += self.vel
         self.pos.x = max(self.tamanho, min(LARGURA_TELA - self.tamanho, self.pos.x))
         self.pos.y = max(60 + self.tamanho, min(ALTURA_TELA - self.tamanho, self.pos.y))
@@ -289,7 +311,7 @@ class Inimigo:
 
             if self.padrao_tiro == 0:
                 self.em_rajada = True
-                intervalo_tiro = 0.52
+                intervalo_tiro = 0.58
                 while self.timer_tiro >= intervalo_tiro:
                     self.timer_tiro -= intervalo_tiro
                     for angulo in range(0, 360, 45):
@@ -297,8 +319,8 @@ class Inimigo:
                         interface_principal.projeteis_inimigos.append(
                             {
                                 "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
-                                "vel": direcao_proj * 9.8,
-                                "raio": 10,
+                                "vel": direcao_proj * 9.2,
+                                "raio": 8,
                                 "tempo": 2.4,
                                 "cor": ROXO_NEON,
                             }
@@ -309,7 +331,7 @@ class Inimigo:
 
             elif self.padrao_tiro == 1:
                 self.em_rajada = False
-                intervalo_tiro = 0.18
+                intervalo_tiro = 0.22
                 while self.timer_tiro >= intervalo_tiro:
                     self.timer_tiro -= intervalo_tiro
                     fase = int(time.time() * 8) % 2
@@ -319,8 +341,8 @@ class Inimigo:
                         interface_principal.projeteis_inimigos.append(
                             {
                                 "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
-                                "vel": direcao_proj * 10.6,
-                                "raio": 10,
+                                "vel": direcao_proj * 9.8,
+                                "raio": 8,
                                 "tempo": 2.2,
                                 "cor": ROXO_NEON,
                             }
@@ -331,7 +353,7 @@ class Inimigo:
 
             else:
                 self.em_rajada = True
-                intervalo_tiro = 0.09
+                intervalo_tiro = 0.11
                 while self.timer_tiro >= intervalo_tiro:
                     self.timer_tiro -= intervalo_tiro
                     self.angulo_espiral = (self.angulo_espiral + 20) % 360
@@ -341,8 +363,8 @@ class Inimigo:
                         interface_principal.projeteis_inimigos.append(
                             {
                                 "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
-                                "vel": direcao_proj * 11.2,
-                                "raio": 10,
+                                "vel": direcao_proj * 10.4,
+                                "raio": 8,
                                 "tempo": 2.0,
                                 "cor": ROXO_NEON,
                             }
@@ -528,7 +550,7 @@ class BlackHole:
     def expirado(self):
         return self.tempo_vida <= 0
 
-    def update(self, player, dt, lidar_com_morte):
+    def update(self, player, dt):
         self.tempo_vida -= dt
         
         # Atualiza o ângulo das partículas do disco
@@ -544,19 +566,22 @@ class BlackHole:
         
         # Dano no centro
         if distancia < self.raio_dano and not player.invencivel:
-            lidar_com_morte()
-            return
+            self.tempo_vida = 0
+            return True
 
         # Puxão e Lentidão Progressiva
         if distancia < self.raio_efeito:
             # Puxão
-            direcao_puxao = (self.pos - player.pos).normalize()
-            player.pos += direcao_puxao * self.forca_puxao * dt
+            if distancia > 0:
+                direcao_puxao = (self.pos - player.pos).normalize()
+                player.pos += direcao_puxao * self.forca_puxao * dt
 
             # Lentidão
             progresso = 1.0 - (distancia / self.raio_efeito)
             lentidao_atual = 1.0 - (progresso * (1.0 - self.fator_lentidao_max))
             player.vel *= lentidao_atual
+
+        return False
 
     def draw(self, surface):
         # Horizonte de eventos (Brilho sutil)

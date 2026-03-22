@@ -15,8 +15,10 @@ def carregar_ranking(self):
                 dados["Hardcore"] = []
             if "Corrida_Infinita" not in dados:
                 dados["Corrida_Infinita"] = []
+            if "Labirinto_Infinito" not in dados:
+                dados["Labirinto_Infinito"] = []
             return dados
-    return {"Corrida": [], "Sobrevivencia": [], "Hardcore": [], "Corrida_Infinita": []}
+    return {"Corrida": [], "Sobrevivencia": [], "Hardcore": [], "Corrida_Infinita": [], "Labirinto_Infinito": []}
 
 
 def salvar_ranking(self, modo, valor):
@@ -26,10 +28,12 @@ def salvar_ranking(self, modo, valor):
         chave_modo = "Sobrevivencia"
     elif modo == "CORRIDA_INFINITA":
         chave_modo = "Corrida_Infinita"
+    elif modo == "LABIRINTO":
+        chave_modo = "Labirinto_Infinito"
     else:
         chave_modo = "Hardcore"
 
-    if chave_modo == "Corrida_Infinita":
+    if chave_modo in ["Corrida_Infinita", "Labirinto_Infinito"]:
         novo_registro = {"nome": self.nome_jogador, "fase": int(valor), "id": time.time()}
         self.ranking[chave_modo].append(novo_registro)
         self.ranking[chave_modo] = sorted(self.ranking[chave_modo], key=lambda x: x["fase"], reverse=True)

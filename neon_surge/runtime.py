@@ -34,6 +34,8 @@ def acionar_botao(self):
             self.modo_jogo = "HARDCORE"
         elif self.botao_selecionado == 5:
             self.modo_jogo = "CORRIDA_INFINITA"
+        elif self.botao_selecionado == 6:
+            self.modo_jogo = "LABIRINTO"
         elif self.botao_selecionado == 4:
             self.estado = "TELA_INFO_MODOS"
             self.botao_selecionado = 0
@@ -142,10 +144,17 @@ def executar(self):
                         self.alterar_volume(0.1)
                         continue
 
-                if self.estado != "MENU_MODO":
+                if self.estado != "JOGANDO":
                     for i, rect in enumerate(self.botoes_hitboxes):
                         if rect.collidepoint(mx, my):
-                            self.botao_selecionado = i
+                            if self.estado == "MENU_MODO":
+                                opcoes_menu = self.obter_pads_menu()
+                                if i < len(opcoes_menu):
+                                    self.botao_selecionado = opcoes_menu[i]["id"]
+                                else:
+                                    self.botao_selecionado = 0
+                            else:
+                                self.botao_selecionado = i
                             self.acionar_botao()
 
             if event.type == pygame.KEYDOWN:
@@ -159,6 +168,34 @@ def executar(self):
                         self.nome_jogador = self.nome_jogador[:-1]
                     elif event.key not in [pygame.K_RETURN, pygame.K_SPACE] and len(self.nome_jogador) < 12 and event.unicode.isprintable():
                         self.nome_jogador += event.unicode
+
+                if self.estado == "MENU_MODO":
+                    ids_menu = [item["id"] for item in self.obter_pads_menu()]
+                    if self.botao_selecionado not in ids_menu:
+                        self.botao_selecionado = ids_menu[0]
+
+                    indice_atual = ids_menu.index(self.botao_selecionado)
+                    cols_menu = 3
+                    linha_atual = indice_atual // cols_menu
+                    col_atual = indice_atual % cols_menu
+                    total_linhas = (len(ids_menu) + cols_menu - 1) // cols_menu
+
+                    if event.key in [pygame.K_LEFT, pygame.K_a]:
+                        novo_indice = max(0, indice_atual - 1)
+                        self.botao_selecionado = ids_menu[novo_indice]
+                    elif event.key in [pygame.K_RIGHT, pygame.K_d]:
+                        novo_indice = min(len(ids_menu) - 1, indice_atual + 1)
+                        self.botao_selecionado = ids_menu[novo_indice]
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        if linha_atual > 0:
+                            novo_indice = (linha_atual - 1) * cols_menu + col_atual
+                            novo_indice = min(novo_indice, len(ids_menu) - 1)
+                            self.botao_selecionado = ids_menu[novo_indice]
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        if linha_atual < total_linhas - 1:
+                            novo_indice = (linha_atual + 1) * cols_menu + col_atual
+                            novo_indice = min(novo_indice, len(ids_menu) - 1)
+                            self.botao_selecionado = ids_menu[novo_indice]
 
                 if num_botoes > 0 and self.estado != "MENU_MODO":
                     if event.key in [pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a]:
