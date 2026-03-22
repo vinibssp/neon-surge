@@ -456,16 +456,16 @@ def desenhar(self):
                 pygame.draw.circle(surf_jogo, BRANCO, (int(gx), int(gy)), max(2, raio_g // 3))
 
         for p in self.portais_inimigos:
-            if p["tipo"] == "boss":
+            if p["tipo"] in ["boss", "boss_artilharia", "boss_caotico"]:
                 cor_portal = ROXO_NEON
-            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador"]:
+            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador", "miniboss_escudo", "miniboss_sniper"]:
                 cor_portal = AMARELO_DADO
             else:
                 cor_portal = VERMELHO_SANGUE
             centro = (int(p["pos"].x), int(p["pos"].y))
-            if p["tipo"] == "boss":
+            if p["tipo"] in ["boss", "boss_artilharia", "boss_caotico"]:
                 raio_base = 20
-            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador"]:
+            elif p["tipo"] in ["miniboss_espiral", "miniboss_cacador", "miniboss_escudo", "miniboss_sniper"]:
                 raio_base = 18
             else:
                 raio_base = 16

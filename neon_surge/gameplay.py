@@ -13,7 +13,8 @@ MAX_INIMIGOS_HARDCORE = 24
 LABIRINTO_ESPESSURA_PAREDE = 8
 MAX_FANTASMAS_LABIRINTO = 6
 FANTASMA_INTERVALO_DECISAO = 0.12
-MINIBOSS_TIPOS = ["miniboss_espiral", "miniboss_cacador"]
+MINIBOSS_TIPOS = ["miniboss_espiral", "miniboss_cacador", "miniboss_escudo", "miniboss_sniper"]
+BOSS_TIPOS = ["boss", "boss_artilharia", "boss_caotico"]
 
 
 def entrar_menu_modo(self):
@@ -382,11 +383,14 @@ def iniciar_fase(self):
         self.temporizador_spawn = 0.0
         self.temporizador_buraco_negro = 8.0
 
+    self.tempo_renascer_corrida = 0.0
+    self.limite_inimigos_corrida = 0
+
     if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
             self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
         )
-        fase_miniboss_corrida = self.modo_jogo == "CORRIDA" and self.fase_atual > 0 and self.fase_atual % 5 == 0
+        fase_miniboss_corrida = self.modo_jogo == "CORRIDA" and self.fase_atual > 0 and self.fase_atual % 3 == 0
 
         if eh_fase_boss:
             for _ in range(9):
@@ -403,15 +407,17 @@ def iniciar_fase(self):
                 variante_boss = max(1, self.fase_atual // 10)
             else:
                 variante_boss = 1 + (self.fase_atual // 5)
+            tipo_boss = random.choice(BOSS_TIPOS)
             self.portais_inimigos.append(
                 {
                     "pos": pygame.math.Vector2(ex, ey),
-                    "tipo": "boss",
+                    "tipo": tipo_boss,
                     "vel": 4.2 + (variante_boss * 0.28),
                     "tempo": 1.1,
                     "variante": variante_boss,
                 }
             )
+            self.limite_inimigos_corrida = 4 + variante_boss
             self._spawn_inimigos(4 + variante_boss, 4.8 + (variante_boss * 0.32))
 
             if fase_miniboss_corrida:
@@ -439,6 +445,7 @@ def iniciar_fase(self):
 
             limite_inimigos = 2 + min(self.fase_atual, 14)
             vel_inimigo = 4.0 + min((self.fase_atual * 0.18), 6.8)
+            self.limite_inimigos_corrida = limite_inimigos
             self._spawn_inimigos(limite_inimigos, vel_inimigo)
 
             if fase_miniboss_corrida:
@@ -550,7 +557,7 @@ def atualizar_jogo(self):
 
     for p in self.portais_inimigos[:]:
         if self.player.dash_timer > 0:
-            if p.get("tipo") == "boss":
+            if p.get("tipo") in BOSS_TIPOS:
                 raio_portal = 20
             elif p.get("tipo") in MINIBOSS_TIPOS:
                 raio_portal = 18
@@ -580,7 +587,7 @@ def atualizar_jogo(self):
             inimigo = Inimigo(p["pos"].x, p["pos"].y, p["tipo"], p["vel"])
             if "variante" in p:
                 inimigo.variante = p["variante"]
-            if inimigo.tipo == "boss":
+            if inimigo.tipo in BOSS_TIPOS:
                 inimigo.raio = 40 + (inimigo.variante * 5)
             self.inimigos.append(inimigo)
             self.portais_inimigos.remove(p)
@@ -588,6 +595,7 @@ def atualizar_jogo(self):
             for _ in range(15):
                 self.particulas.append(Particula(p["pos"].x, p["pos"].y, VERMELHO_SANGUE))
 
+    mortes_inimigos_corrida = 0
     novos_inimigos = []
     for ini in self.inimigos[:]:
         ini.update(self.player, self.inimigos, self.dt, self.particulas, self)
@@ -598,6 +606,9 @@ def atualizar_jogo(self):
                 if not self.player.invencivel and ini.pos.distance_to(self.player.pos) < 80:
                     self._lidar_com_morte()
                     return
+
+            if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"] and ini.tipo not in BOSS_TIPOS:
+                mortes_inimigos_corrida += 1
             continue
 
         dist = ini.pos.distance_to(self.player.pos)
@@ -608,6 +619,22 @@ def atualizar_jogo(self):
         novos_inimigos.append(ini)
 
     self.inimigos = novos_inimigos
+
+    if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
+        self.tempo_renascer_corrida = max(0.0, float(getattr(self, "tempo_renascer_corrida", 0.0)) - self.dt)
+
+        eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
+            self.modo_jogo == "CORRIDA_INFINITA" and self.fase_atual > 0 and self.fase_atual % 10 == 0
+        )
+        alvo = int(getattr(self, "limite_inimigos_corrida", 0))
+        total_ativo = len(self.inimigos) + len(self.portais_inimigos)
+        faltando = max(0, alvo - total_ativo)
+
+        if not eh_fase_boss and mortes_inimigos_corrida > 0 and faltando > 0 and self.tempo_renascer_corrida <= 0:
+            qtd = min(faltando, max(1, min(2, mortes_inimigos_corrida)))
+            vel_respawn = 4.2 + min((self.fase_atual * 0.2), 7.0)
+            self._spawn_inimigos(qtd, vel_respawn)
+            self.tempo_renascer_corrida = 1.1 if self.modo_jogo == "CORRIDA" else 0.9
 
     # -- Atualização do Buraco Negro --
     if self.modo_jogo != "LABIRINTO":

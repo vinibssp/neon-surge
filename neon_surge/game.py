@@ -99,6 +99,8 @@ class NeonSurge:
         self.tempo_corrida = 0.0
         self.tempo_sobrevivencia = 0.0
         self.temporizador_spawn = 0.0
+        self.tempo_renascer_corrida = 0.0
+        self.limite_inimigos_corrida = 0
         self.temporizador_buraco_negro = 8.0
         self.buracos_negros = []
         self.labirinto_paredes = []
