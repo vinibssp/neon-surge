@@ -226,8 +226,9 @@ def atualizar_jogo(self):
 
     if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         self.tempo_corrida += self.dt
+        raio_coleta = 28 if self.modo_jogo == "CORRIDA" else 20
         for d in self.coletaveis[:]:
-            if self.player.pos.distance_to(d) < 20:
+            if self.player.pos.distance_to(d) < raio_coleta:
                 self.coletaveis.remove(d)
                 self.shake_frames = 2
                 for _ in range(10):
@@ -355,6 +356,7 @@ def atualizar_menu_interativo(self):
 
 def _lidar_com_morte(self):
     self.shake_frames = 15
+    self.mortes_total_jogador += 1
     if self.modo_jogo == "CORRIDA":
         self.iniciar_fase()
     elif self.modo_jogo == "CORRIDA_INFINITA":

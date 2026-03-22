@@ -70,6 +70,7 @@ def acionar_botao(self):
             self.estado = "INPUT_NOME"
             self.nome_jogador = ""
             self.veio_do_game_over = True
+            self.mortes_total_jogador = 0
             self.botao_selecionado = 0
 
 
@@ -109,15 +110,23 @@ def executar(self):
                         self.botao_selecionado = 0
                     elif self.estado == "PAUSA":
                         self.estado = "JOGANDO"
-                elif event.key == pygame.K_RETURN:
-                    if self.estado == "MENU_MODO":
-                        if self.botao_selecionado != -1:
+                elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                    estados_menu_interacao = [
+                        "INPUT_NOME",
+                        "PERGUNTA_MODO",
+                        "MENU_MODO",
+                        "TELA_INFO_MODOS",
+                        "TELA_HOTKEYS",
+                        "TELA_INIMIGOS",
+                        "PAUSA",
+                        "RANKING",
+                    ]
+                    if self.estado in estados_menu_interacao:
+                        if self.estado == "MENU_MODO":
+                            if self.botao_selecionado != -1:
+                                self.acionar_botao()
+                        else:
                             self.acionar_botao()
-                    else:
-                        self.acionar_botao()
-                elif event.key == pygame.K_SPACE and self.estado == "MENU_MODO":
-                    if self.botao_selecionado != -1:
-                        self.acionar_botao()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = self.obter_posicao_mouse()
@@ -148,7 +157,7 @@ def executar(self):
                 if self.estado == "INPUT_NOME":
                     if event.key == pygame.K_BACKSPACE:
                         self.nome_jogador = self.nome_jogador[:-1]
-                    elif event.key != pygame.K_RETURN and len(self.nome_jogador) < 12 and event.unicode.isprintable():
+                    elif event.key not in [pygame.K_RETURN, pygame.K_SPACE] and len(self.nome_jogador) < 12 and event.unicode.isprintable():
                         self.nome_jogador += event.unicode
 
                 if num_botoes > 0 and self.estado != "MENU_MODO":
@@ -156,9 +165,6 @@ def executar(self):
                         self.botao_selecionado = (self.botao_selecionado - 1) % num_botoes
                     elif event.key in [pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d]:
                         self.botao_selecionado = (self.botao_selecionado + 1) % num_botoes
-
-                if self.estado in ["TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS"] and event.key == pygame.K_SPACE:
-                    self.acionar_botao()
 
         if self.estado == "JOGANDO":
             self.atualizar_jogo()

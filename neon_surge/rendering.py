@@ -105,6 +105,35 @@ def desenhar_controle_volume(self, mx, my):
     )
 
 
+def _desenhar_contadores_topo_esquerdo(self):
+    estados_visiveis = [
+        "INPUT_NOME",
+        "MENU_MODO",
+        "TELA_INFO_MODOS",
+        "TELA_HOTKEYS",
+        "TELA_INIMIGOS",
+        "PERGUNTA_MODO",
+        "JOGANDO",
+        "PAUSA",
+        "RANKING",
+    ]
+    if self.estado not in estados_visiveis:
+        return
+
+    x_base = 170 if self.estado in ["TELA_INFO_MODOS", "TELA_HOTKEYS", "TELA_INIMIGOS", "PERGUNTA_MODO"] else 20
+    y_base = 16
+
+    mortes = int(getattr(self, "mortes_total_jogador", 0))
+    texto_mortes = f"💀 {mortes}"
+    surf_mortes = self.fonte_sub.render(texto_mortes, True, VERMELHO_SANGUE)
+    self.tela.blit(surf_mortes, (x_base, y_base))
+
+    if self.modo_jogo == "CORRIDA":
+        texto_fase = f"{int(self.fase_atual)}/10"
+        surf_fase = self.fonte_sub.render(texto_fase, True, BRANCO)
+        self.tela.blit(surf_fase, (x_base + surf_mortes.get_width() + 22, y_base))
+
+
 def desenhar(self):
     mx, my = self.obter_posicao_mouse()
 
@@ -593,6 +622,8 @@ def desenhar(self):
         )
 
         self.botoes_hitboxes.extend([btn_replay, btn_manter, btn_novo])
+
+    _desenhar_contadores_topo_esquerdo(self)
 
     if self.is_fullscreen:
         w, h = self.tela_real.get_size()

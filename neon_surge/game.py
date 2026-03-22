@@ -108,6 +108,7 @@ class NeonSurge:
         self.ultima_pos_mouse = (0, 0)
         self.ultima_posicao = 0
         self.ultimo_tempo = 0.0
+        self.mortes_total_jogador = 0
 
     def alternar_tela_cheia(self):
         self.is_fullscreen = not self.is_fullscreen
