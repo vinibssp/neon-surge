@@ -1,0 +1,39 @@
+{
+    "Corrida": [],
+    "Sobrevivencia": [
+        {
+            "nome": "tot",
+            "tempo": 37.2,
+            "id": 1774208560.258655
+        },
+        {
+            "nome": "morteiro",
+            "tempo": 34.5,
+            "id": 1774208685.3087275
+        },
+        {
+            "nome": "tot",
+            "tempo": 33.5,
+            "id": 1774208296.15888
+        },
+        {
+            "nome": "tot",
+            "tempo": 32.4,
+            "id": 1774208519.0962057
+        },
+        {
+            "nome": "tot",
+            "tempo": 8.7,
+            "id": 1774208484.8143585
+        }
+    ],
+    "Hardcore": [],
+    "Corrida_Infinita": [
+        {
+            "nome": "morteiro",
+            "fase": 2,
+            "id": 1774208645.1556203
+        }
+    ],
+    "Labirinto_Infinito": []
+}

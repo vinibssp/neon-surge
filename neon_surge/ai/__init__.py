@@ -3,7 +3,7 @@ from .chaser import ChaserAI
 from .charge import ChargeAI
 from .explosive import ExplosiveAI
 from .bounce import BounceAI
-from .shooter import MetralhadoraAI, MinibossSniperAI, MinibossEspiralaAI, MinibossCacadorAI, MinibossEscudoAI
+from .shooter import MetralhadoraAI, MinibossSniperAI, MinibossEspiralaAI, MinibossCacadorAI, MinibossEscudoAI, MorteiroAI
 from .bosses import BossAI, BossArtilhariaAI, BossCaoticoAI
 
 AI_MAPPING = {
@@ -15,6 +15,7 @@ AI_MAPPING = {
     "boss_artilharia": BossArtilhariaAI,
     "boss_caotico": BossCaoticoAI,
     "metralhadora": MetralhadoraAI,
+    "morteiro": MorteiroAI,
     "miniboss_espiral": MinibossEspiralaAI,
     "miniboss_cacador": MinibossCacadorAI,
     "miniboss_escudo": MinibossEscudoAI,

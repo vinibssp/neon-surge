@@ -1,9 +1,10 @@
 from .base import BaseAI
 import pygame
 import time
+import random
 from ..entities.particle import Particula
 from ..constants import (
-    ROXO_NEON, VERMELHO_SANGUE, CIANO_NEON, AMARELO_DADO
+    ROXO_NEON, VERMELHO_SANGUE, CIANO_NEON, AMARELO_DADO, LARANJA_NEON
 )
 
 class MetralhadoraAI(BaseAI):
@@ -178,3 +179,36 @@ class MinibossSniperAI(BaseAI):
                 )
             enemy.estado_sniper = "MIRANDO"
             enemy.timer_tiro = 0.0
+
+class MorteiroAI(BaseAI):
+    def update(self, enemy, player, lista_inimigos, dt, lista_particulas, interface_principal, sound_manager):
+        # Morteiro fica parado
+        enemy.dir = pygame.math.Vector2(0, 0)
+        
+        enemy.timer_tiro += dt
+        intervalo_tiro = 2.0  # Atira a cada 2 segundos
+        
+        if enemy.timer_tiro >= intervalo_tiro:
+            enemy.timer_tiro = 0
+            sound_manager.play('enemy_shoot')
+            
+            # Alvo é a posição atual do player com um pouco de erro aleatório
+            alvo = pygame.math.Vector2(player.pos.x, player.pos.y)
+            alvo.x += random.uniform(-30, 30)
+            alvo.y += random.uniform(-30, 30)
+            
+            # Adiciona uma "bomba" que é um projétil especial
+            # Na lógica atual, projéteis são dicionários em projeteis_inimigos
+            interface_principal.projeteis_inimigos.append({
+                "pos": pygame.math.Vector2(enemy.pos.x, enemy.pos.y),
+                "alvo_final": alvo,
+                "tipo": "bomba",
+                "timer_queda": 1.2,  # Tempo para cair
+                "timer_total": 1.2,
+                "raio_explosao": 70,
+                "cor": LARANJA_NEON,
+                "explodiu": False
+            })
+            
+            for _ in range(5):
+                lista_particulas.append(Particula(enemy.pos.x, enemy.pos.y, LARANJA_NEON))

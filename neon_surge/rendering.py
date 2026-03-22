@@ -566,11 +566,33 @@ def desenhar(self):
         for b in self.buracos_negros:
             b.draw(surf_jogo)
         for proj in self.projeteis_inimigos:
+            pos_v = proj.get("pos_visual", (proj["pos"].x, proj["pos"].y))
             cor_proj = proj.get("cor", LARANJA_NEON)
-            raio = int(proj.get("raio", 4))
-            desenhar_brilho_neon(surf_jogo, cor_proj, proj["pos"].x, proj["pos"].y, raio + 2, 2)
-            pygame.draw.circle(surf_jogo, cor_proj, (int(proj["pos"].x), int(proj["pos"].y)), raio)
-            pygame.draw.circle(surf_jogo, BRANCO, (int(proj["pos"].x), int(proj["pos"].y)), max(1, raio // 2))
+            
+            if proj.get("tipo") == "bomba":
+                # Desenha marcação no chão
+                alvo = proj["alvo_final"]
+                raio_e = proj["raio_explosao"]
+                
+                # Círculo de aviso piscante
+                alpha_aviso = int(80 + math.sin(time.time() * 15) * 40)
+                surf_aviso = pygame.Surface((raio_e * 2, raio_e * 2), pygame.SRCALPHA)
+                pygame.draw.circle(surf_aviso, (*cor_proj, alpha_aviso), (raio_e, raio_e), raio_e)
+                pygame.draw.circle(surf_aviso, (*cor_proj, 255), (raio_e, raio_e), raio_e, 2)
+                surf_jogo.blit(surf_aviso, (alvo.x - raio_e, alvo.y - raio_e))
+                
+                # Sombra/Projeção da bomba no chão
+                pygame.draw.circle(surf_jogo, (0, 0, 0, 80), (int(proj["pos"].x), int(proj["pos"].y)), 6)
+                
+                # A bomba em si (no ar)
+                desenhar_brilho_neon(surf_jogo, cor_proj, pos_v[0], pos_v[1], 10, 2)
+                pygame.draw.circle(surf_jogo, cor_proj, (int(pos_v[0]), int(pos_v[1])), 10)
+                pygame.draw.circle(surf_jogo, BRANCO, (int(pos_v[0]), int(pos_v[1])), 4)
+            else:
+                raio = int(proj.get("raio", 4))
+                desenhar_brilho_neon(surf_jogo, cor_proj, pos_v[0], pos_v[1], raio + 2, 2)
+                pygame.draw.circle(surf_jogo, cor_proj, (int(pos_v[0]), int(pos_v[1])), raio)
+                pygame.draw.circle(surf_jogo, BRANCO, (int(pos_v[0]), int(pos_v[1])), max(1, raio // 2))
         self.player.draw(surf_jogo)
 
         self.tela.blit(surf_jogo, (offset_x, offset_y))

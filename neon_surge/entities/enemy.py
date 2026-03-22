@@ -18,6 +18,7 @@ def Inimigo(x, y, tipo, velocidade):
         "investida": InimigoInvestida,
         "explosivo": InimigoExplosivo,
         "metralhadora": InimigoMetralhadora,
+        "morteiro": InimigoMorteiro,
         "miniboss_espiral": MinibossEspiral,
         "miniboss_cacador": MinibossCacador,
         "miniboss_escudo": MinibossEscudo,
@@ -355,3 +356,29 @@ class BossCaotico(InimigoBase):
             ang = tempo * 5.0 + i * (math.pi / 3)
             ponta = pygame.math.Vector2(self.pos.x + math.cos(ang) * (self.raio + 12), self.pos.y + math.sin(ang) * (self.raio + 12))
             pygame.draw.line(surface, BRANCO, self.pos, ponta, 2)
+
+class InimigoMorteiro(InimigoBase):
+    def __init__(self, x, y, velocidade):
+        super().__init__(x, y, "morteiro", velocidade, 18)
+        self.timer_tiro = 0.0
+
+    def apply_movement(self, forca_repulsao):
+        """Morteiro stays still."""
+        self.dir = pygame.math.Vector2(0, 0)
+
+    def draw(self, surface):
+        pulso = abs(math.sin(time.time() * 5))
+        cor_base = LARANJA_NEON
+        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4)
+        
+        # Desenho do corpo (hexágono/trapézio para parecer um morteiro)
+        pontos = []
+        for i in range(6):
+            ang = i * (math.pi / 3)
+            px = self.pos.x + math.cos(ang) * self.raio
+            py = self.pos.y + math.sin(ang) * self.raio
+            pontos.append((px, py))
+        
+        pygame.draw.polygon(surface, cor_base, pontos)
+        pygame.draw.polygon(surface, PRETO_FUNDO, pontos, 2)
+        pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), 6)

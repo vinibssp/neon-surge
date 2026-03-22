@@ -1,5 +1,5 @@
 import random
-
+import math
 import pygame
 
 from ..constants import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
@@ -477,7 +477,7 @@ def iniciar_fase(self):
 
 
 def _spawn_inimigos(self, quantidade, velocidade):
-    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora"]
+    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro"]
     tipos_sem_atirador = ["quique", "perseguidor", "investida", "explosivo"]
     for _ in range(quantidade):
         tipo = random.choice(tipos_spawn)
@@ -531,8 +531,42 @@ def atualizar_jogo(self):
 
     projeteis_ativos = []
     for proj in self.projeteis_inimigos:
-        proj["pos"] += proj["vel"]
-        proj["tempo"] -= self.dt
+        if proj.get("tipo") == "bomba":
+            proj["timer_queda"] -= self.dt
+            progresso = max(0.0, min(1.0, 1.0 - (proj["timer_queda"] / proj["timer_total"])))
+            
+            # Movimento em arco (falso 3D)
+            altura_arco = math.sin(progresso * math.pi) * 100
+            origem = proj.get("origem_falsa", proj["pos"].copy())
+            if "origem_falsa" not in proj: proj["origem_falsa"] = origem
+            
+            proj["pos"] = origem.lerp(proj["alvo_final"], progresso)
+            proj["pos_visual"] = (proj["pos"].x, proj["pos"].y - altura_arco)
+            
+            if proj["timer_queda"] <= 0:
+                # Explosão!
+                proj["explodiu"] = True
+                self.shake_frames = 6
+                self.sounds.play('black_hole') # Som de impacto/explosão
+                for _ in range(25):
+                    ang = random.uniform(0, math.pi * 2)
+                    dist = random.uniform(0, proj["raio_explosao"])
+                    self.particulas.append(Particula(
+                        proj["pos"].x + math.cos(ang)*dist, 
+                        proj["pos"].y + math.sin(ang)*dist, 
+                        LARANJA_NEON
+                    ))
+                
+                # Dano na explosão
+                if not self.player.invencivel:
+                    if proj["pos"].distance_to(self.player.pos) < proj["raio_explosao"]:
+                        self._lidar_com_morte()
+                        return
+                continue
+        else:
+            proj["pos"] += proj["vel"]
+            proj["tempo"] -= self.dt
+            proj["pos_visual"] = (proj["pos"].x, proj["pos"].y)
 
         fora_tela = (
             proj["pos"].x < -30
@@ -540,13 +574,14 @@ def atualizar_jogo(self):
             or proj["pos"].y < 30
             or proj["pos"].y > ALTURA_TELA + 30
         )
-        if proj["tempo"] <= 0 or fora_tela:
+        if (not proj.get("tipo") == "bomba" and proj["tempo"] <= 0) or fora_tela:
             continue
 
         if random.random() < 0.25:
-            self.particulas.append(Particula(proj["pos"].x, proj["pos"].y, proj.get("cor", LARANJA_NEON)))
+            pv = proj.get("pos_visual", (proj["pos"].x, proj["pos"].y))
+            self.particulas.append(Particula(pv[0], pv[1], proj.get("cor", LARANJA_NEON)))
 
-        if not self.player.invencivel:
+        if not self.player.invencivel and not proj.get("tipo") == "bomba":
             raio_colisao = proj.get("raio", 4) + (self.player.tamanho * 0.45)
             if proj["pos"].distance_to(self.player.pos) < raio_colisao:
                 self._lidar_com_morte()
