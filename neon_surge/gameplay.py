@@ -18,7 +18,7 @@ BOSS_TIPOS = ["boss", "boss_artilharia", "boss_caotico"]
 
 
 def entrar_menu_modo(self):
-    self.sounds.play_bgm("NeonSurge/assets/trilha_menu.wav", self.volume_musica)
+    self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
     self.estado = "MENU_MODO"
     self.player = None
     self.particulas.clear()

@@ -11,7 +11,7 @@ class SoundManager:
         """
         self.sounds = {}
         # Path relative to the project root where neon_surge.py is run
-        base_path = "NeonSurge/assets/sounds/"
+        base_path = "neon_surge/assets/sounds/"
         
         sound_files = {
             # Player sounds

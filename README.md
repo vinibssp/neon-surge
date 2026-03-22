@@ -6,19 +6,24 @@ Jogo arcade em `pygame` com modos de corrida e sobrevivência.
 
 ```text
 .
-├── neon_surge.py               # Entrypoint
-├── neon_surge/
+├── neon_surge
 │   ├── __init__.py
-│   ├── config.py               # Configurações e constantes
-│   ├── ui.py                   # Funções de renderização/UI
-│   ├── entities.py             # Player, inimigos e partículas
-│   ├── ranking.py              # Persistência e ordenação de ranking
-│   ├── gameplay.py             # Regras e atualização da partida
-│   ├── rendering.py            # Renderização de telas e HUD
-│   ├── runtime.py              # Loop principal e eventos de input
-│   └── game.py                 # Orquestrador principal (sem God Class)
-├── ranking_completo.json       # Persistência do ranking
-└── trilha.mp3                  # Música de fundo
+│   ├── assets
+│   │   └── sounds
+│   ├── config.py
+│   ├── entities.py
+│   ├── game.py
+│   ├── gameplay.py
+│   ├── ranking.py
+│   ├── rendering.py
+│   ├── runtime.py
+│   ├── sound.py
+│   └── ui.py
+├── neon_surge.py
+├── ranking_completo.json
+├── README.md
+└── requirements.txt
+
 ```
 
 ## Requisitos
