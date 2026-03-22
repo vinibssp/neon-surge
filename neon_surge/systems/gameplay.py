@@ -483,48 +483,48 @@ def iniciar_fase(self):
         self._gerar_layout_labirinto()
 
     elif self.modo_jogo == "TREINO":
-        # No modo treino, começamos com alguns inimigos e sem limite de tempo/fase
-        self._spawn_inimigos(3, 4.0)
+        # No modo treino, spawnamos exatamente o que o jogador escolheu
+        for tid, count in self.inimigos_treino_selecionados.items():
+            for _ in range(count):
+                self._spawn_unitario(tid, 4.0)
 
     self.estado = "JOGANDO"
+
+def _spawn_unitario(self, tipo, velocidade):
+    """Spawna um inimigo específico (usado no Treino)."""
+    variante = 1
+    tempo_portal = 0.8
+    vel_final = velocidade
+
+    if tipo in BOSS_TIPOS:
+        tempo_portal = 1.2
+        vel_final = 4.5
+        variante = 1
+    elif tipo in MINIBOSS_TIPOS:
+        tempo_portal = 1.0
+        vel_final = 5.5
+    elif tipo == "metralhadora":
+        vel_final = max(0.0, velocidade * 0.9)
+
+    ex, ey = self.player.pos.x, self.player.pos.y
+    while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
+        ex = random.randint(50, LARGURA_TELA - 50)
+        ey = random.randint(110, ALTURA_TELA - 50)
+
+    p_data = {"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_final, "tempo": tempo_portal}
+    if tipo in BOSS_TIPOS:
+        p_data["variante"] = variante
+    
+    self.portais_inimigos.append(p_data)
 
 
 def _spawn_inimigos(self, quantidade, velocidade):
     tipos_comuns = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro"]
-    
-    if self.modo_jogo == "TREINO" and self.inimigos_treino_selecionados:
-        tipos_disponiveis = self.inimigos_treino_selecionados
-    else:
-        tipos_disponiveis = tipos_comuns
+    tipos_disponiveis = tipos_comuns
 
     for _ in range(quantidade):
         tipo = random.choice(tipos_disponiveis)
-
-        # Lógica de spawn especial para Bosses/Minibosses no Treino
-        variante = 1
-        tempo_portal = 0.8
-        vel_final = velocidade
-
-        if tipo in BOSS_TIPOS:
-            tempo_portal = 1.2
-            vel_final = 4.5
-            variante = 1
-        elif tipo in MINIBOSS_TIPOS:
-            tempo_portal = 1.0
-            vel_final = 5.5
-        elif tipo == "metralhadora":
-            vel_final = max(0.0, velocidade * 0.9)
-
-        ex, ey = self.player.pos.x, self.player.pos.y
-        while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
-            ex = random.randint(50, LARGURA_TELA - 50)
-            ey = random.randint(110, ALTURA_TELA - 50)
-
-        p_data = {"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_final, "tempo": tempo_portal}
-        if tipo in BOSS_TIPOS:
-            p_data["variante"] = variante
-        
-        self.portais_inimigos.append(p_data)
+        self._spawn_unitario(tipo, velocidade)
 
 
 def atualizar_jogo(self):
@@ -761,9 +761,13 @@ def atualizar_jogo(self):
                 self.botao_selecionado = 0
 
     elif self.modo_jogo == "TREINO":
-        # No modo treino, se houver poucos inimigos, spawnamos mais para manter a prática
-        if len(self.inimigos) + len(self.portais_inimigos) < 5:
-            self._spawn_inimigos(1, 4.5)
+        # No modo treino, mantemos a quantidade que o jogador escolheu
+        for tid, count in self.inimigos_treino_selecionados.items():
+            ativos = sum(1 for ini in self.inimigos if ini.tipo == tid)
+            ativos += sum(1 for p in self.portais_inimigos if p["tipo"] == tid)
+            
+            if ativos < count:
+                self._spawn_unitario(tid, 4.5)
 
 def atualizar_menu_interativo(self):
     particulas_ativas = []

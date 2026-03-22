@@ -80,7 +80,7 @@ class NeonSurge:
         self.estado = "INPUT_NOME"
         self.nome_jogador = ""
         self.modo_jogo = ""
-        self.inimigos_treino_selecionados = []
+        self.inimigos_treino_selecionados = {} # { type: count }
         self.fase_atual = 1
         self.veio_do_game_over = False
 

@@ -207,6 +207,88 @@ def _desenhar_contadores_topo_esquerdo(self):
         self.tela.blit(surf_fase, (x_base + surf_mortes.get_width() + 22, y_base))
 
 
+# Constantes de dados de inimigos para a enciclopédia
+INIMIGOS_DATA = {
+    "quique": {
+        "nome": "SENTINELA",
+        "cor": ROSA_NEON,
+        "categoria": "COMUNS",
+        "desc": "Unidade básica de patrulha. Reflete-se em superfícies e outros inimigos com velocidade constante. Perigosa em grandes grupos."
+    },
+    "perseguidor": {
+        "nome": "CAÇADOR",
+        "cor": VERMELHO_SANGUE,
+        "categoria": "COMUNS",
+        "desc": "Persegue o jogador incansavelmente. Embora lento, sua persistência força o jogador a se manter em movimento constante."
+    },
+    "investida": {
+        "nome": "INVESTIDA",
+        "cor": LARANJA_NEON,
+        "categoria": "COMUNS",
+        "desc": "Carrega energia antes de realizar um avanço veloz em linha reta. O rastro de mira indica sua trajetória iminente."
+    },
+    "explosivo": {
+        "nome": "BOMBA",
+        "cor": AMARELO_DADO,
+        "categoria": "COMUNS",
+        "desc": "Aproxima-se e detona após um curto período. A explosão causa dano em área, marcada por um anel de aviso vermelho."
+    },
+    "metralhadora": {
+        "nome": "ATIRADOR",
+        "cor": ROXO_NEON,
+        "categoria": "COMUNS",
+        "desc": "Unidade estática que dispara rajadas de projéteis em padrões geométricos. Controle de zona é sua principal função."
+    },
+    "morteiro": {
+        "nome": "MORTEIRO",
+        "cor": LARANJA_NEON,
+        "categoria": "COMUNS",
+        "desc": "Dispara bombas que viajam em arco e explodem ao atingir o solo. Exige atenção tanto ao céu quanto à terra."
+    },
+    "miniboss_espiral": {
+        "nome": "ESPIRO",
+        "cor": ROXO_NEON,
+        "categoria": "MINIBOSSES",
+        "desc": "Dispara projéteis em espiral contínua. Sua presença satura o campo de batalha com perigos rotativos."
+    },
+    "miniboss_cacador": {
+        "nome": "PREDADOR",
+        "cor": VERMELHO_SANGUE,
+        "categoria": "MINIBOSSES",
+        "desc": "Uma versão evoluída do Caçador. Dispara projéteis triplos enquanto persegue sua presa de forma agressiva."
+    },
+    "miniboss_escudo": {
+        "nome": "BALUARTE",
+        "cor": CIANO_NEON,
+        "categoria": "MINIBOSSES",
+        "desc": "Orbita o jogador disparando projéteis em leque. Difícil de evitar devido à sua proximidade constante."
+    },
+    "miniboss_sniper": {
+        "nome": "SNIPER",
+        "cor": AMARELO_DADO,
+        "categoria": "MINIBOSSES",
+        "desc": "Trava a mira no jogador e dispara um projétil de altíssima velocidade após carregar. Dash é essencial para sobreviver."
+    },
+    "boss": {
+        "nome": "TITÃ",
+        "cor": ROXO_NEON,
+        "categoria": "BOSSES",
+        "desc": "Entidade massiva com múltiplas fases. Invoca aliados, realiza investidas pesadas e dispara padrões complexos."
+    },
+    "boss_artilharia": {
+        "nome": "COLOSSO",
+        "cor": LARANJA_NEON,
+        "categoria": "BOSSES",
+        "desc": "Especialista em saturação de área. Dispara anéis de projéteis e invoca minibosses para auxiliar no combate."
+    },
+    "boss_caotico": {
+        "nome": "CAOS",
+        "cor": ROSA_NEON,
+        "categoria": "BOSSES",
+        "desc": "O ápice da instabilidade. Move-se erraticamente, dispara rajadas multidirecionais e realiza ataques de área devastadores."
+    }
+}
+
 def desenhar(self):
     mx, my = self.obter_posicao_mouse()
 
@@ -423,90 +505,115 @@ def desenhar(self):
 
     elif self.estado == "TELA_INIMIGOS":
         is_treino = (self.modo_jogo == "TREINO")
+        aba_atual = getattr(self, "guia_aba", "COMUNS")
+        if aba_atual not in ["COMUNS", "MINIBOSSES", "BOSSES"]:
+             aba_atual = "COMUNS"
+             self.guia_aba = "COMUNS"
+
         if is_treino:
             desenhar_texto(self.tela, "SISTEMA DE SIMULAÇÃO: DOJO", self.fonte_titulo, VERDE_NEON, cx, 60)
-            sub_msg = "CONFIGURE OS ALVOS PARA O PROTOCOLO DE TREINAMENTO"
         else:
             desenhar_texto(self.tela, "BANCO DE DADOS DE AMEAÇAS", self.fonte_titulo, VERMELHO_SANGUE, cx, 60)
-            sub_msg = "ANALISANDO PADRÕES DE COMBATE IDENTIFICADOS"
         
-        desenhar_texto(self.tela, sub_msg, self.fonte_sub, BRANCO, cx, 105)
+        # Desenhar Abas
+        categorias_nomes = ["COMUNS", "MINIBOSSES", "BOSSES"]
+        for i, cat in enumerate(categorias_nomes):
+            bx = cx - 240 + (i * 240)
+            esta_focada = (aba_atual == cat)
+            cor_aba = (VERDE_NEON if is_treino else VERMELHO_SANGUE) if esta_focada else CINZA_ESCURO
+            btn_aba = desenhar_botao_dinamico(
+                self.tela, cat, self.fonte_texto, cor_aba, bx, 120, 
+                self.botao_selecionado == i, largura=220, altura=40
+            )
+            self.botoes_hitboxes.append(btn_aba)
 
-        largura_p = LARGURA_TELA - 60
-        altura_p = ALTURA_TELA - 200
+        # Painel Principal
+        largura_p = LARGURA_TELA - 80
+        altura_p = 420
+        rect_p = pygame.Rect(40, 160, largura_p, altura_p)
         surf_p = criar_painel_transparente(largura_p, altura_p)
-        rect_p = pygame.Rect(30, 140, largura_p, altura_p)
         self.tela.blit(surf_p, rect_p)
         pygame.draw.rect(self.tela, VERDE_NEON if is_treino else VERMELHO_SANGUE, rect_p, 2, border_radius=15)
 
-        # Categorias de Inimigos
-        categorias = [
-            ("COMUNS", [
-                (ROSA_NEON, "SENTINELA", "quique"),
-                (VERMELHO_SANGUE, "CAÇADOR", "perseguidor"),
-                (LARANJA_NEON, "INVESTIDA", "investida"),
-                (AMARELO_DADO, "BOMBA", "explosivo"),
-                (ROXO_NEON, "ATIRADOR", "metralhadora"),
-                (LARANJA_NEON, "MORTEIRO", "morteiro"),
-            ]),
-            ("MINIBOSSES", [
-                (AMARELO_DADO, "ESPIRO", "miniboss_espiral"),
-                (VERMELHO_SANGUE, "PREDADOR", "miniboss_cacador"),
-                (CIANO_NEON, "BALUARTE", "miniboss_escudo"),
-                (AMARELO_DADO, "SNIPER", "miniboss_sniper"),
-            ]),
-            ("BOSSES", [
-                (ROXO_NEON, "TITÃ", "boss"),
-                (LARANJA_NEON, "COLOSSO", "boss_artilharia"),
-                (VERMELHO_SANGUE, "CAOS", "boss_caotico"),
-            ])
-        ]
+        # Filtrar inimigos da aba
+        inimigos_aba = [(tid, data) for tid, data in INIMIGOS_DATA.items() if data["categoria"] == aba_atual]
+        
+        # Grid de Inimigos (Lado Esquerdo)
+        x_grid = rect_p.left + 30
+        y_grid = rect_p.top + 30
+        card_w, card_h = 320, 50
+        gap_y = 12
+        
+        for i, (tid, data) in enumerate(inimigos_aba):
+            btn_idx = 3 + i
+            esta_focado = (self.botao_selecionado == btn_idx)
+            y_pos = y_grid + (i * (card_h + gap_y))
+            rect_item = pygame.Rect(x_grid, y_pos, card_w, card_h)
+            
+            # Fundo do card
+            cor_tema = data["cor"]
+            bg_cor = (*cor_tema, 60) if esta_focado else (15, 20, 30)
+            pygame.draw.rect(self.tela, bg_cor, rect_item, border_radius=8)
+            pygame.draw.rect(self.tela, cor_tema if esta_focado else CINZA_ESCURO, rect_item, 2, border_radius=8)
+            
+            # Nome e Ícone
+            pygame.draw.circle(self.tela, cor_tema, (x_grid + 25, y_pos + 25), 8)
+            desenhar_texto(self.tela, data["nome"], self.fonte_sub, BRANCO, x_grid + 50, y_pos + 25, alinhamento="esquerda")
+            
+            # Se for treino, mostrar contador
+            if is_treino:
+                count = self.inimigos_treino_selecionados.get(tid, 0)
+                cor_count = VERDE_NEON if count > 0 else CINZA_CLARO
+                desenhar_texto(self.tela, f"QTD: {count}", self.fonte_sub, cor_count, x_grid + card_w - 70, y_pos + 25, alinhamento="centro")
+                # Setas de ajuste (indicativas)
+                if esta_focado:
+                    desenhar_texto(self.tela, "←", self.fonte_sub, BRANCO, x_grid + card_w - 115, y_pos + 25)
+                    desenhar_texto(self.tela, "→", self.fonte_sub, BRANCO, x_grid + card_w - 25, y_pos + 25)
 
-        self.botoes_hitboxes = []
-        x_start = rect_p.left + 40
-        y_start = rect_p.top + 40
-        col_w = (largura_p - 80) // 3
+            self.botoes_hitboxes.append(rect_item)
 
-        for i, (cat_nome, inimigos) in enumerate(categorias):
-            x_cat = x_start + (i * col_w)
-            desenhar_texto(self.tela, cat_nome, self.fonte_sub, BRANCO, x_cat, y_start, alinhamento="esquerda")
-            pygame.draw.line(self.tela, CINZA_ESCURO, (x_cat, y_start + 25), (x_cat + col_w - 40, y_start + 25), 2)
-
-            for j, (cor, nome, tid) in enumerate(inimigos):
-                y_item = y_start + 60 + (j * 45)
-                rect_item = pygame.Rect(x_cat, y_item - 15, col_w - 50, 40)
-                
-                esta_focado = (self.botao_selecionado == len(self.botoes_hitboxes))
-                if is_treino:
-                    selecionado = tid in self.inimigos_treino_selecionados
-                    # Fundo do item
-                    bg_cor = (*cor, 40) if selecionado else (20, 25, 35)
-                    if esta_focado: bg_cor = (*cor, 80)
-                    pygame.draw.rect(self.tela, bg_cor, rect_item, border_radius=6)
-                    
-                    # Checkbox estilizada
-                    check_rect = pygame.Rect(x_cat + 10, y_item - 8, 26, 26)
-                    pygame.draw.rect(self.tela, (10, 15, 20), check_rect, border_radius=4)
-                    pygame.draw.rect(self.tela, cor if selecionado else CINZA_ESCURO, check_rect, 2, border_radius=4)
-                    if selecionado:
-                        pygame.draw.line(self.tela, BRANCO, (check_rect.left+6, check_rect.centery), (check_rect.centerx, check_rect.bottom-6), 3)
-                        pygame.draw.line(self.tela, BRANCO, (check_rect.centerx, check_rect.bottom-6), (check_rect.right-4, check_rect.top+6), 3)
-                    
-                    desenhar_texto(self.tela, nome, self.fonte_texto, BRANCO, x_cat + 45, y_item + 5, alinhamento="esquerda")
+        # Área de Detalhes (Lado Direito)
+        x_detalhe = x_grid + card_w + 40
+        y_detalhe = rect_p.top + 30
+        largura_det = largura_p - card_w - 100
+        
+        sel_idx = self.botao_selecionado - 3
+        if 0 <= sel_idx < len(inimigos_aba):
+            tid_sel, data_sel = inimigos_aba[sel_idx]
+            
+            # Título do Detalhe
+            desenhar_texto(self.tela, data_sel["nome"], self.fonte_titulo, data_sel["cor"], x_detalhe, y_detalhe, alinhamento="esquerda")
+            pygame.draw.line(self.tela, data_sel["cor"], (x_detalhe, y_detalhe + 75), (x_detalhe + largura_det, y_detalhe + 75), 3)
+            
+            # Descrição (com quebra de linha manual simples)
+            palavras = data_sel["desc"].split()
+            linhas = []
+            linha_atual = ""
+            for p in palavras:
+                if len(linha_atual + p) < 45:
+                    linha_atual += p + " "
                 else:
-                    # Modo visualização apenas
-                    pygame.draw.circle(self.tela, cor, (x_cat + 15, y_item + 5), 8)
-                    desenhar_texto(self.tela, nome, self.fonte_texto, BRANCO, x_cat + 35, y_item + 5, alinhamento="esquerda")
+                    linhas.append(linha_atual)
+                    linha_atual = p + " "
+            linhas.append(linha_atual)
+            
+            for i, l in enumerate(linhas):
+                desenhar_texto(self.tela, l, self.fonte_texto, BRANCO, x_detalhe, y_detalhe + 105 + (i * 30), alinhamento="esquerda")
 
-                self.botoes_hitboxes.append(rect_item)
-
-        btn_txt = "INICIAR PROTOCOLO" if is_treino else "VOLTAR AO MENU"
+        # Botão de Ação Inferior
+        btn_txt = "INICIAR SIMULAÇÃO" if is_treino else "VOLTAR AO MENU"
         btn_cor = VERDE_NEON if is_treino else CIANO_NEON
-        btn_iniciar = desenhar_botao_dinamico(
-            self.tela, btn_txt, self.fonte_sub, btn_cor, cx, rect_p.bottom + 45, 
+        btn_acao = desenhar_botao_dinamico(
+            self.tela, btn_txt, self.fonte_sub, btn_cor, cx, rect_p.bottom + 60, 
             self.botao_selecionado == len(self.botoes_hitboxes)
         )
-        self.botoes_hitboxes.append(btn_iniciar)
+        self.botoes_hitboxes.append(btn_acao)
+        
+        hint = "TAB: Trocar Aba   |   WASD: Navegar   |   ←→: Ajustar Quantidade (Treino)"
+        desenhar_texto(self.tela, hint, self.fonte_desc, CINZA_CLARO, cx, LARGURA_TELA - 30) # Erro aqui, LARGURA_TELA em Y
+        # Corrigindo hint y
+        desenhar_texto(self.tela, hint, self.fonte_desc, CINZA_CLARO, cx, ALTURA_TELA - 30)
+
     elif self.estado in ["JOGANDO", "PAUSA"]:
         offset_x = random.randint(-8, 8) if self.shake_frames > 0 else 0
         offset_y = random.randint(-8, 8) if self.shake_frames > 0 else 0

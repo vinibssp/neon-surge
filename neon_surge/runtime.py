@@ -66,29 +66,35 @@ def acionar_botao(self):
 
 
     elif self.estado == "TELA_INIMIGOS":
-        if self.modo_jogo == "TREINO":
-            tipos_ordenados = [
-                "quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro",
-                "miniboss_espiral", "miniboss_cacador", "miniboss_escudo", "miniboss_sniper",
-                "boss", "boss_artilharia", "boss_caotico"
-            ]
-            num_inimigos = len(tipos_ordenados)
-            if self.botao_selecionado < num_inimigos:
-                tipo_clicado = tipos_ordenados[self.botao_selecionado]
-                if tipo_clicado in self.inimigos_treino_selecionados:
-                    self.inimigos_treino_selecionados.remove(tipo_clicado)
-                else:
-                    self.inimigos_treino_selecionados.append(tipo_clicado)
-                self.sounds.play('menu_button')
-            elif self.botao_selecionado == num_inimigos: # Botão Iniciar
-                if not self.inimigos_treino_selecionados:
-                    self.inimigos_treino_selecionados = ["quique"]
+        if self.botao_selecionado < 3:
+            # Trocar de Aba
+            categorias = ["COMUNS", "MINIBOSSES", "BOSSES"]
+            self.guia_aba = categorias[self.botao_selecionado]
+            self.botao_selecionado = 3 # Foca no primeiro inimigo da aba
+        elif self.botao_selecionado == len(self.botoes_hitboxes) - 1:
+            # Botão Iniciar / Voltar
+            if self.modo_jogo == "TREINO":
+                # No modo treino, se não escolheu nada, coloca um quique por padrão
+                tem_selecao = any(v > 0 for v in self.inimigos_treino_selecionados.values())
+                if not tem_selecao:
+                    self.inimigos_treino_selecionados["quique"] = 1
                 self.fase_atual = 1
                 self.iniciar_fase()
-        else:
-            # No modo info, o botão iniciar é o último
-            if self.botao_selecionado == len(self.botoes_hitboxes) - 1:
+            else:
                 self.entrar_menu_modo()
+        else:
+            # Seleção de inimigo (Apenas visual ou incremento no treino)
+            if self.modo_jogo == "TREINO":
+                aba_atual = getattr(self, "guia_aba", "COMUNS")
+                from .rendering import INIMIGOS_DATA
+                inimigos_aba = [tid for tid, data in INIMIGOS_DATA.items() if data["categoria"] == aba_atual]
+                sel_idx = self.botao_selecionado - 3
+                if 0 <= sel_idx < len(inimigos_aba):
+                    tid = inimigos_aba[sel_idx]
+                    self.inimigos_treino_selecionados[tid] = self.inimigos_treino_selecionados.get(tid, 0) + 1
+                    if self.inimigos_treino_selecionados[tid] > 10:
+                        self.inimigos_treino_selecionados[tid] = 0
+                    self.sounds.play('menu_button')
 
     elif self.estado == "PAUSA":
         if self.botao_selecionado == 0:
@@ -215,6 +221,31 @@ def executar(self):
                     elif event.key in [pygame.K_UP, pygame.K_w]:
                         self.sounds.play('menu_button')
                         self.botao_selecionado = 0 # Foca na aba
+                    elif event.key == pygame.K_TAB:
+                        self.sounds.play('menu_button')
+                        self.guia_aba = "HOTKEYS" if self.guia_aba == "MODOS" else "MODOS"
+                        self.botao_selecionado = 1 if self.guia_aba == "HOTKEYS" else 0
+
+                elif self.estado == "TELA_INIMIGOS":
+                    if event.key == pygame.K_TAB:
+                        self.sounds.play('menu_button')
+                        categorias = ["COMUNS", "MINIBOSSES", "BOSSES"]
+                        idx = (categorias.index(getattr(self, "guia_aba", "COMUNS")) + 1) % 3
+                        self.guia_aba = categorias[idx]
+                        self.botao_selecionado = idx
+                    elif self.modo_jogo == "TREINO" and self.botao_selecionado >= 3:
+                        aba_atual = getattr(self, "guia_aba", "COMUNS")
+                        from .rendering import INIMIGOS_DATA
+                        inimigos_aba = [tid for tid, data in INIMIGOS_DATA.items() if data["categoria"] == aba_atual]
+                        sel_idx = self.botao_selecionado - 3
+                        if 0 <= sel_idx < len(inimigos_aba):
+                            tid = inimigos_aba[sel_idx]
+                            if event.key in [pygame.K_LEFT, pygame.K_a]:
+                                self.inimigos_treino_selecionados[tid] = max(0, self.inimigos_treino_selecionados.get(tid, 0) - 1)
+                                self.sounds.play('menu_button')
+                            elif event.key in [pygame.K_RIGHT, pygame.K_d]:
+                                self.inimigos_treino_selecionados[tid] = min(10, self.inimigos_treino_selecionados.get(tid, 0) + 1)
+                                self.sounds.play('menu_button')
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = self.obter_posicao_mouse()
