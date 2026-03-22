@@ -7,6 +7,7 @@ from .config import FPS
 
 
 def acionar_botao(self):
+    self.sounds.play('menu_button')
     if self.estado == "INPUT_NOME" and self.botao_selecionado == 0:
         if len(self.nome_jogador) > 0:
             if self.veio_do_game_over and self.modo_jogo != "":

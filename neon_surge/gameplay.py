@@ -506,7 +506,6 @@ def _spawn_inimigos(self, quantidade, velocidade):
         elif tipo in MINIBOSS_TIPOS:
             vel_spawn = max(5.0, velocidade * 1.12)
 
-        self.sounds.play('portal_activation')
         self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_spawn, "tempo": 0.8})
 
 
@@ -592,7 +591,6 @@ def atualizar_jogo(self):
                 inimigo.raio = 40 + (inimigo.variante * 5)
             self.inimigos.append(inimigo)
             self.portais_inimigos.remove(p)
-            self.sounds.play('enemy_spawn')
             self.shake_frames = 3
             for _ in range(15):
                 self.particulas.append(Particula(p["pos"].x, p["pos"].y, VERMELHO_SANGUE))
@@ -644,6 +642,7 @@ def atualizar_jogo(self):
         if self.temporizador_buraco_negro <= 0:
             bx = random.randint(100, LARGURA_TELA - 100)
             by = random.randint(110, ALTURA_TELA - 100)
+            self.sounds.play('black_hole')
             self.buracos_negros.append(BlackHole(bx, by))
             self.temporizador_buraco_negro = random.uniform(8.0, 15.0)
 
@@ -678,6 +677,7 @@ def atualizar_jogo(self):
         raio_coleta = 28 if self.modo_jogo == "CORRIDA" else 20
         for d in self.coletaveis[:]:
             if self.player.pos.distance_to(d) < raio_coleta:
+                self.sounds.play('coin_collect')
                 self.coletaveis.remove(d)
                 self.shake_frames = 2
                 for _ in range(10):
@@ -694,6 +694,7 @@ def atualizar_jogo(self):
             self.shake_frames = 10
 
         if self.portal_aberto and self.player.pos.distance_to(self.portal_pos) < 30:
+            self.sounds.play('exit_portal')
             if self.modo_jogo == "CORRIDA_INFINITA":
                 self.fase_atual += 1
                 self.iniciar_fase()

@@ -104,7 +104,7 @@ class Player:
             self.dash_timer -= 1
             self.invencivel = True
             if self.dash_timer == 0:
-                self.pos_dash_invuln_timer = 12
+                self.pos_dash_invuln_timer = 14
             for _ in range(3):
                 lista_particulas.append(Particula(self.pos.x, self.pos.y, CIANO_NEON))
         else:
@@ -265,7 +265,6 @@ class Inimigo:
                 if self.timer_explosao > 4.5:
                     self.morto = True
                     self.explodiu = True
-                    sound_manager.play('enemy_death')
                     for _ in range(40):
                         lista_particulas.append(Particula(self.pos.x, self.pos.y, AMARELO_DADO))
 
@@ -311,7 +310,6 @@ class Inimigo:
                 self.dir *= 0.9
 
                 if self.timer_habilidade > 1.0:
-                    sound_manager.play('portal_activation')
                     if self.variante % 3 == 1:
                         interface_principal.portais_inimigos.append(
                             {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "explosivo", "vel": 3.5, "tempo": 0.8}
@@ -393,7 +391,6 @@ class Inimigo:
 
             if self.timer_habilidade >= 4.3:
                 self.timer_habilidade = 0.0
-                sound_manager.play('portal_activation')
                 interface_principal.portais_inimigos.append(
                     {
                         "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
@@ -440,7 +437,6 @@ class Inimigo:
             self.timer_vida += dt
             if self.timer_vida >= 10.0:
                 self.morto = True
-                sound_manager.play('enemy_death')
                 for _ in range(10):
                     lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
                 return
