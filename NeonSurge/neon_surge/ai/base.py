@@ -18,6 +18,7 @@ class AIBehaviour(ABC):
         peers: list,
         dt: float,
         particle_pool: list,
+        sound_manager,
     ) -> None: ...
 
     @staticmethod

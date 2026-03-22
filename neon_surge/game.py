@@ -18,6 +18,7 @@ from .gameplay import (
 from .ranking import carregar_ranking, salvar_ranking
 from .rendering import desenhar, desenhar_controle_volume
 from .runtime import acionar_botao, executar
+from .sound import SoundManager
 
 
 class NeonSurge:
@@ -43,9 +44,11 @@ class NeonSurge:
         pygame.init()
         pygame.mixer.init()
 
-        self.volume_musica = 0.4
-        self.volume_salvo = 0.4
+        self.volume_musica = 0.20
+        self.volume_salvo = 0.20
         self.mutado = False
+        self.sounds = SoundManager()
+        self.sounds.set_sfx_volume(self.volume_musica)
 
         try:
             pygame.mixer.music.load("trilha.mp3")
@@ -148,6 +151,7 @@ class NeonSurge:
         self.volume_musica = max(0.0, min(1.0, self.volume_musica + delta))
         try:
             pygame.mixer.music.set_volume(self.volume_musica)
+            self.sounds.set_sfx_volume(self.volume_musica)
         except:
             pass
 
@@ -162,6 +166,7 @@ class NeonSurge:
                 if self.volume_musica == 0.0:
                     self.volume_musica = 0.4
             pygame.mixer.music.set_volume(self.volume_musica)
+            self.sounds.set_sfx_volume(self.volume_musica)
         except:
             pass
 

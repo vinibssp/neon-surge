@@ -14,7 +14,7 @@ class BounceAI(AIBehaviour):
         ang      = random.uniform(0, math.tau)
         self.vel = pygame.math.Vector2(math.cos(ang), math.sin(ang)) * speed
 
-    def update(self, transform, player_pos, peers, dt, particle_pool):
+    def update(self, transform, player_pos, peers, dt, particle_pool, sound_manager):
         r   = 12
         pos = transform.pos
         pos += self.vel

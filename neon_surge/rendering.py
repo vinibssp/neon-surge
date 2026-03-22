@@ -160,7 +160,7 @@ def desenhar(self):
 
     if self.estado == "INPUT_NOME":
         desenhar_texto(self.tela, "NEON SURGE", self.fonte_titulo, CIANO_NEON, cx, cy - 120)
-        desenhar_texto(self.tela, "IDENTIFICAÇÃO DO PILOTO:", self.fonte_texto, BRANCO, cx, cy)
+        desenhar_texto(self.tela, "IDENTIFICAÇÃO DO PLAYER:", self.fonte_texto, BRANCO, cx, cy)
 
         caixa_texto = pygame.Rect(0, 0, 400, 60)
         caixa_texto.center = (cx, cy + 50)
@@ -176,7 +176,7 @@ def desenhar(self):
         self.botoes_hitboxes.append(btn_rect)
 
     elif self.estado == "PERGUNTA_MODO":
-        desenhar_texto(self.tela, "NOVO PILOTO REGISTRADO", self.fonte_titulo, VERDE_NEON, cx, cy - 100)
+        desenhar_texto(self.tela, "NOVO PLAYER REGISTRADO", self.fonte_titulo, VERDE_NEON, cx, cy - 100)
         modo_formatado = self.modo_jogo.replace("_", " ")
         btn_manter_modo = desenhar_botao_dinamico(
             self.tela,
@@ -241,9 +241,6 @@ def desenhar(self):
             cor_borda = modo["cor"] if ativo else CINZA_ESCURO
             cor_fundo = (18, 26, 40) if ativo else (12, 17, 28)
 
-            if ativo:
-                desenhar_brilho_neon(self.tela, modo["cor"], rect_card.centerx, rect_card.centery, 58, 2)
-
             pygame.draw.rect(self.tela, cor_fundo, rect_card, border_radius=10)
             pygame.draw.rect(self.tela, cor_borda, rect_card, 3 if ativo else 2, border_radius=10)
 
@@ -269,7 +266,7 @@ def desenhar(self):
 
     elif self.estado == "TELA_INFO_MODOS":
         aba_atual = getattr(self, "guia_aba", "MODOS")
-        titulo = "GUIA DO PILOTO"
+        titulo = "GUIA DO PLAYER"
         cor_titulo = AMARELO_DADO if aba_atual == "MODOS" else VERDE_NEON
         desenhar_texto(self.tela, titulo, self.fonte_titulo, cor_titulo, cx, 80)
 
@@ -733,11 +730,11 @@ def desenhar(self):
             self.tela, "JOGAR NOVAMENTE", self.fonte_sub, VERDE_NEON, cx, y_botoes, self.botao_selecionado == 0
         )
         btn_manter = desenhar_botao_dinamico(
-            self.tela, "MANTER PILOTO (MENU)", self.fonte_sub, CIANO_NEON, cx, y_botoes + espaco_y, self.botao_selecionado == 1
+            self.tela, "MANTER PLAYER (MENU)", self.fonte_sub, CIANO_NEON, cx, y_botoes + espaco_y, self.botao_selecionado == 1
         )
         btn_novo = desenhar_botao_dinamico(
             self.tela,
-            "CRIAR NOVO PILOTO",
+            "CRIAR NOVO PLAYER",
             self.fonte_sub,
             ROSA_NEON,
             cx,

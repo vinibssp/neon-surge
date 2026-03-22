@@ -70,7 +70,7 @@ class Player:
         self.ultima_direcao = pygame.math.Vector2(1, 0)
         self.invencivel = False
 
-    def update(self, teclas, lista_particulas):
+    def update(self, teclas, lista_particulas, sound_manager):
         dir_x, dir_y = 0, 0
         if teclas[pygame.K_w] or teclas[pygame.K_UP]:
             dir_y = -1
@@ -94,6 +94,7 @@ class Player:
             else:
                 direcao_dash = self.ultima_direcao
 
+            sound_manager.play('player_dash')
             self.vel = direcao_dash * self.velocidade_dash
             self.dash_timer = 10
             self.dash_cooldown = 45
@@ -213,7 +214,7 @@ class Inimigo:
             self.estado_sniper = "MIRANDO"
             self.alvo_mira = pygame.math.Vector2(x, y)
 
-    def update(self, player, lista_inimigos, dt, lista_particulas, interface_principal):
+    def update(self, player, lista_inimigos, dt, lista_particulas, interface_principal, sound_manager):
         if self.tipo == "perseguidor":
             pos_futura = player.pos + (player.vel * 12)
             vec_to_player = pos_futura - self.pos
@@ -242,6 +243,7 @@ class Inimigo:
                     vec = self.alvo_mira - self.pos
                     if vec.length() > 0:
                         self.dir = vec.normalize() * (self.vel * 4.0)
+                        sound_manager.play('enemy_shoot')
                     self.estado_investida = "ATACANDO"
                     self.timer_investida = 0.0
 
@@ -263,6 +265,7 @@ class Inimigo:
                 if self.timer_explosao > 4.5:
                     self.morto = True
                     self.explodiu = True
+                    sound_manager.play('enemy_death')
                     for _ in range(40):
                         lista_particulas.append(Particula(self.pos.x, self.pos.y, AMARELO_DADO))
 
@@ -273,6 +276,7 @@ class Inimigo:
             intervalo_tiro = max(0.42, 0.85 - (self.variante * 0.06))
             if self.estado_boss == "PERSEGUINDO" and self.timer_tiro >= intervalo_tiro:
                 self.timer_tiro = 0.0
+                sound_manager.play('enemy_shoot')
                 vec = player.pos - self.pos
                 if vec.length_squared() > 0:
                     direcao_base = vec.normalize()
@@ -307,6 +311,7 @@ class Inimigo:
                 self.dir *= 0.9
 
                 if self.timer_habilidade > 1.0:
+                    sound_manager.play('portal_activation')
                     if self.variante % 3 == 1:
                         interface_principal.portais_inimigos.append(
                             {"pos": pygame.math.Vector2(self.pos.x, self.pos.y), "tipo": "explosivo", "vel": 3.5, "tempo": 0.8}
@@ -348,6 +353,7 @@ class Inimigo:
                     self.dir *= 0.8
                 elif self.timer_habilidade < 1.2:
                     if self.timer_habilidade - dt < 0.6:
+                        sound_manager.play('player_dash')
                         vec_to_player = player.pos - self.pos
                         if vec_to_player.length() > 0:
                             self.dir = vec_to_player.normalize() * (self.vel * 5.0)
@@ -368,6 +374,7 @@ class Inimigo:
 
             if self.timer_tiro >= max(0.9, 1.35 - (self.variante * 0.06)):
                 self.timer_tiro = 0.0
+                sound_manager.play('enemy_shoot')
                 passos = 10 + min(6, self.variante)
                 velocidade_proj = 8.2 + min(2.0, self.variante * 0.25)
                 for ang in range(0, 360, max(18, 360 // passos)):
@@ -386,6 +393,7 @@ class Inimigo:
 
             if self.timer_habilidade >= 4.3:
                 self.timer_habilidade = 0.0
+                sound_manager.play('portal_activation')
                 interface_principal.portais_inimigos.append(
                     {
                         "pos": pygame.math.Vector2(self.pos.x, self.pos.y),
@@ -406,6 +414,7 @@ class Inimigo:
 
             if self.timer_tiro >= max(0.34, 0.62 - (self.variante * 0.03)) and vec_to_player.length_squared() > 0:
                 self.timer_tiro = 0.0
+                sound_manager.play('enemy_shoot')
                 base = vec_to_player.normalize()
                 for off in [-24, -10, 0, 10, 24]:
                     direcao_proj = base.rotate(off)
@@ -421,6 +430,7 @@ class Inimigo:
 
             if self.timer_habilidade >= 3.2 and vec_to_player.length_squared() > 0:
                 self.timer_habilidade = 0.0
+                sound_manager.play('enemy_shoot')
                 self.dir = vec_to_player.normalize() * (self.vel * 4.6)
                 for _ in range(22):
                     lista_particulas.append(Particula(self.pos.x, self.pos.y, ROSA_NEON))
@@ -430,6 +440,7 @@ class Inimigo:
             self.timer_vida += dt
             if self.timer_vida >= 10.0:
                 self.morto = True
+                sound_manager.play('enemy_death')
                 for _ in range(10):
                     lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
                 return
@@ -441,6 +452,7 @@ class Inimigo:
                 intervalo_tiro = 0.64
                 while self.timer_tiro >= intervalo_tiro:
                     self.timer_tiro -= intervalo_tiro
+                    sound_manager.play('enemy_shoot')
                     for angulo in range(0, 360, 45):
                         direcao_proj = pygame.math.Vector2(1, 0).rotate(angulo)
                         interface_principal.projeteis_inimigos.append(
@@ -461,6 +473,7 @@ class Inimigo:
                 intervalo_tiro = 0.26
                 while self.timer_tiro >= intervalo_tiro:
                     self.timer_tiro -= intervalo_tiro
+                    sound_manager.play('enemy_shoot')
                     fase = int(time.time() * 8) % 2
                     angulo_base = 45 if fase else 0
                     for angulo in [angulo_base, angulo_base + 90, angulo_base + 180, angulo_base + 270]:
@@ -483,6 +496,7 @@ class Inimigo:
             self.timer_vida += dt
             if self.timer_vida >= 14.0:
                 self.morto = True
+                sound_manager.play('enemy_death')
                 for _ in range(20):
                     lista_particulas.append(Particula(self.pos.x, self.pos.y, ROXO_NEON))
                 return
@@ -492,6 +506,7 @@ class Inimigo:
             intervalo_tiro = 0.13
             while self.timer_tiro >= intervalo_tiro:
                 self.timer_tiro -= intervalo_tiro
+                sound_manager.play('enemy_shoot')
                 self.angulo_espiral = (self.angulo_espiral + 17) % 360
                 direcao_a = pygame.math.Vector2(1, 0).rotate(self.angulo_espiral)
                 direcao_b = pygame.math.Vector2(1, 0).rotate(self.angulo_espiral + 180)
@@ -517,6 +532,7 @@ class Inimigo:
             self.timer_tiro += dt
             if self.timer_tiro >= 1.1 and vec_to_player.length_squared() > 0:
                 self.timer_tiro = 0.0
+                sound_manager.play('enemy_shoot')
                 base = vec_to_player.normalize()
                 for off in [-14, 0, 14]:
                     direcao_proj = base.rotate(off)
@@ -544,6 +560,7 @@ class Inimigo:
 
             if self.timer_tiro >= 1.45:
                 self.timer_tiro = 0.0
+                sound_manager.play('enemy_shoot')
                 for ang in range(0, 360, 60):
                     direcao_proj = pygame.math.Vector2(1, 0).rotate(ang + (self.timer_habilidade * 35))
                     interface_principal.projeteis_inimigos.append(
@@ -568,6 +585,7 @@ class Inimigo:
             else:
                 vec = self.alvo_mira - self.pos
                 if vec.length_squared() > 0:
+                    sound_manager.play('enemy_shoot')
                     direcao_proj = vec.normalize()
                     interface_principal.projeteis_inimigos.append(
                         {

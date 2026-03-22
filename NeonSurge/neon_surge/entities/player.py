@@ -43,7 +43,7 @@ class Player:
         return self.dash.active
 
     # ── update ────────────────────────────────────────────────────────────────
-    def update(self, keys, particle_pool: list) -> bool:
+    def update(self, keys, particle_pool: list, sound_manager) -> bool:
         """Returns True the frame a dash fires (lets Level trigger screen-shake)."""
         dx = dy = 0
         if keys[pygame.K_w] or keys[pygame.K_UP]:    dy = -1
@@ -52,7 +52,13 @@ class Player:
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]: dx =  1
         direction = pygame.math.Vector2(dx, dy)
 
+        if direction.length_squared() > 0:
+            sound_manager.start_walking()
+        else:
+            sound_manager.stop_walking()
+
         if keys[pygame.K_SPACE] and self.dash.ready and self.transform.vel.length() > 0:
+            sound_manager.play('player_dash')
             self.dash.try_activate(self.transform.vel)
             return True
 

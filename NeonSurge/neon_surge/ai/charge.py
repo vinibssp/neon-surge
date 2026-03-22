@@ -26,7 +26,7 @@ class ChargeAI(AIBehaviour):
         self.locked = False
         self.dir    = pygame.math.Vector2(0, 0)
 
-    def update(self, transform, player_pos, peers, dt, particle_pool):
+    def update(self, transform, player_pos, peers, dt, particle_pool, sound_manager):
         self.timer += dt
         pos = transform.pos
         r   = 12
@@ -47,6 +47,7 @@ class ChargeAI(AIBehaviour):
                 vec = self.target - pos
                 if vec.length() > 0:
                     self.dir = vec.normalize() * (self.speed * ENEMY_CHARGE_MULT)
+                sound_manager.play('enemy_shoot')
                 self.state = self.CHARGE
                 self.timer = 0.0
 

@@ -46,8 +46,8 @@ class Enemy:
     def radius(self) -> float:
         return self.collider.radius
 
-    def update(self, player_pos, peers: list, dt: float, particle_pool: list) -> None:
-        self.ai.update(self.transform, player_pos, peers, dt, particle_pool)
+    def update(self, player_pos, peers: list, dt: float, particle_pool: list, sound_manager) -> None:
+        self.ai.update(self.transform, player_pos, peers, dt, particle_pool, sound_manager)
         self._apply_separation(peers)
 
     def _apply_separation(self, peers: list) -> None:

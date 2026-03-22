@@ -9,7 +9,7 @@ class ChaserAI(AIBehaviour):
         self.speed = speed
         self.dir   = pygame.math.Vector2(0, 0)
 
-    def update(self, transform, player_pos, peers, dt, particle_pool):
+    def update(self, transform, player_pos, peers, dt, particle_pool, sound_manager):
         to_player = player_pos - transform.pos
         if to_player.length() > 0:
             desired  = to_player.normalize() * (self.speed * 0.7)

@@ -6,6 +6,7 @@ import pygame
 from .base       import Screen
 from ..constants import MODE_RACE, MODE_RACE_HC
 from ..hud       import HUD
+from ..services.sound import SoundManager
 
 
 class GameScreen(Screen):
@@ -14,6 +15,7 @@ class GameScreen(Screen):
     def __init__(self, game) -> None:
         super().__init__(game)
         self.hud = HUD()
+        self.game.sound_manager = SoundManager()
 
     def handle_event(self, event) -> Optional[str]:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -22,7 +24,7 @@ class GameScreen(Screen):
 
     def update(self, dt: float) -> Optional[str]:
         level = self.game.level
-        level.update(pygame.key.get_pressed(), dt)
+        level.update(pygame.key.get_pressed(), dt, self.game.sound_manager)
 
         outcome = level.outcome
         if outcome is None:

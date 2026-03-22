@@ -83,7 +83,7 @@ class Level:
         elif self.mode == MODE_HC:
             self._spawn_enemies(4, ENEMY_BASE_SPEED + 2)
 
-    def _spawn_enemies(self, count: int, speed: float) -> None:
+    def _spawn_enemies(self, count: int, speed: float, sound_manager=None) -> None:
         for _ in range(count):
             ex, ey = self.player.pos.x, self.player.pos.y
             while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
@@ -91,21 +91,23 @@ class Level:
                 ey = random.randint(HUD_H + 50, SCREEN_H - 50)
             kind = random.choice(self.KINDS)
             self.enemies.append(Enemy(ex, ey, kind, speed))
+            if sound_manager:
+                sound_manager.play('enemy_spawn')
 
     # ── update ────────────────────────────────────────────────────────────────
 
-    def update(self, keys, dt: float) -> None:
+    def update(self, keys, dt: float, sound_manager) -> None:
         if self._outcome:
             return
 
         self.elapsed += dt
 
-        dashed = self.player.update(keys, self.particles.pool)
+        dashed = self.player.update(keys, self.particles.pool, sound_manager)
         if dashed:
             self.shake_frames = 6
 
         for e in self.enemies:
-            e.update(self.player.pos, self.enemies, dt, self.particles.pool)
+            e.update(self.player.pos, self.enemies, dt, self.particles.pool, sound_manager)
 
         # -- Tornado spawning --
         self.tornado_timer -= dt
@@ -127,33 +129,43 @@ class Level:
 
         if self.collision.player_vs_enemies(self.player, self.enemies):
             self.shake_frames = 15
+            sound_manager.play('player_death')
             self._outcome = "DIED"
             return
 
         if self.mode in (MODE_RACE, MODE_RACE_HC):
-            self._update_race()
+            self._update_race(sound_manager)
         else:
-            self._update_survival(dt)
+            self._update_survival(dt, sound_manager)
 
-    def _update_race(self) -> None:
+    def _update_race(self, sound_manager) -> None:
+        print("DEBUG: _update_race executado.")
+
         hit = self.collision.player_vs_collectible(self.player, self.collectibles)
         if hit:
+            print("DEBUG: Moeda coletada!")
             hit.emitter.burst(hit.pos.x, hit.pos.y, self.particles.pool)
             self.collectibles.remove(hit)
+            sound_manager.play('coin_collect')
             self.shake_frames = 2
-
+        
+        # O portal aparece quando não há mais moedas
         if not self.collectibles and self.portal is None:
+            print("DEBUG: Todas as moedas coletadas! Criando portal.")
             self.portal = Portal(SCREEN_W // 2, HUD_H + 80)
+            sound_manager.play('portal_activation')
             self.shake_frames = 10
 
         if self.collision.player_vs_portal(self.player, self.portal):
+            print("DEBUG: Jogador entrou no portal.")
+            sound_manager.play('portal_enter')
             self._outcome = "WIN" if self.phase >= 10 else "PHASE_CLEAR"
 
-    def _update_survival(self, dt: float) -> None:
+    def _update_survival(self, dt: float, sound_manager) -> None:
         count = self._spawner.update(dt)
         if count:
             speed = self._spawner.current_speed(self.elapsed)
-            self._spawn_enemies(count, speed)
+            self._spawn_enemies(count, speed, sound_manager)
             self.shake_frames = 3 if self.mode == MODE_SURV else 5
 
     # ── outcome ───────────────────────────────────────────────────────────────

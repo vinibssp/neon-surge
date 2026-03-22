@@ -506,13 +506,14 @@ def _spawn_inimigos(self, quantidade, velocidade):
         elif tipo in MINIBOSS_TIPOS:
             vel_spawn = max(5.0, velocidade * 1.12)
 
+        self.sounds.play('portal_activation')
         self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_spawn, "tempo": 0.8})
 
 
 def atualizar_jogo(self):
     teclas = pygame.key.get_pressed()
     pos_player_anterior = pygame.math.Vector2(self.player.pos.x, self.player.pos.y)
-    if self.player.update(teclas, self.particulas):
+    if self.player.update(teclas, self.particulas, self.sounds):
         self.shake_frames = 6
 
     if self.modo_jogo == "LABIRINTO":
@@ -591,6 +592,7 @@ def atualizar_jogo(self):
                 inimigo.raio = 40 + (inimigo.variante * 5)
             self.inimigos.append(inimigo)
             self.portais_inimigos.remove(p)
+            self.sounds.play('enemy_spawn')
             self.shake_frames = 3
             for _ in range(15):
                 self.particulas.append(Particula(p["pos"].x, p["pos"].y, VERMELHO_SANGUE))
@@ -598,7 +600,7 @@ def atualizar_jogo(self):
     mortes_inimigos_corrida = 0
     novos_inimigos = []
     for ini in self.inimigos[:]:
-        ini.update(self.player, self.inimigos, self.dt, self.particulas, self)
+        ini.update(self.player, self.inimigos, self.dt, self.particulas, self, self.sounds)
 
         if ini.morto:
             if getattr(ini, "explodiu", False):
