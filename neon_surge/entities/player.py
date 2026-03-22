@@ -32,6 +32,10 @@ class Player:
     def pos(self) -> pygame.math.Vector2:
         return self.transform.pos
 
+    @pos.setter
+    def pos(self, value: pygame.math.Vector2):
+        self.transform.pos = value
+
     @property
     def vel(self) -> pygame.math.Vector2:
         return self.transform.vel
