@@ -448,17 +448,14 @@ def desenhar(self):
             p.draw(surf_jogo)
         for ini in self.inimigos:
             ini.draw(surf_jogo)
-<<<<<<< HEAD
         for b in self.buracos_negros:
             b.draw(surf_jogo)
-=======
         for proj in self.projeteis_inimigos:
             cor_proj = proj.get("cor", LARANJA_NEON)
             raio = int(proj.get("raio", 4))
             desenhar_brilho_neon(surf_jogo, cor_proj, proj["pos"].x, proj["pos"].y, raio + 2, 2)
             pygame.draw.circle(surf_jogo, cor_proj, (int(proj["pos"].x), int(proj["pos"].y)), raio)
             pygame.draw.circle(surf_jogo, BRANCO, (int(proj["pos"].x), int(proj["pos"].y)), max(1, raio // 2))
->>>>>>> 7ff9806 (varias coisas)
         self.player.draw(surf_jogo)
 
         self.tela.blit(surf_jogo, (offset_x, offset_y))
