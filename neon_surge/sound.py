@@ -22,7 +22,11 @@ class SoundManager:
             # Action sounds
             'coin_collect': "coin_collect.wav",
             'black_hole': "black_hole.wav",
+            
+            # UI sounds
             'menu_button': "menu_button.wav",
+            'menu_accept': "menu_accept.wav",
+            'menu_reject': "menu_reject.wav",
 
             # Portal sounds
             'portal_activation': "portal_activation.wav",

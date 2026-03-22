@@ -7,7 +7,7 @@ from .config import FPS
 
 
 def acionar_botao(self):
-    self.sounds.play('menu_button')
+    self.sounds.play('menu_accept')
     if self.estado == "INPUT_NOME" and self.botao_selecionado == 0:
         if len(self.nome_jogador) > 0:
             if self.veio_do_game_over and self.modo_jogo != "":
@@ -112,6 +112,7 @@ def executar(self):
                 elif event.key in [pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS]:
                     self.alterar_volume(0.1)
                 elif event.key == pygame.K_ESCAPE:
+                    self.sounds.play('menu_reject')
                     if self.estado == "MENU_MODO":
                         self.estado = "INPUT_NOME"
                         self.botao_selecionado = 0
@@ -155,12 +156,15 @@ def executar(self):
 
                 if self.estado not in ["JOGANDO", "PAUSA"]:
                     if self.rect_vol_mute.collidepoint(mx, my):
+                        self.sounds.play('menu_accept')
                         self.alternar_mute()
                         continue
                     elif self.rect_vol_menos.collidepoint(mx, my):
+                        self.sounds.play('menu_accept')
                         self.alterar_volume(-0.1)
                         continue
                     elif self.rect_vol_mais.collidepoint(mx, my):
+                        self.sounds.play('menu_accept')
                         self.alterar_volume(0.1)
                         continue
 
@@ -201,17 +205,21 @@ def executar(self):
                     total_linhas = (len(ids_menu) + cols_menu - 1) // cols_menu
 
                     if event.key in [pygame.K_LEFT, pygame.K_a]:
+                        self.sounds.play('menu_button')
                         novo_indice = max(0, indice_atual - 1)
                         self.botao_selecionado = ids_menu[novo_indice]
                     elif event.key in [pygame.K_RIGHT, pygame.K_d]:
+                        self.sounds.play('menu_button')
                         novo_indice = min(len(ids_menu) - 1, indice_atual + 1)
                         self.botao_selecionado = ids_menu[novo_indice]
                     elif event.key in [pygame.K_UP, pygame.K_w]:
+                        self.sounds.play('menu_button')
                         if linha_atual > 0:
                             novo_indice = (linha_atual - 1) * cols_menu + col_atual
                             novo_indice = min(novo_indice, len(ids_menu) - 1)
                             self.botao_selecionado = ids_menu[novo_indice]
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        self.sounds.play('menu_button')
                         if linha_atual < total_linhas - 1:
                             novo_indice = (linha_atual + 1) * cols_menu + col_atual
                             novo_indice = min(novo_indice, len(ids_menu) - 1)
@@ -219,8 +227,10 @@ def executar(self):
 
                 if num_botoes > 0 and self.estado != "MENU_MODO":
                     if event.key in [pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a]:
+                        self.sounds.play('menu_button')
                         self.botao_selecionado = (self.botao_selecionado - 1) % num_botoes
                     elif event.key in [pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d]:
+                        self.sounds.play('menu_button')
                         self.botao_selecionado = (self.botao_selecionado + 1) % num_botoes
 
         if self.estado == "JOGANDO":
