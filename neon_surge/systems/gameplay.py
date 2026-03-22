@@ -2,8 +2,8 @@ import random
 
 import pygame
 
-from .config import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
-from .entities import BlackHole, Inimigo, Particula, Player
+from ..constants import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
+from ..entities import BlackHole, Inimigo, Particula, Player
 
 
 MAX_PARTICULAS = 650

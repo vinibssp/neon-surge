@@ -3,7 +3,7 @@ import time
 
 import pygame
 
-from .config import FPS
+from .constants import FPS
 
 
 def acionar_botao(self):

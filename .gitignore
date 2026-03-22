@@ -1,2 +1,6 @@
-ranking_completo.json
 __pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+data/ranking_completo.json

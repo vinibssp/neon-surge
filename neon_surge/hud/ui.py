@@ -3,7 +3,7 @@ import time
 
 import pygame
 
-from .config import (
+from ..constants import (
     ALTURA_TELA,
     BRANCO,
     CINZA_ESCURO,

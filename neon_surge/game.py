@@ -1,8 +1,8 @@
 import pygame
 
-from .config import ALTURA_TELA, LARGURA_TELA
+from .constants import ALTURA_TELA, LARGURA_TELA
 from .entities import ParticulaMenu
-from .gameplay import (
+from .systems.gameplay import (
     _atualizar_fantasmas_labirinto,
     _colide_com_paredes_labirinto,
     _gerar_layout_labirinto,
@@ -15,10 +15,10 @@ from .gameplay import (
     iniciar_fase,
     obter_pads_menu,
 )
-from .ranking import carregar_ranking, salvar_ranking
+from .services.ranking import carregar_ranking, salvar_ranking
 from .rendering import desenhar, desenhar_controle_volume
 from .runtime import acionar_botao, executar
-from .sound import SoundManager
+from .services.audio import SoundManager
 
 
 class NeonSurge:

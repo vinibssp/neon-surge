@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from .config import ARQUIVO_RANKING
+from ..constants import ARQUIVO_RANKING
 
 
 def carregar_ranking(self):

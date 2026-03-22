@@ -4,7 +4,7 @@ import time
 
 import pygame
 
-from .config import (
+from .constants import (
     ALTURA_TELA,
     AMARELO_DADO,
     AZUL_ESCURO,
@@ -21,7 +21,7 @@ from .config import (
     VERMELHO_SANGUE,
 )
 from .entities import Particula
-from .ui import (
+from .hud.ui import (
     criar_painel_transparente,
     desenhar_botao_dinamico,
     desenhar_brilho_neon,
