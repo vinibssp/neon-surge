@@ -174,8 +174,27 @@ def desenhar_grade_jogo(surface):
         pygame.draw.line(surface, (15, 20, 25), (0, y), (LARGURA_TELA, y), 1)
 
 
-def criar_painel_transparente(largura, altura):
+def criar_painel_transparente(largura, altura, cor=COR_PAINEL):
     surf = pygame.Surface((largura, altura), pygame.SRCALPHA)
-    pygame.draw.rect(surf, COR_PAINEL, (0, 0, largura, altura), border_radius=15)
+    pygame.draw.rect(surf, cor, (0, 0, largura, altura), border_radius=15)
     pygame.draw.rect(surf, CINZA_ESCURO, (0, 0, largura, altura), 3, border_radius=15)
     return surf
+
+
+def desenhar_moldura(surface, rect, cor, titulo=None, fonte=None):
+    """Desenha uma moldura neon estilizada com um título opcional."""
+    pygame.draw.rect(surface, cor, rect, 2, border_radius=12)
+    
+    # Cantos acentuados
+    t = 20
+    pygame.draw.line(surface, BRANCO, (rect.left, rect.top), (rect.left + t, rect.top), 3)
+    pygame.draw.line(surface, BRANCO, (rect.left, rect.top), (rect.left, rect.top + t), 3)
+    pygame.draw.line(surface, BRANCO, (rect.right, rect.bottom), (rect.right - t, rect.bottom), 3)
+    pygame.draw.line(surface, BRANCO, (rect.right, rect.bottom), (rect.right, rect.bottom - t), 3)
+
+    if titulo and fonte:
+        # Fundo para o texto do título
+        largura_t = fonte.size(titulo)[0] + 40
+        pygame.draw.rect(surface, PRETO_FUNDO, (rect.centerx - largura_t//2, rect.top - 15, largura_t, 30))
+        pygame.draw.rect(surface, cor, (rect.centerx - largura_t//2, rect.top - 15, largura_t, 30), 2, border_radius=5)
+        desenhar_texto(surface, titulo, fonte, BRANCO, rect.centerx, rect.top)

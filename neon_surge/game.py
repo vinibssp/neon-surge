@@ -9,6 +9,7 @@ from .systems.gameplay import (
     _lidar_com_morte,
     _resolver_colisao_labirinto,
     _spawn_inimigos,
+    _spawn_unitario,
     atualizar_jogo,
     atualizar_menu_interativo,
     entrar_menu_modo,
@@ -32,6 +33,7 @@ class NeonSurge:
     _gerar_layout_labirinto = _gerar_layout_labirinto
     _resolver_colisao_labirinto = _resolver_colisao_labirinto
     _spawn_inimigos = _spawn_inimigos
+    _spawn_unitario = _spawn_unitario
     atualizar_jogo = atualizar_jogo
     atualizar_menu_interativo = atualizar_menu_interativo
     _lidar_com_morte = _lidar_com_morte
@@ -54,6 +56,7 @@ class NeonSurge:
         self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
 
         self.rect_vol_mute = pygame.Rect(0, 0, 45, 45)
+        self.rect_vol_config = pygame.Rect(0, 0, 45, 45)
         self.rect_vol_menos = pygame.Rect(0, 0, 35, 35)
         self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
         self.estado_anterior_config = "MENU_MODO"

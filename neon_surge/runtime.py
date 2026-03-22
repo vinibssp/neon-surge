@@ -86,7 +86,7 @@ def acionar_botao(self):
             # Seleção de inimigo (Apenas visual ou incremento no treino)
             if self.modo_jogo == "TREINO":
                 aba_atual = getattr(self, "guia_aba", "COMUNS")
-                from .rendering import INIMIGOS_DATA
+                from .data import INIMIGOS_DATA
                 inimigos_aba = [tid for tid, data in INIMIGOS_DATA.items() if data["categoria"] == aba_atual]
                 sel_idx = self.botao_selecionado - 3
                 if 0 <= sel_idx < len(inimigos_aba):
@@ -235,7 +235,7 @@ def executar(self):
                         self.botao_selecionado = idx
                     elif self.modo_jogo == "TREINO" and self.botao_selecionado >= 3:
                         aba_atual = getattr(self, "guia_aba", "COMUNS")
-                        from .rendering import INIMIGOS_DATA
+                        from .data import INIMIGOS_DATA
                         inimigos_aba = [tid for tid, data in INIMIGOS_DATA.items() if data["categoria"] == aba_atual]
                         sel_idx = self.botao_selecionado - 3
                         if 0 <= sel_idx < len(inimigos_aba):
