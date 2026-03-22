@@ -36,6 +36,14 @@ def obter_pads_menu(self):
             "tag": "10 FASES",
         },
         {
+            "id": 1,
+            "modo": "TREINO",
+            "texto": "TREINO",
+            "cor": VERDE_NEON,
+            "descricao": "Pratique suas habilidades sem medo de morrer.",
+            "tag": "IMORTAL",
+        },
+        {
             "id": 5,
             "modo": "CORRIDA_INFINITA",
             "texto": "INFINITA",
@@ -474,41 +482,49 @@ def iniciar_fase(self):
     elif self.modo_jogo == "LABIRINTO":
         self._gerar_layout_labirinto()
 
+    elif self.modo_jogo == "TREINO":
+        # No modo treino, começamos com alguns inimigos e sem limite de tempo/fase
+        self._spawn_inimigos(3, 4.0)
+
     self.estado = "JOGANDO"
 
 
 def _spawn_inimigos(self, quantidade, velocidade):
-    tipos_spawn = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro"]
-    tipos_sem_atirador = ["quique", "perseguidor", "investida", "explosivo"]
+    tipos_comuns = ["quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro"]
+    
+    if self.modo_jogo == "TREINO" and self.inimigos_treino_selecionados:
+        tipos_disponiveis = self.inimigos_treino_selecionados
+    else:
+        tipos_disponiveis = tipos_comuns
+
     for _ in range(quantidade):
-        tipo = random.choice(tipos_spawn)
+        tipo = random.choice(tipos_disponiveis)
 
-        if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"] and random.random() < 0.055:
-            tipo = random.choice(MINIBOSS_TIPOS)
+        # Lógica de spawn especial para Bosses/Minibosses no Treino
+        variante = 1
+        tempo_portal = 0.8
+        vel_final = velocidade
 
-        if tipo == "metralhadora":
-            atiradores_ativos = sum(1 for ini in self.inimigos if ini.tipo == "metralhadora")
-            atiradores_em_portal = sum(1 for portal in self.portais_inimigos if portal.get("tipo") == "metralhadora")
-            if atiradores_ativos + atiradores_em_portal >= 2:
-                tipo = random.choice(tipos_sem_atirador)
+        if tipo in BOSS_TIPOS:
+            tempo_portal = 1.2
+            vel_final = 4.5
+            variante = 1
         elif tipo in MINIBOSS_TIPOS:
-            miniboss_ativos = sum(1 for ini in self.inimigos if ini.tipo in MINIBOSS_TIPOS)
-            miniboss_em_portal = sum(1 for portal in self.portais_inimigos if portal.get("tipo") in MINIBOSS_TIPOS)
-            if miniboss_ativos + miniboss_em_portal >= 1:
-                tipo = random.choice(tipos_sem_atirador)
+            tempo_portal = 1.0
+            vel_final = 5.5
+        elif tipo == "metralhadora":
+            vel_final = max(0.0, velocidade * 0.9)
 
         ex, ey = self.player.pos.x, self.player.pos.y
         while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
             ex = random.randint(50, LARGURA_TELA - 50)
             ey = random.randint(110, ALTURA_TELA - 50)
 
-        vel_spawn = velocidade
-        if tipo == "metralhadora":
-            vel_spawn = max(0.0, velocidade * 0.9)
-        elif tipo in MINIBOSS_TIPOS:
-            vel_spawn = max(5.0, velocidade * 1.12)
-
-        self.portais_inimigos.append({"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_spawn, "tempo": 0.8})
+        p_data = {"pos": pygame.math.Vector2(ex, ey), "tipo": tipo, "vel": vel_final, "tempo": tempo_portal}
+        if tipo in BOSS_TIPOS:
+            p_data["variante"] = variante
+        
+        self.portais_inimigos.append(p_data)
 
 
 def atualizar_jogo(self):
@@ -744,83 +760,10 @@ def atualizar_jogo(self):
                 self.estado = "RANKING"
                 self.botao_selecionado = 0
 
-    elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
-        self.tempo_sobrevivencia += self.dt
-        self.temporizador_spawn += self.dt
-
-        if not self.lava_ativa:
-            self.tempo_para_lava -= self.dt
-            if self.tempo_para_lava <= 3.0:
-                if self.tipo_lava == 0:
-                    self.tipo_lava = 1
-                    self.lava_lado_horizontal = random.choice(["esquerda", "direita"])
-                    self.lava_lado_vertical = random.choice(["cima", "baixo"])
-                self.aviso_lava = self.tempo_para_lava
-            if self.tempo_para_lava <= 0.0:
-                self.lava_ativa = True
-                self.tempo_lava_restante = 10.0
-                self.aviso_lava = 0.0
-                self.shake_frames = 15
-        else:
-            self.tempo_lava_restante -= self.dt
-            if self.tempo_lava_restante <= 0.0:
-                self.lava_ativa = False
-                self.tempo_para_lava = 30.0
-                self.tipo_lava = 0
-                self.lava_hitboxes = []
-                self.lava_lado_horizontal = None
-                self.lava_lado_vertical = None
-
-        self.lava_hitboxes = []
-        if self.tipo_lava != 0:
-            tempo_simulado = self.tempo_lava_restante if self.lava_ativa else 10.0
-            progresso = max(0.0, min(1.0, (10.0 - tempo_simulado) / 10.0))
-
-            metade_largura = int(LARGURA_TELA * 0.5)
-            metade_altura = int((ALTURA_TELA - 60) * 0.5)
-            largura_h = max(32, int(metade_largura * progresso))
-            altura_v = max(32, int(metade_altura * progresso))
-            altura_area = ALTURA_TELA - 60
-
-            lado_h = self.lava_lado_horizontal or "esquerda"
-            if lado_h == "esquerda":
-                rect_h = pygame.Rect(0, 60, largura_h, altura_area)
-            else:
-                rect_h = pygame.Rect(LARGURA_TELA - largura_h, 60, largura_h, altura_area)
-            self.lava_hitboxes.append(rect_h)
-
-            lado_v = self.lava_lado_vertical or "cima"
-            if lado_v == "cima":
-                rect_v = pygame.Rect(0, 60, LARGURA_TELA, altura_v)
-            else:
-                rect_v = pygame.Rect(0, ALTURA_TELA - altura_v, LARGURA_TELA, altura_v)
-            self.lava_hitboxes.append(rect_v)
-
-        if self.lava_ativa and not self.player.invencivel:
-            p_rect = pygame.Rect(
-                self.player.pos.x - self.player.tamanho // 2,
-                self.player.pos.y - self.player.tamanho // 2,
-                self.player.tamanho,
-                self.player.tamanho,
-            )
-            for r in self.lava_hitboxes:
-                if r.colliderect(p_rect):
-                    self._lidar_com_morte()
-                    return
-
-        limite_spawn = 3.2 if self.modo_jogo == "SOBREVIVENCIA" else 1.8
-        taxa_vel = 0.045 if self.modo_jogo == "SOBREVIVENCIA" else 0.08
-        vel_base = 4 if self.modo_jogo == "SOBREVIVENCIA" else 6
-        vel_max = 7.5 if self.modo_jogo == "SOBREVIVENCIA" else 10.5
-
-        limite_inimigos_ativos = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else MAX_INIMIGOS_HARDCORE
-
-        if self.temporizador_spawn > limite_spawn and len(self.inimigos) < limite_inimigos_ativos:
-            vel_progressiva = min(vel_max, vel_base + (self.tempo_sobrevivencia * taxa_vel))
-            self._spawn_inimigos(1, vel_progressiva)
-            self.temporizador_spawn = 0.0
-            self.shake_frames = 3
-
+    elif self.modo_jogo == "TREINO":
+        # No modo treino, se houver poucos inimigos, spawnamos mais para manter a prática
+        if len(self.inimigos) + len(self.portais_inimigos) < 5:
+            self._spawn_inimigos(1, 4.5)
 
 def atualizar_menu_interativo(self):
     particulas_ativas = []
@@ -839,7 +782,7 @@ def atualizar_menu_interativo(self):
 def _lidar_com_morte(self):
     self.shake_frames = 15
     self.mortes_total_jogador += 1
-    if self.modo_jogo == "CORRIDA":
+    if self.modo_jogo in ["CORRIDA", "TREINO"]:
         self.iniciar_fase()
     elif self.modo_jogo == "CORRIDA_INFINITA":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)

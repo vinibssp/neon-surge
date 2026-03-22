@@ -422,43 +422,91 @@ def desenhar(self):
         self.botoes_hitboxes.append(btn_voltar)
 
     elif self.estado == "TELA_INIMIGOS":
-        desenhar_texto(self.tela, "BANCO DE DADOS DE AMEAÇAS", self.fonte_titulo, VERMELHO_SANGUE, cx, 60)
+        is_treino = (self.modo_jogo == "TREINO")
+        if is_treino:
+            desenhar_texto(self.tela, "SISTEMA DE SIMULAÇÃO: DOJO", self.fonte_titulo, VERDE_NEON, cx, 60)
+            sub_msg = "CONFIGURE OS ALVOS PARA O PROTOCOLO DE TREINAMENTO"
+        else:
+            desenhar_texto(self.tela, "BANCO DE DADOS DE AMEAÇAS", self.fonte_titulo, VERMELHO_SANGUE, cx, 60)
+            sub_msg = "ANALISANDO PADRÕES DE COMBATE IDENTIFICADOS"
+        
+        desenhar_texto(self.tela, sub_msg, self.fonte_sub, BRANCO, cx, 105)
 
-        largura_painel, altura_painel = min(1100, LARGURA_TELA - 40), min(560, ALTURA_TELA - 160)
-        surf_painel = criar_painel_transparente(largura_painel, altura_painel)
-        painel_rect = pygame.Rect(0, 0, largura_painel, altura_painel)
-        painel_rect.center = (cx, cy - 20)
-        self.tela.blit(surf_painel, painel_rect.topleft)
+        largura_p = LARGURA_TELA - 60
+        altura_p = ALTURA_TELA - 200
+        surf_p = criar_painel_transparente(largura_p, altura_p)
+        rect_p = pygame.Rect(30, 140, largura_p, altura_p)
+        self.tela.blit(surf_p, rect_p)
+        pygame.draw.rect(self.tela, VERDE_NEON if is_treino else VERMELHO_SANGUE, rect_p, 2, border_radius=15)
 
-        x_icone = painel_rect.left + 65
-        x_texto = painel_rect.left + 120
-        y_base = painel_rect.top + 30
-        espaco_y = 65
-
-        ameacas = [
-            (ROSA_NEON, "SENTINELA", "Inimigo cinético. Causa dano por contato físico direto."),
-            (VERMELHO_SANGUE, "CAÇADOR", "Unidade de perseguição agressiva. Tenta cercar o player."),
-            (LARANJA_NEON, "INVESTIDA", "Velocidade extrema. Ataca em linha reta após travar mira."),
-            (AMARELO_DADO, "BOMBA", "Unidade suicida. Explode 5s após surgir no cenário."),
-            (ROXO_NEON, "ATIRADOR", "Estático. Dispara projéteis de energia em padrões circulares."),
-            (LARANJA_NEON, "MORTEIRO", "Suporte pesado. Lança bombas que explodem após 12 segundos."),
-            (VERMELHO_SANGUE, "PORTAIS", "Fendas dimensionais. Destrua-os para avançar de nível."),
-            (LARANJA_NEON, "LAVA SETORIAL", "Perigo ambiental em modos Survival e Hardcore."),
+        # Categorias de Inimigos
+        categorias = [
+            ("COMUNS", [
+                (ROSA_NEON, "SENTINELA", "quique"),
+                (VERMELHO_SANGUE, "CAÇADOR", "perseguidor"),
+                (LARANJA_NEON, "INVESTIDA", "investida"),
+                (AMARELO_DADO, "BOMBA", "explosivo"),
+                (ROXO_NEON, "ATIRADOR", "metralhadora"),
+                (LARANJA_NEON, "MORTEIRO", "morteiro"),
+            ]),
+            ("MINIBOSSES", [
+                (AMARELO_DADO, "ESPIRO", "miniboss_espiral"),
+                (VERMELHO_SANGUE, "PREDADOR", "miniboss_cacador"),
+                (CIANO_NEON, "BALUARTE", "miniboss_escudo"),
+                (AMARELO_DADO, "SNIPER", "miniboss_sniper"),
+            ]),
+            ("BOSSES", [
+                (ROXO_NEON, "TITÃ", "boss"),
+                (LARANJA_NEON, "COLOSSO", "boss_artilharia"),
+                (VERMELHO_SANGUE, "CAOS", "boss_caotico"),
+            ])
         ]
 
-        for i, (cor_ameaca, titulo, descricao) in enumerate(ameacas):
-            y_item = y_base + (i * espaco_y)
-            desenhar_brilho_neon(self.tela, cor_ameaca, x_icone, y_item + 16, 12, 2)
-            pygame.draw.circle(self.tela, cor_ameaca, (x_icone, y_item + 16), 12)
-            pygame.draw.circle(self.tela, BRANCO, (x_icone, y_item + 16), 4)
-            desenhar_texto(self.tela, titulo + ":", self.fonte_sub, cor_ameaca, x_texto, y_item, alinhamento="esquerda")
-            desenhar_texto(self.tela, descricao, self.fonte_desc, BRANCO, x_texto, y_item + 28, alinhamento="esquerda")
+        self.botoes_hitboxes = []
+        x_start = rect_p.left + 40
+        y_start = rect_p.top + 40
+        col_w = (largura_p - 80) // 3
 
+        for i, (cat_nome, inimigos) in enumerate(categorias):
+            x_cat = x_start + (i * col_w)
+            desenhar_texto(self.tela, cat_nome, self.fonte_sub, BRANCO, x_cat, y_start, alinhamento="esquerda")
+            pygame.draw.line(self.tela, CINZA_ESCURO, (x_cat, y_start + 25), (x_cat + col_w - 40, y_start + 25), 2)
+
+            for j, (cor, nome, tid) in enumerate(inimigos):
+                y_item = y_start + 60 + (j * 45)
+                rect_item = pygame.Rect(x_cat, y_item - 15, col_w - 50, 40)
+                
+                esta_focado = (self.botao_selecionado == len(self.botoes_hitboxes))
+                if is_treino:
+                    selecionado = tid in self.inimigos_treino_selecionados
+                    # Fundo do item
+                    bg_cor = (*cor, 40) if selecionado else (20, 25, 35)
+                    if esta_focado: bg_cor = (*cor, 80)
+                    pygame.draw.rect(self.tela, bg_cor, rect_item, border_radius=6)
+                    
+                    # Checkbox estilizada
+                    check_rect = pygame.Rect(x_cat + 10, y_item - 8, 26, 26)
+                    pygame.draw.rect(self.tela, (10, 15, 20), check_rect, border_radius=4)
+                    pygame.draw.rect(self.tela, cor if selecionado else CINZA_ESCURO, check_rect, 2, border_radius=4)
+                    if selecionado:
+                        pygame.draw.line(self.tela, BRANCO, (check_rect.left+6, check_rect.centery), (check_rect.centerx, check_rect.bottom-6), 3)
+                        pygame.draw.line(self.tela, BRANCO, (check_rect.centerx, check_rect.bottom-6), (check_rect.right-4, check_rect.top+6), 3)
+                    
+                    desenhar_texto(self.tela, nome, self.fonte_texto, BRANCO, x_cat + 45, y_item + 5, alinhamento="esquerda")
+                else:
+                    # Modo visualização apenas
+                    pygame.draw.circle(self.tela, cor, (x_cat + 15, y_item + 5), 8)
+                    desenhar_texto(self.tela, nome, self.fonte_texto, BRANCO, x_cat + 35, y_item + 5, alinhamento="esquerda")
+
+                self.botoes_hitboxes.append(rect_item)
+
+        btn_txt = "INICIAR PROTOCOLO" if is_treino else "VOLTAR AO MENU"
+        btn_cor = VERDE_NEON if is_treino else CIANO_NEON
         btn_iniciar = desenhar_botao_dinamico(
-            self.tela, "INICIAR MISSÃO", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 0
+            self.tela, btn_txt, self.fonte_sub, btn_cor, cx, rect_p.bottom + 45, 
+            self.botao_selecionado == len(self.botoes_hitboxes)
         )
         self.botoes_hitboxes.append(btn_iniciar)
-
     elif self.estado in ["JOGANDO", "PAUSA"]:
         offset_x = random.randint(-8, 8) if self.shake_frames > 0 else 0
         offset_y = random.randint(-8, 8) if self.shake_frames > 0 else 0
@@ -668,6 +716,11 @@ def desenhar(self):
             melhor = self.ranking.get(chave_modo, [{}])[0].get("tempo", atual) if self.ranking.get(chave_modo) else atual
             texto_atual = f"{atual:.1f}s/"
             texto_melhor = f"{melhor:.1f}s"
+        elif self.modo_jogo == "TREINO":
+            atual = int(self.mortes_total_jogador)
+            chave_modo = "Treino"
+            texto_atual = f"MORTES: {atual}"
+            texto_melhor = "MODO TREINO"
         else:
             atual = int(self.fase_atual)
             chave_modo = "Corrida_Infinita"

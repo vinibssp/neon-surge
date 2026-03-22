@@ -290,6 +290,7 @@ class Boss(InimigoBase):
     def __init__(self, x, y, velocidade):
         super().__init__(x, y, "boss", velocidade, 40)
         self.timer_habilidade = 0.0
+        self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
     def draw(self, surface):
@@ -325,6 +326,7 @@ class BossArtilharia(InimigoBase):
     def __init__(self, x, y, velocidade):
         super().__init__(x, y, "boss_artilharia", velocidade, 40)
         self.timer_habilidade = 0.0
+        self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
     def draw(self, surface):
@@ -344,6 +346,7 @@ class BossCaotico(InimigoBase):
     def __init__(self, x, y, velocidade):
         super().__init__(x, y, "boss_caotico", velocidade, 40)
         self.timer_habilidade = 0.0
+        self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
     def draw(self, surface):
@@ -361,6 +364,7 @@ class InimigoMorteiro(InimigoBase):
     def __init__(self, x, y, velocidade):
         super().__init__(x, y, "morteiro", velocidade, 18)
         self.timer_tiro = 0.0
+        self.timer_vida = 0.0
 
     def apply_movement(self, forca_repulsao):
         """Morteiro stays still."""

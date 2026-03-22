@@ -29,6 +29,8 @@ def acionar_botao(self):
     elif self.estado == "MENU_MODO":
         if self.botao_selecionado == 0:
             self.modo_jogo = "CORRIDA"
+        elif self.botao_selecionado == 1:
+            self.modo_jogo = "TREINO"
         elif self.botao_selecionado == 2:
             self.modo_jogo = "SOBREVIVENCIA"
         elif self.botao_selecionado == 3:
@@ -63,9 +65,30 @@ def acionar_botao(self):
         self.botao_selecionado = 1
 
 
-    elif self.estado == "TELA_INIMIGOS" and self.botao_selecionado == 0:
-        self.fase_atual = 1
-        self.iniciar_fase()
+    elif self.estado == "TELA_INIMIGOS":
+        if self.modo_jogo == "TREINO":
+            tipos_ordenados = [
+                "quique", "perseguidor", "investida", "explosivo", "metralhadora", "morteiro",
+                "miniboss_espiral", "miniboss_cacador", "miniboss_escudo", "miniboss_sniper",
+                "boss", "boss_artilharia", "boss_caotico"
+            ]
+            num_inimigos = len(tipos_ordenados)
+            if self.botao_selecionado < num_inimigos:
+                tipo_clicado = tipos_ordenados[self.botao_selecionado]
+                if tipo_clicado in self.inimigos_treino_selecionados:
+                    self.inimigos_treino_selecionados.remove(tipo_clicado)
+                else:
+                    self.inimigos_treino_selecionados.append(tipo_clicado)
+                self.sounds.play('menu_button')
+            elif self.botao_selecionado == num_inimigos: # Botão Iniciar
+                if not self.inimigos_treino_selecionados:
+                    self.inimigos_treino_selecionados = ["quique"]
+                self.fase_atual = 1
+                self.iniciar_fase()
+        else:
+            # No modo info, o botão iniciar é o último
+            if self.botao_selecionado == len(self.botoes_hitboxes) - 1:
+                self.entrar_menu_modo()
 
     elif self.estado == "PAUSA":
         if self.botao_selecionado == 0:
