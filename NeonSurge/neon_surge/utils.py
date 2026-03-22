@@ -19,7 +19,16 @@ from .constants import (
 
 
 def draw_text(surf, text: str, font, color, x: int, y: int,
-              align: str = "centro") -> pygame.Rect:
+              align: str = "centro", shadow: bool = False) -> pygame.Rect:
+    if shadow:
+        # Optimization: Render the text once and blit it twice
+        img_shadow = font.render(text, True, (0, 0, 0))
+        rect_shadow = img_shadow.get_rect()
+        if   align == "centro":   rect_shadow.center   = (x + 2, y + 2)
+        elif align == "esquerda": rect_shadow.midleft  = (x + 2, y + 2)
+        elif align == "direita":  rect_shadow.midright = (x + 2, y + 2)
+        surf.blit(img_shadow, rect_shadow)
+
     img  = font.render(text, True, color)
     rect = img.get_rect()
     if   align == "centro":   rect.center   = (x, y)

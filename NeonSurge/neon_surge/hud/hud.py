@@ -20,17 +20,20 @@ class HUD:
         pygame.draw.line(surf, C_NEON_CYN, (0, HUD_H), (SCREEN_W, HUD_H), 2)
 
         cx = SCREEN_W // 2
+        margin = 30  # Standardized horizontal margin
 
         if mode in (MODE_RACE, MODE_RACE_HC):
             label = "CORRIDA HARDCORE" if mode == MODE_RACE_HC else "CORRIDA"
-            draw_text(surf, f"{label} - FASE {phase}/10", fonts["sub"], C_WHITE, 20, 30, "esquerda")
+            if mode == MODE_RACE:
+                label += f" - FASE {phase}/10"
+            draw_text(surf, label, fonts["sub"], C_WHITE, margin, 30, "esquerda", shadow=True)
         else:
             label = "MODO SOBREVIVÊNCIA" if mode == MODE_SURV else "SOBREVIVÊNCIA HARDCORE"
             color = C_WHITE if mode == MODE_SURV else C_BLOOD_RED
-            draw_text(surf, label, fonts["sub"], color, 20, 30, "esquerda")
+            draw_text(surf, label, fonts["sub"], color, margin, 30, "esquerda", shadow=True)
 
         draw_text(surf, f"{total_elapsed:.1f}s", fonts["sub"], C_NEON_GRN,
-                  SCREEN_W - 20, 30, "direita")
+                  SCREEN_W - margin, 30, "direita", shadow=True)
 
         # Dash cooldown bar (centre)
         bar_color = C_NEON_GRN if dash.ready else (255, 20, 147)
