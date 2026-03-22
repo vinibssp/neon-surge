@@ -532,6 +532,8 @@ def desenhar(self):
             p.draw(surf_jogo)
         for ini in self.inimigos:
             ini.draw(surf_jogo)
+        for b in self.buracos_negros:
+            b.draw(surf_jogo)
         self.player.draw(surf_jogo)
 
         self.tela.blit(surf_jogo, (offset_x, offset_y))

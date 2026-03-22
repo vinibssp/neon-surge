@@ -89,6 +89,8 @@ class NeonSurge:
         self.tempo_corrida = 0.0
         self.tempo_sobrevivencia = 0.0
         self.temporizador_spawn = 0.0
+        self.temporizador_buraco_negro = 8.0
+        self.buracos_negros = []
         self.shake_frames = 0
         self.tempo_global = 0
 

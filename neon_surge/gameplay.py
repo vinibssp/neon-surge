@@ -4,7 +4,7 @@ import random
 import pygame
 
 from .config import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERMELHO_SANGUE
-from .entities import Inimigo, Particula, Player
+from .entities import BlackHole, Inimigo, Particula, Player
 
 
 def entrar_menu_modo(self):
@@ -56,6 +56,8 @@ def iniciar_fase(self):
         self.tempo_corrida = 0.0
         self.tempo_sobrevivencia = 0.0
         self.temporizador_spawn = 0.0
+        self.temporizador_buraco_negro = 8.0
+        self.buracos_negros.clear()
 
     if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         eh_fase_boss = (self.modo_jogo == "CORRIDA" and self.fase_atual == 10) or (
@@ -164,6 +166,20 @@ def atualizar_jogo(self):
             novos_inimigos.append(ini)
 
     self.inimigos = novos_inimigos
+
+    # -- Atualização do Buraco Negro --
+    self.temporizador_buraco_negro -= self.dt
+    if self.temporizador_buraco_negro <= 0:
+        bx = random.randint(100, LARGURA_TELA - 100)
+        by = random.randint(110, ALTURA_TELA - 100)
+        self.buracos_negros.append(BlackHole(bx, by))
+        # Tempo de spawn entre 8 e 15 segundos
+        self.temporizador_buraco_negro = random.uniform(8.0, 15.0)
+
+    for b in self.buracos_negros:
+        b.update(self.player, self.dt, self._lidar_com_morte)
+    
+    self.buracos_negros = [b for b in self.buracos_negros if not b.expirado]
 
     if self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         self.tempo_corrida += self.dt

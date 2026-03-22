@@ -54,6 +54,14 @@ HC_SPAWN_INTERVAL = 1.5
 HC_MAX_SPEED      = 12.0
 HC_SPEED_GROWTH   = 0.1
 
+# ── Tornado ───────────────────────────────────────────────────────────────────
+TORNADO_RADIUS       = 180.0
+TORNADO_PULL         = 120.0
+TORNADO_SLOW         = 0.75
+TORNADO_LIFETIME     = 5.0
+TORNADO_SPAWN_MIN    = 5.0
+TORNADO_SPAWN_MAX    = 5.0
+
 # ── Game mode tokens ──────────────────────────────────────────────────────────
 MODE_RACE    = "CORRIDA"
 MODE_RACE_HC = "CORRIDA_HARDCORE"

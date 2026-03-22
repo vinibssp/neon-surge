@@ -19,10 +19,11 @@ from .constants import (
     ENEMY_BASE_SPEED,
     SURV_SPAWN_INTERVAL, SURV_MAX_SPEED, SURV_SPEED_GROWTH,
     HC_SPAWN_INTERVAL,   HC_MAX_SPEED,   HC_SPEED_GROWTH,
+    TORNADO_SPAWN_MIN,   TORNADO_SPAWN_MAX,
     C_BG,
 )
 from .utils             import draw_game_grid
-from .entities          import Player, Enemy, Collectible, Portal
+from .entities          import Player, Enemy, Collectible, Portal, Tornado
 from .systems           import ParticleSystem, SpawnSystem, CollisionSystem
 
 
@@ -47,12 +48,14 @@ class Level:
         self.player            = Player(SCREEN_W // 2, SCREEN_H // 2)
         self.enemies:      List[Enemy]       = []
         self.collectibles: List[Collectible] = []
+        self.tornados:     List[Tornado]     = []
         self.portal:       Optional[Portal]  = None
 
         self.particles  = ParticleSystem()
         self.collision  = CollisionSystem()
         self.elapsed    = 0.0
         self.shake_frames = 0
+        self.tornado_timer = random.uniform(TORNADO_SPAWN_MIN, TORNADO_SPAWN_MAX)
         self._outcome: Optional[str] = None
 
         if mode == MODE_SURV:
@@ -103,6 +106,19 @@ class Level:
 
         for e in self.enemies:
             e.update(self.player.pos, self.enemies, dt, self.particles.pool)
+
+        # -- Tornado spawning --
+        self.tornado_timer -= dt
+        if self.tornado_timer <= 0:
+            tx = random.randint(100, SCREEN_W - 100)
+            ty = random.randint(HUD_H + 100, SCREEN_H - 100)
+            self.tornados.append(Tornado(tx, ty))
+            self.tornado_timer = random.uniform(TORNADO_SPAWN_MIN, TORNADO_SPAWN_MAX)
+
+        for t in self.tornados:
+            t.update(self.player, dt)
+        
+        self.tornados = [t for t in self.tornados if not t.expired]
 
         self.particles.update()
 
@@ -168,6 +184,8 @@ class Level:
         self.particles.draw(game_surf)
         for e in self.enemies:
             e.draw(game_surf)
+        for t in self.tornados:
+            t.draw(game_surf)
         self.player.draw(game_surf)
 
         surf.blit(game_surf, (ox, oy))
