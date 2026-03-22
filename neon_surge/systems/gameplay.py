@@ -352,6 +352,7 @@ def _atualizar_fantasmas_labirinto(self):
 
 
 def iniciar_fase(self):
+    self.sounds.play_bgm("neon_surge/assets/sounds/trilha_gameplay.wav", self.volume_musica)
     self.player = Player(LARGURA_TELA // 2, ALTURA_TELA // 2)
     self.inimigos.clear()
     self.projeteis_inimigos.clear()
@@ -547,7 +548,7 @@ def atualizar_jogo(self):
                 # Explosão!
                 proj["explodiu"] = True
                 self.shake_frames = 6
-                self.sounds.play('black_hole') # Som de impacto/explosão
+                self.sounds.play('som_explosao')
                 for _ in range(25):
                     ang = random.uniform(0, math.pi * 2)
                     dist = random.uniform(0, proj["raio_explosao"])
@@ -639,6 +640,7 @@ def atualizar_jogo(self):
         if ini.morto:
             if getattr(ini, "explodiu", False):
                 self.shake_frames = 15
+                self.sounds.play('som_explosao')
                 if not self.player.invencivel and ini.pos.distance_to(self.player.pos) < 80:
                     self._lidar_com_morte()
                     return
@@ -841,13 +843,16 @@ def _lidar_com_morte(self):
         self.iniciar_fase()
     elif self.modo_jogo == "CORRIDA_INFINITA":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
+        self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
         self.estado = "RANKING"
         self.botao_selecionado = 0
     elif self.modo_jogo == "LABIRINTO":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
+        self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
         self.estado = "RANKING"
         self.botao_selecionado = 0
     elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
         self.salvar_ranking(self.modo_jogo, self.tempo_sobrevivencia)
+        self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
         self.estado = "RANKING"
         self.botao_selecionado = 0

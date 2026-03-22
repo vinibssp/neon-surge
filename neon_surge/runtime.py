@@ -87,6 +87,7 @@ def acionar_botao(self):
             self.entrar_menu_modo()
             self.botao_selecionado = 0
         elif self.botao_selecionado == 2:
+            self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
             self.estado = "INPUT_NOME"
             self.nome_jogador = ""
             self.veio_do_game_over = True

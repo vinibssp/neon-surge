@@ -35,6 +35,7 @@ class SoundManager:
 
             # Enemy sounds
             'enemy_shoot': "enemy_shoot.wav",
+            'som_explosao': "som_explosao.wav",
         }
 
         if not pygame.mixer.get_init():

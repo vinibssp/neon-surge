@@ -185,6 +185,18 @@ class MorteiroAI(BaseAI):
         # Morteiro fica parado
         enemy.dir = pygame.math.Vector2(0, 0)
         
+        # Vida limitada para o morteiro também
+        if not hasattr(enemy, 'timer_vida'):
+            enemy.timer_vida = 0.0
+        
+        enemy.timer_vida += dt
+        if enemy.timer_vida >= 12.0:
+            enemy.morto = True
+            enemy.explodiu = True
+            for _ in range(30):
+                lista_particulas.append(Particula(enemy.pos.x, enemy.pos.y, LARANJA_NEON))
+            return
+
         enemy.timer_tiro += dt
         intervalo_tiro = 2.0  # Atira a cada 2 segundos
         
