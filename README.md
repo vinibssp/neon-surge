@@ -1,6 +1,5 @@
 # Backlog de Atualizações - Novas Features
 
----
 
 ## Interface, Experiência do Usuário (UX) e Mecânicas
 *Novas habilidades e funcionalidades de interface/experiência do usuário (UX).*
@@ -11,7 +10,6 @@
 - [ ] **Atualizar Guia do Player:** Inserir as novas mecânicas, explicações dos novos modos e arquivo de ameaças.
 - [ ] **Atualizar Arquivo de Ameaças:** Cadastrar todos os novos inimigos e obstáculos no bestiário/arquivo do jogo.
 
----
 
 ## Novos Inimigos (Mobs)
 *Novas ameaças para o jogador lidar nas fases.*
@@ -23,7 +21,6 @@
 - [ ] **Buffer:** Mago que buffa a velocidade de movimento e ataque dos outros mobs. Só toma dano/morre se o jogador der um dash por cima dele.
 - [ ] **Sapo:** Vomita uma poça de ácido que fica no mapa causando dano por um tempo.
 
----
 
 ## Eventos de Ambiente (Hazards)
 *Modificadores de mapa que alteram a física ou zona de perigo.*
@@ -32,7 +29,6 @@
 - [ ] **Região de Água:** Transforma uma parte do mapa em água e spawna navios piratas com canhões.
 - [ ] **Nuvem de Balas:** Uma área onde chove bala constantemente, mas o jogador consegue atravessar ileso usando o dash.
 
----
 
 ## Novos Modos de Jogo
 *Novas formas de jogar, sozinhas ou multiplayer.*
@@ -42,14 +38,13 @@
 - [ ] **Modo Fuga:** Auto-scroller para a direita enquanto a parede esquerda fecha e mobs spawnam na frente (Foco em Multiplayer).
 - [ ] **Modo Party (Construtor):** Estilo *Ultimate Chicken Horse*. Jogadores adicionam paredes e mobs para montar a fase com o objetivo de conseguir moedas.
 
----
 
 ## Drops e Power-Ups
 *Itens temporários no meio da partida.*
 
 - [ ] **Drop Nuke:** Item momentâneo que elimina todos os inimigos da tela (Pode spawnar após um inimigo despawnar ou condição similar de balanceamento).
 
-
+---
 
 
 ## 🏗️ Nova Estrutura de Pastas e Arquivos
