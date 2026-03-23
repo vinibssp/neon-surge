@@ -1,10 +1,9 @@
 import pygame
 
 pygame.init()
-info = pygame.display.Info()
 
-LARGURA_TELA = int(info.current_w * 0.8)
-ALTURA_TELA = int(info.current_h * 0.8)
+LARGURA_TELA = 1280
+ALTURA_TELA = 720
 
 SCREEN_W = LARGURA_TELA
 SCREEN_H = ALTURA_TELA
@@ -34,5 +33,5 @@ C_DARK_GRAY = CINZA_ESCURO
 CINZA_CLARO = (200, 200, 210)
 AZUL_ESCURO = (15, 20, 30)
 C_DARK_BLUE = AZUL_ESCURO
-COR_PAINEL = (15, 20, 30, 230)
+COR_PAINEL = (10, 12, 18, 248)
 C_PANEL = COR_PAINEL

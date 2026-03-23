@@ -12,7 +12,7 @@ from .entities import Particula
 from .hud.ui import (
     criar_painel_transparente, desenhar_botao_dinamico, desenhar_brilho_neon,
     desenhar_fundo_cyberpunk, desenhar_grade_jogo, desenhar_icone_som, 
-    desenhar_texto, desenhar_moldura
+    desenhar_icone_engrenagem, desenhar_texto, desenhar_moldura
 )
 from .data import INIMIGOS_DATA
 
@@ -63,12 +63,16 @@ class Renderer:
         # HUD Topo (Sempre visível em menus/jogo)
         Renderer._render_hud_topo(self)
 
-        # Escalonamento para tela cheia
-        if self.is_fullscreen:
-            w, h = self.tela_real.get_size()
-            self.tela_real.blit(pygame.transform.scale(self.tela, (w, h)), (0, 0))
+        # Escalonamento inteligente mantendo proporção (Letterbox/Pillarbox)
+        rect_destino = self.calcular_rect_tela()
+        self.tela_real.fill((0, 0, 0)) # Limpa com preto para as barras laterais
+        
+        if rect_destino.size != self.tela.get_size():
+            # Redimensionamento suave para evitar serrilhado em resoluções não nativas
+            self.tela_real.blit(pygame.transform.smoothscale(self.tela, rect_destino.size), rect_destino)
         else:
-            self.tela_real.blit(self.tela, (0, 0))
+            self.tela_real.blit(self.tela, rect_destino)
+            
         pygame.display.flip()
 
     @staticmethod
@@ -120,35 +124,33 @@ class Renderer:
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
         modos = self.obter_pads_menu()
         
-        # Info do Modo
-        sel = next((m for m in modos if m["id"] == self.botao_selecionado), None)
-        if self.botao_selecionado == 99:
-            sel = {"texto": "OPÇÕES DE TELA", "tag": "FULLSCREEN / WINDOWED", "descricao": "Alterne entre modo janela ou tela cheia (F11).", "cor": AMARELO_DADO}
-        if not sel: sel = modos[0]
+        # Info do Modo (Painel Superior)
+        sel = next((m for m in modos if m["id"] == self.botao_selecionado), modos[0])
 
-        # Painel Descritivo
-        pw, ph = 960, 180
-        rect_desc = pygame.Rect(cx - pw//2, cy - 240, pw, ph)
+        # Painel Descritivo - Refinado
+        pw, ph = 1000, 190
+        rect_desc = pygame.Rect(cx - pw//2, cy - 230, pw, ph)
         self.tela.blit(criar_painel_transparente(pw, ph), rect_desc.topleft)
         desenhar_moldura(self.tela, rect_desc, sel["cor"])
         
-        desenhar_texto(self.tela, sel["texto"], self.fonte_titulo, sel["cor"], cx, rect_desc.top + 50)
-        desenhar_texto(self.tela, sel["tag"], self.fonte_sub, BRANCO, cx, rect_desc.top + 105)
-        desenhar_texto(self.tela, sel["descricao"], self.fonte_texto, BRANCO, cx, rect_desc.top + 145)
+        desenhar_texto(self.tela, sel["texto"], self.fonte_titulo, sel["cor"], cx, rect_desc.top + 55)
+        desenhar_texto(self.tela, sel["tag"], self.fonte_sub, BRANCO, cx, rect_desc.top + 110)
+        desenhar_texto(self.tela, sel["descricao"], self.fonte_texto, BRANCO, cx, rect_desc.top + 155)
 
-        # Grid
+        # Grid de 4 Colunas x 2 Linhas (Total 8 itens)
         cw, ch = 240, 95
-        gx, gy = 25, 20
-        cols = 3
+        gx, gy = 20, 20
+        cols = 4
         total_w = (cols * cw) + ((cols-1) * gx)
         sx = cx - total_w // 2
-        sy = cy - 20
+        sy = cy + 10
 
         for i, m in enumerate(modos):
             r, c = i // cols, i % cols
             rect = pygame.Rect(sx + c*(cw+gx), sy + r*(ch+gy), cw, ch)
             ativo = (self.botao_selecionado == m["id"])
             
+            # Cores dinâmicas para botões
             cf = m["cor"] if ativo else (15, 20, 30)
             ct = PRETO_FUNDO if ativo else BRANCO
             
@@ -158,11 +160,6 @@ class Renderer:
             desenhar_texto(self.tela, m["texto"], self.fonte_sub, ct, rect.centerx, rect.top + 35)
             desenhar_texto(self.tela, m["tag"], self.fonte_desc, PRETO_FUNDO if ativo else m["cor"], rect.centerx, rect.top + 65)
             self.botoes_hitboxes.append(rect)
-
-        # Botão de Tela
-        txt_t = "FECHAR TELA CHEIA" if self.is_fullscreen else "ATIVAR TELA CHEIA"
-        btn_t = desenhar_botao_dinamico(self.tela, txt_t, self.fonte_sub, AMARELO_DADO, cx, sy + (3*(ch+gy)) - 10, self.botao_selecionado == 99, 450, 50)
-        self.botoes_hitboxes.append(btn_t)
 
     @staticmethod
     def _render_info_modos(self, mx, my):
@@ -291,10 +288,10 @@ class Renderer:
     @staticmethod
     def _render_configuracoes(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        pw, ph = 680, 460
+        pw, ph = 680, 540
         rect = pygame.Rect(cx - pw//2, cy - ph//2, pw, ph)
         self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
-        desenhar_moldura(self.tela, rect, CIANO_NEON, "AJUSTES DE ÁUDIO", self.fonte_sub)
+        desenhar_moldura(self.tela, rect, CIANO_NEON, "AJUSTES DE SISTEMA", self.fonte_sub)
 
         def draw_bar(label, y, vol, idx, cor):
             foc = (self.botao_selecionado == idx)
@@ -312,10 +309,27 @@ class Renderer:
             self.botoes_hitboxes.append(pygame.Rect(bx - 50, y-20, 40, 40))
             self.botoes_hitboxes.append(pygame.Rect(bx + bw + 10, y-20, 40, 40))
 
-        draw_bar("VOLUME MÚSICA", cy - 40, self.sounds.volume_musica, 0, CIANO_NEON)
-        draw_bar("EFEITOS SONOROS", cy + 60, self.sounds.volume_sfx, 1, ROSA_NEON)
+        draw_bar("VOLUME MÚSICA", cy - 100, self.sounds.volume_musica, 0, CIANO_NEON)
+        draw_bar("EFEITOS SONOROS", cy, self.sounds.volume_sfx, 1, ROSA_NEON)
         
-        btn = desenhar_botao_dinamico(self.tela, "CONFIRMAR E SAIR", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 70, self.botao_selecionado == 2, 350, 50)
+        # Opção de Resolução
+        ry = cy + 100
+        foc_res = (self.botao_selecionado == 2)
+        if foc_res: pygame.draw.rect(self.tela, (57, 255, 20, 60), (rect.left+30, ry-30, pw-60, 60), border_radius=12)
+        desenhar_texto(self.tela, "RESOLUÇÃO", self.fonte_sub, BRANCO if foc_res else CINZA_CLARO, cx - 220, ry, "esquerda")
+        
+        res_txt = f"{self.resolucoes[self.res_idx][0]}x{self.resolucoes[self.res_idx][1]}"
+        if self.is_fullscreen:
+            res_txt = f"FULLSCREEN ({res_txt})"
+            
+        bx, bw = cx, 240
+        desenhar_texto(self.tela, f"< {res_txt} >", self.fonte_sub, VERDE_NEON if foc_res else BRANCO, bx + bw//2, ry)
+        
+        # Hitboxes para trocar resolução
+        self.botoes_hitboxes.append(pygame.Rect(bx - 20, ry-25, 50, 50))
+        self.botoes_hitboxes.append(pygame.Rect(bx + bw + 10, ry-25, 50, 50))
+
+        btn = desenhar_botao_dinamico(self.tela, "CONFIRMAR E SAIR", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 70, self.botao_selecionado == 3, 350, 50)
         self.botoes_hitboxes.append(btn)
 
     @staticmethod
@@ -448,7 +462,7 @@ class Renderer:
         
         desenhar_texto(self.tela, "SISTEMA EM PAUSA", self.fonte_titulo, BRANCO, cx, cy - 120)
         
-        btns = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE ÁUDIO", AMARELO_DADO)]
+        btns = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE SISTEMA", AMARELO_DADO)]
         if self.modo_jogo == "CORRIDA": btns.append(("REINICIAR CORRIDA", CIANO_NEON))
         btns.append(("ABANDONAR MISSÃO", VERMELHO_SANGUE))
         
@@ -477,16 +491,17 @@ class Renderer:
     @staticmethod
     def _desenhar_controle_volume(self, mx, my):
         # Re-usando lógica original mas com visual limpo
-        rx, ry = LARGURA_TELA - 360, ALTURA_TELA - 70
-        self.tela.blit(criar_painel_transparente(340, 50), (rx, ry))
+        rx, ry = LARGURA_TELA - 410, ALTURA_TELA - 70
+        self.tela.blit(criar_painel_transparente(390, 50), (rx, ry))
         
         vol = "MUDO" if self.mutado else f"{int(self.volume_musica * 100)}%"
         desenhar_texto(self.tela, vol, self.fonte_sub, VERDE_NEON if not self.mutado else CINZA_CLARO, rx+20, ry+25, "esquerda")
         
         # Botões de volume simplificados
-        Renderer._draw_vol_btn(self, "-", rx+200, ry+25, self.rect_vol_menos, mx, my)
-        Renderer._draw_vol_btn(self, "+", rx+310, ry+25, self.rect_vol_mais, mx, my)
-        Renderer._draw_mute_btn(self, rx+255, ry+25, mx, my)
+        Renderer._draw_vol_btn(self, "-", rx+180, ry+25, self.rect_vol_menos, mx, my)
+        Renderer._draw_vol_btn(self, "+", rx+290, ry+25, self.rect_vol_mais, mx, my)
+        Renderer._draw_mute_btn(self, rx+235, ry+25, mx, my)
+        Renderer._draw_config_btn(self, rx+350, ry+25, mx, my)
 
     @staticmethod
     def _draw_vol_btn(self, txt, cx, cy, rect, mx, my):
@@ -501,6 +516,13 @@ class Renderer:
         h = self.rect_vol_mute.collidepoint(mx, my)
         pygame.draw.rect(self.tela, ROSA_NEON if h else (20,30,40), self.rect_vol_mute, border_radius=6)
         desenhar_icone_som(self.tela, cx, cy, self.mutado, BRANCO)
+
+    @staticmethod
+    def _draw_config_btn(self, cx, cy, mx, my):
+        self.rect_vol_config.center = (cx, cy)
+        h = self.rect_vol_config.collidepoint(mx, my)
+        pygame.draw.rect(self.tela, AMARELO_DADO if h else (20,30,40), self.rect_vol_config, border_radius=6)
+        desenhar_icone_engrenagem(self.tela, cx, cy, BRANCO)
 
 # Atalhos globais para facilitar o registro no NeonSurge
 def desenhar(self): Renderer.desenhar(self)

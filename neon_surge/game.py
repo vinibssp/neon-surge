@@ -61,9 +61,21 @@ class NeonSurge:
         self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
         self.estado_anterior_config = "MENU_MODO"
 
+        # Configurações de Vídeo
         self.info = pygame.display.Info()
-        self.is_fullscreen = True
-        self.tela_real = pygame.display.set_mode((self.info.current_w, self.info.current_h), pygame.FULLSCREEN)
+        self.res_nativa = (self.info.current_w, self.info.current_h)
+        self.is_fullscreen = False
+        
+        # Lista de resoluções e detecção da nativa
+        self.resolucoes = [(1280, 720), (1366, 768), (1600, 900), (1920, 1080), (2560, 1440)]
+        if self.res_nativa not in self.resolucoes:
+            self.resolucoes.append(self.res_nativa)
+            self.resolucoes.sort()
+        
+        self.res_idx = self.resolucoes.index((1280, 720)) if (1280, 720) in self.resolucoes else 0
+        
+        # Inicialização da tela
+        self.aplicar_configuracoes_video()
         self.tela = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
         pygame.display.set_caption("Neon Surge - Hardcore Edition")
 
@@ -116,19 +128,65 @@ class NeonSurge:
         self.ultima_posicao = 0
         self.ultimo_tempo = 0.0
         self.mortes_total_jogador = 0
+        self.shake_frames = 0
+        self.tempo_global = 0.0
+
+    def calcular_rect_tela(self):
+        """Calcula o retângulo de destino mantendo a proporção 16:9 (Letterboxing)."""
+        largura_real, altura_real = self.tela_real.get_size()
+        proporcao_alvo = LARGURA_TELA / ALTURA_TELA
+        proporcao_real = largura_real / altura_real
+
+        if proporcao_real > proporcao_alvo:
+            # Tela mais larga que 16:9 (Pillarbox)
+            nova_largura = int(altura_real * proporcao_alvo)
+            nova_altura = altura_real
+            off_x = (largura_real - nova_largura) // 2
+            off_y = 0
+        else:
+            # Tela mais alta que 16:9 (Letterbox)
+            nova_largura = largura_real
+            nova_altura = int(largura_real / proporcao_alvo)
+            off_x = 0
+            off_y = (altura_real - nova_altura) // 2
+
+        return pygame.Rect(off_x, off_y, nova_largura, nova_altura)
+
+    def aplicar_configuracoes_video(self):
+        """Centraliza a lógica de alteração de modo de vídeo."""
+        res = self.resolucoes[self.res_idx]
+        flags = pygame.DOUBLEBUF | pygame.HWSURFACE
+        
+        if self.is_fullscreen:
+            flags |= pygame.FULLSCREEN
+            # Em fullscreen, se a resolução escolhida for a nativa, usamos (0,0) para otimização do SO
+            if res == self.res_nativa:
+                self.tela_real = pygame.display.set_mode((0, 0), flags)
+            else:
+                self.tela_real = pygame.display.set_mode(res, flags)
+        else:
+            self.tela_real = pygame.display.set_mode(res, flags)
 
     def alternar_tela_cheia(self):
         self.is_fullscreen = not self.is_fullscreen
-        if self.is_fullscreen:
-            self.tela_real = pygame.display.set_mode((self.info.current_w, self.info.current_h), pygame.FULLSCREEN)
-        else:
-            self.tela_real = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
+        self.aplicar_configuracoes_video()
+
+    def alterar_resolucao(self, delta):
+        self.res_idx = (self.res_idx + delta) % len(self.resolucoes)
+        self.aplicar_configuracoes_video()
+        self.sounds.play('menu_button')
 
     def obter_posicao_mouse(self):
         mx, my = pygame.mouse.get_pos()
-        if self.is_fullscreen:
-            mx = mx / (self.info.current_w / LARGURA_TELA)
-            my = my / (self.info.current_h / ALTURA_TELA)
+        rect = self.calcular_rect_tela()
+        
+        mx -= rect.x
+        my -= rect.y
+        
+        if rect.width > 0 and rect.height > 0:
+            mx = mx * (LARGURA_TELA / rect.width)
+            my = my * (ALTURA_TELA / rect.height)
+            
         return mx, my
 
     def alterar_volume(self, delta):

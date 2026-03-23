@@ -83,6 +83,14 @@ def obter_pads_menu(self):
             "descricao": "Revise modos, ameaças e regras principais.",
             "tag": "AJUDA",
         },
+        {
+            "id": 99,
+            "modo": "CONFIG",
+            "texto": "CONFIG",
+            "cor": CIANO_NEON,
+            "descricao": "Ajuste áudio, resolução e tela cheia.",
+            "tag": "SISTEMA",
+        },
     ]
 
     return modos

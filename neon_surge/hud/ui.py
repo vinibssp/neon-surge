@@ -69,6 +69,18 @@ def desenhar_icone_som(surface, cx, cy, mutado, cor):
         pygame.draw.arc(surface, cor, (cx - 4, cy - 14, 28, 28), -math.pi / 4, math.pi / 4, 2)
 
 
+def desenhar_icone_engrenagem(surface, cx, cy, cor):
+    """Desenha um ícone de engrenagem simplificado para configurações."""
+    pygame.draw.circle(surface, cor, (cx, cy), 10, 3)
+    for i in range(8):
+        ang = i * (math.pi / 4)
+        px1 = cx + math.cos(ang) * 10
+        py1 = cy + math.sin(ang) * 10
+        px2 = cx + math.cos(ang) * 14
+        py2 = cy + math.sin(ang) * 14
+        pygame.draw.line(surface, cor, (px1, py1), (px2, py2), 3)
+
+
 def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):
     for i in range(intensidade, 0, -1):
         cor_com_alpha = (*cor, 15)
