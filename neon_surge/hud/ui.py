@@ -91,9 +91,9 @@ class TrainingMenuManager:
     """Gerenciador especializado para o Menu de Treino com interatividade aprimorada."""
     def __init__(self, game):
         self.game = game
-        self.row_h = 74
+        self.row_h = 68 # Reduzido de 74 para caber mais itens
         self.list_w = 720
-        self.btn_size = 44
+        self.btn_size = 40 # Reduzido de 44
         self.sel_y_smooth = 0
         self.last_aba = ""
         
@@ -109,9 +109,9 @@ class TrainingMenuManager:
             if self.game.botao_selecionado >= 4:
                 self.game.botao_selecionado = 4
         
-        # Painel de Fundo
-        pw, ph = LARGURA_TELA - 100, 500
-        rect_p = pygame.Rect(cx - pw//2, 170, pw, ph)
+        # Painel de Fundo - Ajustado para caber na tela 720p
+        pw, ph = LARGURA_TELA - 100, 460 # Reduzido de 500
+        rect_p = pygame.Rect(cx - pw//2, 160, pw, ph) # Subiu de 170 para 160
         self.game.tela.blit(criar_painel_transparente(pw, ph), rect_p.topleft)
         desenhar_moldura(self.game.tela, rect_p, VERDE_NEON if is_t else VERMELHO_SANGUE)
 
@@ -123,7 +123,7 @@ class TrainingMenuManager:
             Renderer._render_guia_treino(self.game, rect_p)
         else:
             # Lista de Inimigos
-            start_y = rect_p.top + 60
+            start_y = rect_p.top + 50 # Ajustado de +60
             
             # Cursor de Seleção Suave
             sel_idx = self.game.botao_selecionado - 4
@@ -185,17 +185,18 @@ class TrainingMenuManager:
                     bp.draw(surface)
                     self.game.botoes_menu.append(bp)
 
-            # Painel Lateral de Detalhes (Visual mais "Tech")
+            # Painel Lateral de Detalhes
             if 0 <= sel_idx < len(items):
                 self._render_detalhes_inimigo(surface, items[sel_idx][1], rect_p)
 
-        # Botão Principal (Abaixo do painel)
+        # Botão Principal (Abaixo do painel) - Ajustado para caber em 720p
         txt_f = "INICIAR SIMULAÇÃO" if is_t else "VOLTAR AO MENU PRINCIPAL"
         def final_action():
             self.game.botao_selecionado = 99
             self.game.acionar_botao()
 
-        btn_f = Button(cx, rect_p.bottom + 65, 520, 65, txt_f, self.game.fonte_sub, callback=final_action, id=99, cor=VERDE_NEON if is_t else CIANO_NEON)
+        # Y pos ajustado de bottom + 65 para bottom + 50
+        btn_f = Button(cx, rect_p.bottom + 50, 520, 60, txt_f, self.game.fonte_sub, callback=final_action, id=99, cor=VERDE_NEON if is_t else CIANO_NEON)
         btn_f.update((mx, my), self.game.botao_selecionado)
         btn_f.draw(surface)
         self.game.botoes_menu.append(btn_f)
