@@ -292,47 +292,59 @@ def executar(self):
                             self.sounds.play('menu_button')
 
                 elif self.estado == "TELA_INIMIGOS":
-                    # 1. Navegação Direta de Abas (Páginas)
+                    # IDs structure: 0-3 (Tabs), 4+ (Inimigos), 99 (Start)
+                    items_in_tab = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == self.guia_aba]
+                    max_inim_id = 3 + len(items_in_tab)
+                    
+                    # 1. Troca de Abas (Q/E)
                     if event.key in [pygame.K_q, pygame.K_e]:
                         direcao = -1 if event.key == pygame.K_q else 1
                         cats = ["COMUNS", "MINIBOSSES", "BOSSES", "GUIA"]
                         idx = (cats.index(self.guia_aba) + direcao) % len(cats)
                         self.guia_aba = cats[idx]
-                        self.botao_selecionado = 0 # Reinicia seleção ao trocar aba
+                        self.botao_selecionado = idx # Foca na nova aba
                         self.sounds.play('menu_button')
                         continue
 
-                    # 2. Ajuste de Quantidade (A/D) - Dedicado ao item focado
+                    # 2. Ajuste de Quantidade (A/D)
                     if event.key in [pygame.K_a, pygame.K_d]:
-                        if isinstance(self.botao_selecionado, int) and self.botao_selecionado >= 4:
-                            items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == self.guia_aba]
+                        if 4 <= self.botao_selecionado <= max_inim_id:
                             idx_inim = self.botao_selecionado - 4
-                            if 0 <= idx_inim < len(items):
-                                tid = items[idx_inim][0]
-                                delta = -1 if event.key == pygame.K_a else 1
-                                self.inimigos_treino_selecionados[tid] = max(0, min(10, self.inimigos_treino_selecionados.get(tid, 0) + delta))
-                                self.sounds.play('menu_button')
-                                continue # Impede que A/D naveguem entre itens
-
-                    # 3. Navegação Vertical (W/S)
-                    ids_disponiveis = []
-                    for btn in self.botoes_menu:
-                        if isinstance(btn.id, int) and btn.id not in ids_disponiveis:
-                            ids_disponiveis.append(btn.id)
-                    ids_disponiveis.sort()
-
-                    if ids_disponiveis:
-                        if not isinstance(self.botao_selecionado, int):
-                            self.botao_selecionado = ids_disponiveis[0]
-                        
-                        if event.key in [pygame.K_UP, pygame.K_w]:
+                            tid = items_in_tab[idx_inim][0]
+                            delta = -1 if event.key == pygame.K_a else 1
+                            self.inimigos_treino_selecionados[tid] = max(0, min(10, self.inimigos_treino_selecionados.get(tid, 0) + delta))
                             self.sounds.play('menu_button')
-                            idx_atual = ids_disponiveis.index(self.botao_selecionado) if self.botao_selecionado in ids_disponiveis else 0
-                            self.botao_selecionado = ids_disponiveis[(idx_atual - 1) % len(ids_disponiveis)]
-                        elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                            continue
+
+                    # 3. Navegação Vertical Inteligente (W/S)
+                    if event.key in [pygame.K_UP, pygame.K_w]:
+                        self.sounds.play('menu_button')
+                        if self.botao_selecionado == 99: # De START para o último inimigo ou última aba
+                            self.botao_selecionado = max_inim_id if items_in_tab else 0
+                        elif 4 <= self.botao_selecionado <= max_inim_id:
+                            if self.botao_selecionado == 4: self.botao_selecionado = 0 # Do primeiro inimigo para abas
+                            else: self.botao_selecionado -= 1
+                        else: # Estava nas abas
+                            self.botao_selecionado = 99 # Wrap para o botão start
+                            
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        self.sounds.play('menu_button')
+                        if 0 <= self.botao_selecionado <= 3:
+                            self.botao_selecionado = 4 if items_in_tab else 99
+                        elif 4 <= self.botao_selecionado <= max_inim_id:
+                            if self.botao_selecionado == max_inim_id: self.botao_selecionado = 99
+                            else: self.botao_selecionado += 1
+                        elif self.botao_selecionado == 99:
+                            self.botao_selecionado = 0 # Wrap para as abas
+
+                    # 4. Navegação Horizontal nas Abas (A/D quando focado em abas)
+                    if event.key in [pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d]:
+                        if 0 <= self.botao_selecionado <= 3:
+                            delta = -1 if event.key in [pygame.K_LEFT, pygame.K_a] else 1
+                            self.botao_selecionado = (self.botao_selecionado + delta) % 4
+                            self.guia_aba = ["COMUNS", "MINIBOSSES", "BOSSES", "GUIA"][self.botao_selecionado]
                             self.sounds.play('menu_button')
-                            idx_atual = ids_disponiveis.index(self.botao_selecionado) if self.botao_selecionado in ids_disponiveis else 0
-                            self.botao_selecionado = ids_disponiveis[(idx_atual + 1) % len(ids_disponiveis)]
+
 
                 elif self.estado in ["PAUSA", "RANKING"]:
                     ids_disponiveis = []

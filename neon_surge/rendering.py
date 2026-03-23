@@ -54,8 +54,8 @@ class Renderer:
 
         # Sincronizar mouse com seleção (híbrido) - DEPOIS de renderizar para ter os botões na lista
         if self.estado not in ["JOGANDO"]:
-            mouse_moveu = (mx, my) != getattr(self, "ultima_pos_mouse", (0, 0))
-            if mouse_moveu:
+            self.mouse_moveu = (mx, my) != getattr(self, "ultima_pos_mouse", (0, 0))
+            if self.mouse_moveu:
                 self.ultima_pos_mouse = (mx, my)
                 # Primeiro checa botões da nova classe (precedência)
                 for btn in self.botoes_menu:
