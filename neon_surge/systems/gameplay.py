@@ -852,7 +852,7 @@ def entrar_ranking(self, veio_de_fim_partida=False):
     """Navega para a tela de ranking e inicia o carregamento global."""
     self.sounds.play('menu_accept')
     self.estado = "RANKING"
-    self.botao_selecionado = 1 # Foco no botão MENU por padrão
+    self.botao_selecionado = 0 # Foco no primeiro botão por padrão
     self.ranking_aba = self.modo_jogo if self.modo_jogo != "" else "CORRIDA"
     self.veio_de_fim_partida = veio_de_fim_partida
     self.ranking_global = []

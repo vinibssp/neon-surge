@@ -131,16 +131,29 @@ def acionar_botao(self):
         if isinstance(self.botao_selecionado, str) and self.botao_selecionado.startswith("ABA_RANK_"):
             nova_aba = self.botao_selecionado.replace("ABA_RANK_", "")
             self.trocar_aba_ranking(nova_aba)
+        elif self.botao_selecionado == 0:
+            if getattr(self, "veio_de_fim_partida", False):
+                # Tentar Novamente
+                self.iniciar_fase()
+                self.estado = "JOGANDO"
+            else:
+                # Voltar ao Menu
+                self.entrar_menu_modo()
+                self.botao_selecionado = 0
         elif self.botao_selecionado == 1:
-            self.entrar_menu_modo()
-            self.botao_selecionado = 0
+            if getattr(self, "veio_de_fim_partida", False):
+                # Menu Principal
+                self.entrar_menu_modo()
+                self.botao_selecionado = 0
         elif self.botao_selecionado == 2:
-            self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
-            self.estado = "INPUT_NOME"
-            self.nome_jogador = ""
-            self.veio_do_game_over = True
-            self.mortes_total_jogador = 0
-            self.botao_selecionado = 0
+            if getattr(self, "veio_de_fim_partida", False):
+                # Novo Jogador
+                self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
+                self.estado = "INPUT_NOME"
+                self.nome_jogador = ""
+                self.veio_do_game_over = True
+                self.mortes_total_jogador = 0
+                self.botao_selecionado = 0
 
 
     elif self.estado == "CONFIGURACOES":

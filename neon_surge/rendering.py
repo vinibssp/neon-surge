@@ -318,31 +318,25 @@ class Renderer:
                 return
 
             id_atual = getattr(self, "id_sessao_atual", None)
+            destacou_nesta_lista = False
 
             for i, item in enumerate(dados[:10]):
                 y = r_area.top + 95 + i * 34
                 
                 # Identificar se é o score atual (local ou global)
-                # Local usa 'id', Global pode não ter 'id' mas podemos comparar nome e score se necessário
+                # O highlight usa player_name + score exato
                 is_current = False
-                if id_atual:
-                    if not is_global and item.get("id") == id_atual:
-                        is_current = True
-                    elif is_global:
-                        # No global comparamos metadados ou nome/score aproximado se não tivermos ID vindo do backend
-                        # (O ideal seria o Supabase retornar o ID, mas por segurança destacamos pelo menos o local)
-                        pass
-
                 nome = item.get("nome") or item.get("player_name", "???")
                 score = item.get("tempo") or item.get("fase") or item.get("score", 0)
                 
-                cor = VERDE_NEON if is_current else (AMARELO_DADO if i == 0 else BRANCO)
+                if veio_de_fim and not destacou_nesta_lista:
+                    if str(nome).upper() == getattr(self, "nome_jogador", "").upper():
+                        # Checar se o score bate com o recém-salvo arredondando para evitar diferenças do global
+                        if f"{float(score):.1f}" == f"{getattr(self, 'ultimo_tempo', -1.0):.1f}":
+                            is_current = True
+                            destacou_nesta_lista = True
                 
-                if is_current:
-                    # Desenha um fundo ou borda verde para o item atual
-                    item_rect = pygame.Rect(r_area.left + 10, y - 17, r_area.width - 20, 32)
-                    pygame.draw.rect(self.tela, (0, 255, 0, 40), item_rect, border_radius=6)
-                    pygame.draw.rect(self.tela, VERDE_NEON, item_rect, 1, border_radius=6)
+                cor = VERDE_NEON if is_current else (AMARELO_DADO if i == 0 else BRANCO)
 
                 desenhar_texto(self.tela, f"{i+1}º", self.fonte_desc, cor, r_area.left + 35, y, "esquerda")
                 desenhar_texto(self.tela, str(nome).upper(), self.fonte_desc, cor, r_area.left + 85, y, "esquerda")
@@ -363,8 +357,18 @@ class Renderer:
 
         # Botões Inferiores
         by = rect.bottom + 65
-        b_menu = desenhar_botao_dinamico(self.tela, "VOLTAR AO MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 350, 50)
-        self.botoes_hitboxes.append((b_menu, 1))
+        if veio_de_fim:
+            b_tentar = desenhar_botao_dinamico(self.tela, "TENTAR NOVAMENTE", self.fonte_sub, CIANO_NEON, cx - 280, by, self.botao_selecionado == 0, 250, 45)
+            self.botoes_hitboxes.append((b_tentar, 0))
+            
+            b_menu = desenhar_botao_dinamico(self.tela, "MENU PRINCIPAL", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 250, 45)
+            self.botoes_hitboxes.append((b_menu, 1))
+            
+            b_novo = desenhar_botao_dinamico(self.tela, "NOVO JOGADOR", self.fonte_sub, CIANO_NEON, cx + 280, by, self.botao_selecionado == 2, 250, 45)
+            self.botoes_hitboxes.append((b_novo, 2))
+        else:
+            b_menu = desenhar_botao_dinamico(self.tela, "VOLTAR AO MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 0, 350, 50)
+            self.botoes_hitboxes.append((b_menu, 0))
 
     @staticmethod
     def _render_configuracoes(self, mx, my):
