@@ -286,23 +286,34 @@ def executar(self):
                 if self.estado != "JOGANDO":
                     # Mapeamento especial para cliques no menu de áudio/sistema
                     if self.estado == "CONFIGURACOES":
-                        # Botoes_hitboxes em CONFIG: [mus_-, mus_+, sfx_-, sfx_+, res_-, res_+, voltar]
-                        if len(self.botoes_hitboxes) >= 7:
-                            if self.botoes_hitboxes[0].collidepoint(mx, my): self.alterar_volume_musica(-0.1)
-                            elif self.botoes_hitboxes[1].collidepoint(mx, my): self.alterar_volume_musica(0.1)
-                            elif self.botoes_hitboxes[2].collidepoint(mx, my): self.alterar_volume_sfx(-0.1)
-                            elif self.botoes_hitboxes[3].collidepoint(mx, my): self.alterar_volume_sfx(0.1)
-                            elif self.botoes_hitboxes[4].collidepoint(mx, my): self.alterar_resolucao(-1)
-                            elif self.botoes_hitboxes[5].collidepoint(mx, my): self.alterar_resolucao(1)
-                            elif self.botoes_hitboxes[6].collidepoint(mx, my):
-                                self.botao_selecionado = 3 # Botão Confirmar
-                                self.acionar_botao()
+                        for item in self.botoes_hitboxes:
+                            if isinstance(item, tuple) and len(item) >= 2:
+                                rect, val = item[:2]
+                                if rect.collidepoint(mx, my):
+                                    if val == "val_0_-": self.alterar_volume_musica(-0.1)
+                                    elif val == "val_0_+": self.alterar_volume_musica(0.1)
+                                    elif val == "val_1_-": self.alterar_volume_sfx(-0.1)
+                                    elif val == "val_1_+": self.alterar_volume_sfx(0.1)
+                                    elif val == "res_-": self.alterar_resolucao(-1)
+                                    elif val == "res_+": self.alterar_resolucao(1)
+                                    elif isinstance(val, int):
+                                        self.botao_selecionado = val
+                                        if val == 3: # Botão Confirmar
+                                            self.acionar_botao()
                         continue
 
-                    for i, rect in enumerate(self.botoes_hitboxes):
-                        if rect.collidepoint(mx, my):
-                            self.botao_selecionado = i
-                            self.acionar_botao()
+                    for item in self.botoes_hitboxes:
+                        if isinstance(item, tuple) and len(item) >= 2:
+                            rect, val = item[:2]
+                            if rect.collidepoint(mx, my):
+                                if isinstance(val, int):
+                                    self.botao_selecionado = val
+                                    self.acionar_botao()
+                                    break
+                        elif hasattr(item, "collidepoint") and item.collidepoint(mx, my):
+                            # Fallback para compatibilidade básica se algo ainda for apenas Rect
+                            # (não deve acontecer após as mudanças)
+                            pass
 
 
             if event.type == pygame.KEYDOWN:

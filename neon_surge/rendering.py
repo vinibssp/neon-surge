@@ -26,10 +26,16 @@ class Renderer:
 
         # Sincronizar mouse com botões (exceto em gameplay fluido)
         if self.estado not in ["JOGANDO"]:
-            if (mx, my) != self.ultima_pos_mouse:
-                for i, btn in enumerate(self.botoes_hitboxes):
-                    if btn.collidepoint(mx, my):
-                        self.botao_selecionado = i
+            if (mx, my) != getattr(self, "ultima_pos_mouse", (0, 0)):
+                for item in self.botoes_hitboxes:
+                    if isinstance(item, tuple) and len(item) >= 2:
+                        rect, val = item[:2]
+                        if rect.collidepoint(mx, my):
+                            if isinstance(val, int):
+                                self.botao_selecionado = val
+                    elif hasattr(item, "collidepoint") and item.collidepoint(mx, my):
+                        # Fallback para quando ainda for apenas Rect
+                        pass 
                 self.ultima_pos_mouse = (mx, my)
 
         self.botoes_hitboxes = []
@@ -107,7 +113,7 @@ class Renderer:
         desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 40)
 
         btn = desenhar_botao_dinamico(self.tela, "INICIAR PROTOCOLO", self.fonte_sub, VERDE_NEON, cx, cy + 160, self.botao_selecionado == 0)
-        self.botoes_hitboxes.append(btn)
+        self.botoes_hitboxes.append((btn, 0))
 
     @staticmethod
     def _render_pergunta_modo(self, mx, my):
@@ -117,7 +123,7 @@ class Renderer:
         
         b1 = desenhar_botao_dinamico(self.tela, f"CONTINUAR EM {modo}", self.fonte_sub, CIANO_NEON, cx, cy + 20, self.botao_selecionado == 0)
         b2 = desenhar_botao_dinamico(self.tela, "ALTERAR MODO DE JOGO", self.fonte_sub, ROSA_NEON, cx, cy + 100, self.botao_selecionado == 1)
-        self.botoes_hitboxes.extend([b1, b2])
+        self.botoes_hitboxes.extend([(b1, 0), (b2, 1)])
 
     @staticmethod
     def _render_menu_modo(self, mx, my):
@@ -159,7 +165,7 @@ class Renderer:
             
             desenhar_texto(self.tela, m["texto"], self.fonte_sub, ct, rect.centerx, rect.top + 35)
             desenhar_texto(self.tela, m["tag"], self.fonte_desc, PRETO_FUNDO if ativo else m["cor"], rect.centerx, rect.top + 65)
-            self.botoes_hitboxes.append(rect)
+            self.botoes_hitboxes.append((rect, m["id"]))
 
     @staticmethod
     def _render_info_modos(self, mx, my):
@@ -169,7 +175,7 @@ class Renderer:
         # Abas
         b1 = desenhar_botao_dinamico(self.tela, "GUIA DE SISTEMA", self.fonte_texto, AMARELO_DADO if aba=="MODOS" else CINZA_CLARO, cx - 160, 130, self.botao_selecionado == 0, 280, 45)
         b2 = desenhar_botao_dinamico(self.tela, "MAPEAMENTO DE TECLAS", self.fonte_texto, VERDE_NEON if aba=="HOTKEYS" else CINZA_CLARO, cx + 160, 130, self.botao_selecionado == 1, 280, 45)
-        self.botoes_hitboxes.extend([b1, b2])
+        self.botoes_hitboxes.extend([(b1, 0), (b2, 1)])
 
         pw, ph = LARGURA_TELA - 100, 420
         rect = pygame.Rect(50, 175, pw, ph)
@@ -190,7 +196,7 @@ class Renderer:
                 desenhar_texto(self.tela, d, self.fonte_texto, BRANCO, rect.left + 60, y + 35, "esquerda")
 
         btn_v = desenhar_botao_dinamico(self.tela, "RETORNAR AO MENU", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 2)
-        self.botoes_hitboxes.append(btn_v)
+        self.botoes_hitboxes.append((btn_v, 2))
 
     @staticmethod
     def _render_tela_inimigos(self, mx, my):
@@ -204,7 +210,7 @@ class Renderer:
         for i, c in enumerate(cats):
             bx = cx - 280 + (i * 280)
             btn = desenhar_botao_dinamico(self.tela, c, self.fonte_texto, cor_t if aba==c else CINZA_CLARO, bx, 130, self.botao_selecionado == i, 260, 45)
-            self.botoes_hitboxes.append(btn)
+            self.botoes_hitboxes.append((btn, i))
 
         # Painel
         pw, ph = LARGURA_TELA - 80, 440
@@ -229,7 +235,7 @@ class Renderer:
             if is_t:
                 qtd = self.inimigos_treino_selecionados.get(tid, 0)
                 desenhar_texto(self.tela, f"QTD: {qtd}", self.fonte_sub, VERDE_NEON if qtd>0 else CINZA_CLARO, ir.right - 60, ir.centery)
-            self.botoes_hitboxes.append(ir)
+            self.botoes_hitboxes.append((ir, 3 + i))
 
         # Detalhes (Direita)
         sel_idx = self.botao_selecionado - 3
@@ -250,8 +256,9 @@ class Renderer:
                 desenhar_texto(self.tela, l, self.fonte_texto, BRANCO, dx, rect.top + 160 + i*35, "esquerda")
 
         txt_b = "INICIAR SIMULAÇÃO" if is_t else "VOLTAR AO MENU"
-        btn_f = desenhar_botao_dinamico(self.tela, txt_b, self.fonte_sub, cor_t if is_t else CIANO_NEON, cx, rect.bottom + 65, self.botao_selecionado == len(self.botoes_hitboxes))
-        self.botoes_hitboxes.append(btn_f)
+        last_idx = 3 + len(items)
+        btn_f = desenhar_botao_dinamico(self.tela, txt_b, self.fonte_sub, cor_t if is_t else CIANO_NEON, cx, rect.bottom + 65, self.botao_selecionado == last_idx)
+        self.botoes_hitboxes.append((btn_f, last_idx))
 
     @staticmethod
     def _render_ranking(self, mx, my):
@@ -281,9 +288,9 @@ class Renderer:
             desenhar_texto(self.tela, val, self.fonte_sub, cor, rect.right - 100, y, "direita")
 
         by = rect.bottom + 70
-        self.botoes_hitboxes.append(desenhar_botao_dinamico(self.tela, "REPETIR", self.fonte_sub, VERDE_NEON, cx - 240, by, self.botao_selecionado == 0, 220, 50))
-        self.botoes_hitboxes.append(desenhar_botao_dinamico(self.tela, "MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 220, 50))
-        self.botoes_hitboxes.append(desenhar_botao_dinamico(self.tela, "NOVO PLAYER", self.fonte_sub, ROSA_NEON, cx + 240, by, self.botao_selecionado == 2, 220, 50))
+        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "REPETIR", self.fonte_sub, VERDE_NEON, cx - 240, by, self.botao_selecionado == 0, 220, 50), 0))
+        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 220, 50), 1))
+        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "NOVO PLAYER", self.fonte_sub, ROSA_NEON, cx + 240, by, self.botao_selecionado == 2, 220, 50), 2))
 
     @staticmethod
     def _render_configuracoes(self, mx, my):
@@ -305,9 +312,11 @@ class Renderer:
             for i in range(1, 10):
                 pygame.draw.line(self.tela, PRETO_FUNDO, (bx + i*(bw/10), y-12), (bx + i*(bw/10), y+11), 1)
             
-            # Hitboxes para botões - e +
-            self.botoes_hitboxes.append(pygame.Rect(bx - 50, y-20, 40, 40))
-            self.botoes_hitboxes.append(pygame.Rect(bx + bw + 10, y-20, 40, 40))
+            # Hitboxes para botões - e + (mapeados para o idx da linha para hover correto)
+            self.botoes_hitboxes.append((pygame.Rect(bx - 50, y-20, 40, 40), f"val_{idx}_-"))
+            self.botoes_hitboxes.append((pygame.Rect(bx + bw + 10, y-20, 40, 40), f"val_{idx}_+"))
+            # Adiciona também o idx para garantir que o hover na linha funcione
+            self.botoes_hitboxes.append((pygame.Rect(rect.left+30, y-30, pw-60, 60), idx))
 
         draw_bar("VOLUME MÚSICA", cy - 100, self.sounds.volume_musica, 0, CIANO_NEON)
         draw_bar("EFEITOS SONOROS", cy, self.sounds.volume_sfx, 1, ROSA_NEON)
@@ -326,11 +335,12 @@ class Renderer:
         desenhar_texto(self.tela, f"< {res_txt} >", self.fonte_sub, VERDE_NEON if foc_res else BRANCO, bx + bw//2, ry)
         
         # Hitboxes para trocar resolução
-        self.botoes_hitboxes.append(pygame.Rect(bx - 20, ry-25, 50, 50))
-        self.botoes_hitboxes.append(pygame.Rect(bx + bw + 10, ry-25, 50, 50))
+        self.botoes_hitboxes.append((pygame.Rect(bx - 20, ry-25, 50, 50), "res_-"))
+        self.botoes_hitboxes.append((pygame.Rect(bx + bw + 10, ry-25, 50, 50), "res_+"))
+        self.botoes_hitboxes.append((pygame.Rect(rect.left+30, ry-30, pw-60, 60), 2))
 
         btn = desenhar_botao_dinamico(self.tela, "CONFIRMAR E SAIR", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 70, self.botao_selecionado == 3, 350, 50)
-        self.botoes_hitboxes.append(btn)
+        self.botoes_hitboxes.append((btn, 3))
 
     @staticmethod
     def _render_gameplay(self, mx, my):
@@ -379,6 +389,24 @@ class Renderer:
         # Menu de Pausa Overlay
         if self.estado == "PAUSA":
             Renderer._render_pausa(self)
+
+    @staticmethod
+    def _render_pausa(self):
+        cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
+        overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.tela.blit(overlay, (0, 0))
+        
+        desenhar_texto(self.tela, "SISTEMA EM PAUSA", self.fonte_titulo, BRANCO, cx, cy - 120)
+        
+        btns = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE SISTEMA", AMARELO_DADO)]
+        if self.modo_jogo == "CORRIDA": btns.append(("REINICIAR CORRIDA", CIANO_NEON))
+        btns.append(("ABANDONAR MISSÃO", VERMELHO_SANGUE))
+        
+        for i, (t, c) in enumerate(btns):
+            y = cy + i * 70
+            rect = desenhar_botao_dinamico(self.tela, t, self.fonte_sub, c, cx, y, self.botao_selecionado == i, 400, 50)
+            self.botoes_hitboxes.append((rect, i))
 
     @staticmethod
     def _render_lab_ui(self, surf):
@@ -452,24 +480,6 @@ class Renderer:
             txt = f"FASE: {cur} / RECORDE: {best}"
 
         desenhar_texto(self.tela, txt, self.fonte_sub, VERDE_NEON, LARGURA_TELA - 20, 20, "direita")
-
-    @staticmethod
-    def _render_pausa(self):
-        cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
-        self.tela.blit(overlay, (0, 0))
-        
-        desenhar_texto(self.tela, "SISTEMA EM PAUSA", self.fonte_titulo, BRANCO, cx, cy - 120)
-        
-        btns = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE SISTEMA", AMARELO_DADO)]
-        if self.modo_jogo == "CORRIDA": btns.append(("REINICIAR CORRIDA", CIANO_NEON))
-        btns.append(("ABANDONAR MISSÃO", VERMELHO_SANGUE))
-        
-        for i, (t, c) in enumerate(btns):
-            y = cy + i * 70
-            rect = desenhar_botao_dinamico(self.tela, t, self.fonte_sub, c, cx, y, self.botao_selecionado == i, 400, 50)
-            self.botoes_hitboxes.append(rect)
 
     @staticmethod
     def _render_portal_saida(self, surf):
