@@ -21,12 +21,13 @@ from ..data import UI_COLORS, UI_ANIMATION, INIMIGOS_DATA
 
 
 class Button:
-    def __init__(self, x, y, largura, altura, texto, fonte, callback=None, id=None):
+    def __init__(self, x, y, largura, altura, texto, fonte, callback=None, id=None, cor=None):
         self.rect = pygame.Rect(x - largura // 2, y - altura // 2, largura, altura)
         self.texto = texto
         self.fonte = fonte
         self.callback = callback
         self.id = id
+        self.cor = cor # Cor customizada para o botão
         
         self.is_hovered = False
         self.is_selected = False  # Para navegação via teclado
@@ -47,10 +48,17 @@ class Button:
 
     def draw(self, surface):
         # Cores baseadas no estado
-        # Selecionado ou Hovered: Amarelo preenchido, texto escuro
-        # Inativo: Outline Ciano, texto claro
+        # Selecionado ou Hovered: Cor do botão (ou Amarelo) preenchido, texto escuro
+        # Inativo: Outline da cor do botão (ou Ciano), texto claro
         is_active = self.is_selected or self.is_hovered
-        cor_base = UI_COLORS["SELECTED"] if is_active else UI_COLORS["HIGHLIGHT"]
+        
+        # Se o botão tem cor própria, usa ela. Senão usa os padrões do tema.
+        cor_base = self.cor if self.cor else (UI_COLORS["SELECTED"] if is_active else UI_COLORS["HIGHLIGHT"])
+        
+        # Se estiver ativo (hover/selecionado) e não tiver cor própria, usa o AMARELO_DADO padrão
+        if is_active and not self.cor:
+            cor_base = UI_COLORS["SELECTED"]
+            
         cor_texto = UI_COLORS["TEXT_SELECTED"] if is_active else UI_COLORS["TEXT_NORMAL"]
         
         # Rect animado
@@ -66,13 +74,12 @@ class Button:
         surf_btn = pygame.Surface((draw_rect.width, draw_rect.height), pygame.SRCALPHA)
         
         if is_active:
-            # Bloco preenchido Amarelo
+            # Bloco preenchido com a cor base
             pygame.draw.rect(surf_btn, (*cor_base, bg_alpha), (0, 0, draw_rect.width, draw_rect.height), border_radius=4)
             # Brilho extra se selecionado
-            pulso = math.sin(time.time() * UI_ANIMATION["PULSE_SPEED"]) * 2
             pygame.draw.rect(surf_btn, BRANCO, (0, 0, draw_rect.width, draw_rect.height), 2, border_radius=4)
         else:
-            # Apenas outline Ciano Neon
+            # Apenas outline com a cor base
             pygame.draw.rect(surf_btn, (*cor_base, 255), (0, 0, draw_rect.width, draw_rect.height), 2, border_radius=4)
             # Leve preenchimento transparente para profundidade
             pygame.draw.rect(surf_btn, (*cor_base, 20), (0, 0, draw_rect.width, draw_rect.height), border_radius=4)
@@ -165,11 +172,11 @@ class TrainingMenuManager:
                         self.game.inimigos_treino_selecionados[t] = max(0, self.game.inimigos_treino_selecionados.get(t, 0) - 1)
                         self.game.sounds.play('menu_button')
                     
-                    bm = Button(bx_base, row_rect.centery, self.btn_size, self.btn_size, "-", self.game.fonte_sub, callback=dec, id=f"dec_{tid}")
+                    bm = Button(bx_base, row_rect.centery, self.btn_size, self.btn_size, "-", self.game.fonte_sub, callback=dec, id=f"dec_{tid}", cor=VERMELHO_SANGUE)
                     bm.update((mx, my))
                     if is_selected:
                         pygame.draw.rect(surface, (10, 10, 15), bm.rect, border_radius=4)
-                        desenhar_texto(surface, "-", self.game.fonte_sub, AMARELO_DADO, bm.rect.centerx, bm.rect.centery)
+                        desenhar_texto(surface, "-", self.game.fonte_sub, VERMELHO_SANGUE, bm.rect.centerx, bm.rect.centery)
                     else:
                         bm.draw(surface)
                     self.game.botoes_menu.append(bm)
@@ -182,11 +189,11 @@ class TrainingMenuManager:
                         self.game.inimigos_treino_selecionados[t] = min(10, self.game.inimigos_treino_selecionados.get(t, 0) + 1)
                         self.game.sounds.play('menu_button')
 
-                    bp = Button(bx_base + 120, row_rect.centery, self.btn_size, self.btn_size, "+", self.game.fonte_sub, callback=inc, id=f"inc_{tid}")
+                    bp = Button(bx_base + 120, row_rect.centery, self.btn_size, self.btn_size, "+", self.game.fonte_sub, callback=inc, id=f"inc_{tid}", cor=VERDE_NEON)
                     bp.update((mx, my))
                     if is_selected:
                         pygame.draw.rect(surface, (10, 10, 15), bp.rect, border_radius=4)
-                        desenhar_texto(surface, "+", self.game.fonte_sub, AMARELO_DADO, bp.rect.centerx, bp.rect.centery)
+                        desenhar_texto(surface, "+", self.game.fonte_sub, VERDE_NEON, bp.rect.centerx, bp.rect.centery)
                     else:
                         bp.draw(surface)
                     self.game.botoes_menu.append(bp)
@@ -214,7 +221,7 @@ class TrainingMenuManager:
             self.game.botao_selecionado = 99
             self.game.acionar_botao()
 
-        btn_f = Button(cx, rect_p.bottom + 65, 450, 60, txt_f, self.game.fonte_sub, callback=final_action, id=99)
+        btn_f = Button(cx, rect_p.bottom + 65, 450, 60, txt_f, self.game.fonte_sub, callback=final_action, id=99, cor=VERDE_NEON if is_t else CIANO_NEON)
         btn_f.update((mx, my), self.game.botao_selecionado)
         btn_f.draw(surface)
         self.game.botoes_menu.append(btn_f)

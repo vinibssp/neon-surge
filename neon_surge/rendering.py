@@ -116,7 +116,7 @@ class Renderer:
         cursor = "_" if int(time.time() * 2) % 2 == 0 else ""
         desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 40)
 
-        btn = Button(cx, cy + 160, 400, 55, "INICIAR PROTOCOLO", self.fonte_sub, callback=self.acionar_botao, id=0)
+        btn = Button(cx, cy + 160, 400, 55, "INICIAR PROTOCOLO", self.fonte_sub, callback=self.acionar_botao, id=0, cor=VERDE_NEON)
         btn.update((mx, my), self.botao_selecionado)
         btn.draw(self.tela)
         self.botoes_menu.append(btn)
@@ -134,8 +134,8 @@ class Renderer:
             self.botao_selecionado = 1
             self.acionar_botao()
 
-        b1 = Button(cx, cy + 20, 500, 55, f"CONTINUAR EM {modo}", self.fonte_sub, callback=cont, id=0)
-        b2 = Button(cx, cy + 100, 500, 55, "ALTERAR MODO DE JOGO", self.fonte_sub, callback=alt, id=1)
+        b1 = Button(cx, cy + 20, 500, 55, f"CONTINUAR EM {modo}", self.fonte_sub, callback=cont, id=0, cor=VERDE_NEON)
+        b2 = Button(cx, cy + 100, 500, 55, "ALTERAR MODO DE JOGO", self.fonte_sub, callback=alt, id=1, cor=CIANO_NEON)
         
         for b in [b1, b2]:
             b.update((mx, my), self.botao_selecionado)
@@ -152,7 +152,7 @@ class Renderer:
             self.botao_selecionado = "IR_RANKING"
             self.acionar_botao()
         
-        btn_rank = Button(LARGURA_TELA - 110, 42, 180, 45, "🏆 RANKING", self.fonte_sub, callback=ir_rank, id="IR_RANKING")
+        btn_rank = Button(LARGURA_TELA - 110, 42, 180, 45, "🏆 RANKING", self.fonte_sub, callback=ir_rank, id="IR_RANKING", cor=AMARELO_DADO)
         btn_rank.update((mx, my), self.botao_selecionado)
         btn_rank.draw(self.tela)
         self.botoes_menu.append(btn_rank)
@@ -162,7 +162,7 @@ class Renderer:
             self.botao_selecionado = "SAIR_JOGO"
             self.acionar_botao()
             
-        btn_sair = Button(110, ALTURA_TELA - 42, 180, 45, "🚪 SAIR", self.fonte_sub, callback=sair, id="SAIR_JOGO")
+        btn_sair = Button(110, ALTURA_TELA - 42, 180, 45, "🚪 SAIR", self.fonte_sub, callback=sair, id="SAIR_JOGO", cor=VERMELHO_SANGUE)
         btn_sair.update((mx, my), self.botao_selecionado)
         btn_sair.draw(self.tela)
         self.botoes_menu.append(btn_sair)
@@ -197,7 +197,7 @@ class Renderer:
                 self.botao_selecionado = val
                 self.acionar_botao()
 
-            btn = Button(bx, by, cw, ch, m["texto"], self.fonte_sub, callback=select_mode, id=m["id"])
+            btn = Button(bx, by, cw, ch, m["texto"], self.fonte_sub, callback=select_mode, id=m["id"], cor=m["cor"])
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
@@ -214,8 +214,8 @@ class Renderer:
             self.guia_aba = "HOTKEYS"
             self.botao_selecionado = 1
 
-        b1 = Button(cx - 160, 130, 280, 45, "GUIA DE SISTEMA", self.fonte_texto, callback=set_aba_modos, id=0)
-        b2 = Button(cx + 160, 130, 280, 45, "MAPEAMENTO DE TECLAS", self.fonte_texto, callback=set_aba_keys, id=1)
+        b1 = Button(cx - 160, 130, 280, 45, "GUIA DE SISTEMA", self.fonte_texto, callback=set_aba_modos, id=0, cor=AMARELO_DADO)
+        b2 = Button(cx + 160, 130, 280, 45, "MAPEAMENTO DE TECLAS", self.fonte_texto, callback=set_aba_keys, id=1, cor=VERDE_NEON)
         
         for b in [b1, b2]:
             b.update((mx, my), self.botao_selecionado)
@@ -243,7 +243,7 @@ class Renderer:
         def voltar():
             self.botao_selecionado = 2
             self.acionar_botao()
-        btn_v = Button(cx, cy + 300, 400, 55, "RETORNAR AO MENU", self.fonte_sub, callback=voltar, id=2)
+        btn_v = Button(cx, cy + 300, 400, 55, "RETORNAR AO MENU", self.fonte_sub, callback=voltar, id=2, cor=CIANO_NEON)
         btn_v.update((mx, my), self.botao_selecionado)
         btn_v.draw(self.tela)
         self.botoes_menu.append(btn_v)
@@ -260,6 +260,14 @@ class Renderer:
         cats = ["COMUNS", "MINIBOSSES", "BOSSES"]
         if is_t: cats.append("GUIA")
         
+        # Cores para as abas
+        cat_cores = {
+            "COMUNS": VERDE_NEON,
+            "MINIBOSSES": AMARELO_DADO,
+            "BOSSES": VERMELHO_SANGUE,
+            "GUIA": CIANO_NEON
+        }
+        
         n_abas = len(cats)
         tw = n_abas * 240
         start_x = cx - tw // 2
@@ -271,7 +279,7 @@ class Renderer:
                 self.botao_selecionado = val
                 self.sounds.play('menu_button')
 
-            btn = Button(bx, 130, 220, 45, c, self.fonte_texto, callback=change_tab, id=i)
+            btn = Button(bx, 130, 220, 45, c, self.fonte_texto, callback=change_tab, id=i, cor=cat_cores.get(c, BRANCO))
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
@@ -307,14 +315,20 @@ class Renderer:
         desenhar_texto(self.tela, "LEADERBOARDS MULTIVERSAIS", self.fonte_titulo, AMARELO_DADO, cx, 60)
         
         if not veio_de_fim:
-            modos_rank = ["CORRIDA", "SOBREVIVENCIA", "HARDCORE", "LABIRINTO", "CORRIDA_INFINITA"]
-            for i, m in enumerate(modos_rank):
+            modos_rank = [
+                ("CORRIDA", CIANO_NEON),
+                ("SOBREVIVENCIA", ROSA_NEON),
+                ("HARDCORE", LARANJA_NEON),
+                ("LABIRINTO", VERDE_NEON),
+                ("CORRIDA_INFINITA", ROXO_NEON)
+            ]
+            for i, (m, cor) in enumerate(modos_rank):
                 rx = cx - 440 + (i * 220)
                 def change_rank(val=m):
                     self.trocar_aba_ranking(val)
                     self.botao_selecionado = f"ABA_RANK_{val}"
                 
-                btn = Button(rx, 115, 200, 40, m.replace("_", " "), self.fonte_desc, callback=change_rank, id=f"ABA_RANK_{m}")
+                btn = Button(rx, 115, 200, 40, m.replace("_", " "), self.fonte_desc, callback=change_rank, id=f"ABA_RANK_{m}", cor=cor)
                 btn.update((mx, my), self.botao_selecionado)
                 btn.draw(self.tela)
                 self.botoes_menu.append(btn)
@@ -381,18 +395,19 @@ class Renderer:
             self.acionar_botao()
 
         if veio_de_fim:
-            b1 = Button(cx - 280, by, 250, 45, "TENTAR NOVAMENTE", self.fonte_sub, callback=tentar, id=0)
-            b2 = Button(cx, by, 250, 45, "MENU PRINCIPAL", self.fonte_sub, callback=ir_menu, id=1)
-            b3 = Button(cx + 280, by, 250, 45, "NOVO JOGADOR", self.fonte_sub, callback=novo, id=2)
+            b1 = Button(cx - 280, by, 250, 45, "TENTAR NOVAMENTE", self.fonte_sub, callback=tentar, id=0, cor=VERDE_NEON)
+            b2 = Button(cx, by, 250, 45, "MENU PRINCIPAL", self.fonte_sub, callback=ir_menu, id=1, cor=CIANO_NEON)
+            b3 = Button(cx + 280, by, 250, 45, "NOVO JOGADOR", self.fonte_sub, callback=novo, id=2, cor=ROSA_NEON)
             for b in [b1, b2, b3]:
                 b.update((mx, my), self.botao_selecionado)
                 b.draw(self.tela)
                 self.botoes_menu.append(b)
         else:
-            btn = Button(cx, by, 350, 50, "VOLTAR AO MENU", self.fonte_sub, callback=ir_menu, id=0)
+            btn = Button(cx, by, 350, 50, "VOLTAR AO MENU", self.fonte_sub, callback=ir_menu, id=0, cor=CIANO_NEON)
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
+
 
     @staticmethod
     def _render_configuracoes(self, mx, my):
@@ -424,8 +439,8 @@ class Renderer:
             def m_vol(): self.alterar_volume_musica(-0.1) if idx==0 else self.alterar_volume_sfx(-0.1)
             def p_vol(): self.alterar_volume_musica(0.1) if idx==0 else self.alterar_volume_sfx(0.1)
             
-            bm = Button(bx - 42, y, 44, 44, "-", self.fonte_sub, callback=m_vol, id=f"v{idx}_-")
-            bp = Button(bx + bw + 42, y, 44, 44, "+", self.fonte_sub, callback=p_vol, id=f"v{idx}_+")
+            bm = Button(bx - 42, y, 44, 44, "-", self.fonte_sub, callback=m_vol, id=f"v{idx}_-", cor=VERMELHO_SANGUE)
+            bp = Button(bx + bw + 42, y, 44, 44, "+", self.fonte_sub, callback=p_vol, id=f"v{idx}_+", cor=VERDE_NEON)
             for b in [bm, bp]:
                 b.update((mx, my))
                 b.draw(self.tela)
@@ -448,17 +463,18 @@ class Renderer:
         
         def res_m(): self.alterar_resolucao(-1)
         def res_p(): self.alterar_resolucao(1)
-        bl = Button(tx_pos - 160, ry, 44, 44, "<", self.fonte_sub, callback=res_m, id="res_-")
-        br = Button(tx_pos + 115, ry, 44, 44, ">", self.fonte_sub, callback=res_p, id="res_+")
+        bl = Button(tx_pos - 160, ry, 44, 44, "<", self.fonte_sub, callback=res_m, id="res_-", cor=CIANO_NEON)
+        br = Button(tx_pos + 115, ry, 44, 44, ">", self.fonte_sub, callback=res_p, id="res_+", cor=CIANO_NEON)
         for b in [bl, br]:
             b.update((mx, my))
             b.draw(self.tela)
             self.botoes_menu.append(b)
 
-        btn_c = Button(cx, rect.bottom - 80, 450, 60, "SALVAR E RETORNAR AO MENU", self.fonte_sub, callback=self.acionar_botao, id=3)
+        btn_c = Button(cx, rect.bottom - 80, 450, 60, "SALVAR E RETORNAR AO MENU", self.fonte_sub, callback=self.acionar_botao, id=3, cor=VERDE_NEON)
         btn_c.update((mx, my), self.botao_selecionado)
         btn_c.draw(self.tela)
         self.botoes_menu.append(btn_c)
+
 
     @staticmethod
     def _render_gameplay(self, mx, my):
@@ -505,7 +521,7 @@ class Renderer:
             def cb(idx=i):
                 self.botao_selecionado = idx
                 self.acionar_botao()
-            btn = Button(cx, cy + i * 70, 400, 50, t, self.fonte_sub, callback=cb, id=i)
+            btn = Button(cx, cy + i * 70, 400, 50, t, self.fonte_sub, callback=cb, id=i, cor=c)
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
@@ -604,10 +620,10 @@ class Renderer:
         def t_mute(): self.alternar_mute()
         def ir_cfg(): self.estado_anterior_config = self.estado; self.estado = "CONFIGURACOES"; self.botao_selecionado = 0
 
-        b_m = Button(rx+180, ry+25, 40, 40, "-", self.fonte_sub, callback=m_vol, id="vol_-")
-        b_p = Button(rx+290, ry+25, 40, 40, "+", self.fonte_sub, callback=p_vol, id="vol_+")
-        b_mu = Button(rx+235, ry+25, 40, 40, "", self.fonte_sub, callback=t_mute, id="vol_mute")
-        b_cfg = Button(rx+350, ry+25, 40, 40, "", self.fonte_sub, callback=ir_cfg, id="vol_cfg")
+        b_m = Button(rx+180, ry+25, 40, 40, "-", self.fonte_sub, callback=m_vol, id="vol_-", cor=VERMELHO_SANGUE)
+        b_p = Button(rx+290, ry+25, 40, 40, "+", self.fonte_sub, callback=p_vol, id="vol_+", cor=VERDE_NEON)
+        b_mu = Button(rx+235, ry+25, 40, 40, "", self.fonte_sub, callback=t_mute, id="vol_mute", cor=AMARELO_DADO)
+        b_cfg = Button(rx+350, ry+25, 40, 40, "", self.fonte_sub, callback=ir_cfg, id="vol_cfg", cor=CIANO_NEON)
         
         for b in [b_m, b_p, b_mu, b_cfg]:
             b.update((mx, my))
