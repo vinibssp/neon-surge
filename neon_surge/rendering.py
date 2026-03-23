@@ -137,6 +137,14 @@ class Renderer:
         desenhar_texto(self.tela, "🏆 RANKING", self.fonte_sub, AMARELO_DADO if h_rank else BRANCO, btn_rank.centerx, btn_rank.centery)
         self.botoes_hitboxes.append((btn_rank, "IR_RANKING"))
 
+        # Botão Sair (Canto Inferior Esquerdo)
+        btn_sair = pygame.Rect(20, ALTURA_TELA - 65, 180, 45)
+        h_sair = btn_sair.collidepoint(mx, my) or (self.botao_selecionado == "SAIR_JOGO")
+        pygame.draw.rect(self.tela, (40, 10, 10), btn_sair, border_radius=8)
+        pygame.draw.rect(self.tela, VERMELHO_SANGUE if h_sair else CINZA_ESCURO, btn_sair, 2, border_radius=8)
+        desenhar_texto(self.tela, "🚪 SAIR", self.fonte_sub, VERMELHO_SANGUE if h_sair else BRANCO, btn_sair.centerx, btn_sair.centery)
+        self.botoes_hitboxes.append((btn_sair, "SAIR_JOGO"))
+
         # Info do Modo (Painel Superior)
         # Se for string (Ranking), pegamos o primeiro modo apenas para exibir algo no painel
         id_busca = self.botao_selecionado if isinstance(self.botao_selecionado, int) else modos[0]["id"]

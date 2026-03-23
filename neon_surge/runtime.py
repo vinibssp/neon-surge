@@ -57,6 +57,9 @@ def acionar_botao(self):
             self.estado = "CONFIGURACOES"
             self.botao_selecionado = 2 # Foca na resolução por padrão quando vem do menu
             return
+        elif self.botao_selecionado == "SAIR_JOGO":
+            pygame.quit()
+            sys.exit()
 
         if self.modo_jogo == "TREINO":
             self.estado = "TELA_INIMIGOS"
@@ -358,13 +361,20 @@ def executar(self):
                     ids_menu = [item["id"] for item in self.obter_pads_menu()]
                     # Se o botão selecionado não for um dos IDs (ex: for "IR_RANKING"), reseta para o primeiro
                     if not isinstance(self.botao_selecionado, int) or self.botao_selecionado not in ids_menu:
-                        if self.botao_selecionado != "IR_RANKING": # Mantém se for o ranking
+                        if self.botao_selecionado not in ["IR_RANKING", "SAIR_JOGO"]: # Mantém se for o ranking ou sair
                              self.botao_selecionado = ids_menu[0]
 
                     # Se estiver no botão de ranking, setas levam de volta pros modos
                     if self.botao_selecionado == "IR_RANKING":
                         if event.key in [pygame.K_DOWN, pygame.K_s, pygame.K_LEFT, pygame.K_a]:
                             self.botao_selecionado = ids_menu[0]
+                            self.sounds.play('menu_button')
+                        continue
+                    
+                    # Se estiver no botão de sair, setas levam de volta pros modos
+                    if self.botao_selecionado == "SAIR_JOGO":
+                        if event.key in [pygame.K_UP, pygame.K_w, pygame.K_RIGHT, pygame.K_d]:
+                            self.botao_selecionado = ids_menu[-1] # Vai pro último do grid (CONFIG)
                             self.sounds.play('menu_button')
                         continue
 
@@ -394,6 +404,8 @@ def executar(self):
                             novo_indice = (linha_atual + 1) * cols_menu + col_atual
                             if novo_indice < len(ids_menu):
                                 self.botao_selecionado = ids_menu[novo_indice]
+                        else:
+                            self.botao_selecionado = "SAIR_JOGO"
 
                 if num_botoes > 0 and self.estado != "MENU_MODO":
                     if event.key in [pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a]:
