@@ -764,7 +764,7 @@ def atualizar_jogo(self):
     elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
         self.tempo_sobrevivencia += self.dt
         
-        # Spawn progressivo de inimigos
+        # Spawn progressivo de inimigos comuns
         max_ini = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else MAX_INIMIGOS_HARDCORE
         progressao = min(1.0, self.tempo_sobrevivencia / 300.0)
         alvo_atual = 3 + int(progressao * (max_ini - 3))
@@ -776,6 +776,23 @@ def atualizar_jogo(self):
                 vel = 4.0 + (progressao * 3.5)
                 self._spawn_inimigos(1, vel)
                 self.temporizador_spawn = max(0.5, 2.0 - (progressao * 1.5))
+
+        # --- Lógica de Bosses e Minibosses por Tempo ---
+        tempo = int(self.tempo_sobrevivencia)
+        is_hardcore = (self.modo_jogo == "HARDCORE")
+        
+        # Miniboss a cada 45s (30s no Hardcore)
+        intervalo_mini = 30 if is_hardcore else 45
+        if tempo > 0 and tempo % intervalo_mini == 0 and not getattr(self, "_last_mini_spawn", -1) == tempo:
+            self._last_mini_spawn = tempo
+            self._spawn_unitario(random.choice(MINIBOSS_TIPOS), 5.5 + (progressao * 2))
+            
+        # Boss a cada 90s (75s no Hardcore)
+        intervalo_boss = 75 if is_hardcore else 90
+        if tempo > 0 and tempo % intervalo_boss == 0 and not getattr(self, "_last_boss_spawn", -1) == tempo:
+            self._last_boss_spawn = tempo
+            tipo_boss = random.choice(BOSS_TIPOS)
+            self._spawn_unitario(tipo_boss, 4.5 + (progressao * 1.5))
 
         # Gerenciamento de Lava
         if self.tempo_sobrevivencia > 20:
