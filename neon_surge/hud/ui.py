@@ -7,6 +7,7 @@ from ..constants import (
     ALTURA_TELA,
     AMARELO_DADO,
     BRANCO,
+    CIANO_NEON,
     CINZA_CLARO,
     CINZA_ESCURO,
     COR_PAINEL,
@@ -16,7 +17,7 @@ from ..constants import (
     VERDE_NEON,
     VERMELHO_SANGUE,
 )
-from ..data import UI_COLORS, UI_ANIMATION
+from ..data import UI_COLORS, UI_ANIMATION, INIMIGOS_DATA
 
 
 class Button:
@@ -90,6 +91,133 @@ class Button:
                 self.callback()
                 return True
         return False
+
+
+class TrainingMenuManager:
+    """Gerenciador especializado para o Menu de Treino."""
+    def __init__(self, game):
+        self.game = game
+        self.row_h = 70
+        self.list_w = 800
+        self.btn_size = 40
+        
+    def render(self, surface, mx, my):
+        cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
+        aba = self.game.guia_aba
+        is_t = (self.game.modo_jogo == "TREINO")
+        items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == aba]
+        
+        # Painel de Fundo
+        pw, ph = LARGURA_TELA - 100, 480
+        rect_p = pygame.Rect(cx - pw//2, 160, pw, ph)
+        self.game.tela.blit(criar_painel_transparente(pw, ph), rect_p.topleft)
+        desenhar_moldura(self.game.tela, rect_p, VERDE_NEON if is_t else VERMELHO_SANGUE)
+
+        if aba == "GUIA":
+            # Reutiliza o render de guia existente se necessário, 
+            # mas o foco aqui é a lista interativa
+            from ..rendering import Renderer
+            Renderer._render_guia_treino(self.game, rect_p)
+        else:
+            # Lista de Inimigos
+            start_y = rect_p.top + 40
+            for i, (tid, data) in enumerate(items):
+                ry = start_y + i * self.row_h
+                row_rect = pygame.Rect(rect_p.left + 50, ry - self.row_h//2 + 5, self.list_w, self.row_h - 10)
+                
+                is_hovered = row_rect.collidepoint(mx, my)
+                # Sincronização Híbrida: Hover do mouse seleciona o item para o teclado
+                if is_hovered:
+                    self.game.botao_selecionado = 4 + i
+
+                is_selected = (self.game.botao_selecionado == 4 + i)
+
+                # 1. Background e Moldura da Linha
+                if is_selected:
+                    # Selecionado: Amarelo Sólido (Referência image_1.png)
+                    pygame.draw.rect(surface, AMARELO_DADO, row_rect, border_radius=8)
+                    pygame.draw.rect(surface, BRANCO, row_rect, 2, border_radius=8)
+                    cor_texto = (10, 10, 15) # PRETO para contraste máximo no amarelo
+                    txt_nome = f"> {data['nome']} <"
+                elif is_hovered:
+                    # Hover (sem ser seleção ativa): Azul escuro
+                    pygame.draw.rect(surface, (40, 50, 80), row_rect, border_radius=8)
+                    pygame.draw.rect(surface, CIANO_NEON, row_rect, 2, border_radius=8)
+                    cor_texto = BRANCO
+                    txt_nome = data["nome"]
+                else:
+                    # Inativo
+                    pygame.draw.rect(surface, (15, 20, 35), row_rect, border_radius=8)
+                    pygame.draw.rect(surface, data["cor"], row_rect, 1, border_radius=8)
+                    cor_texto = (180, 180, 200)
+                    txt_nome = data["nome"]
+
+                # Nome do Inimigo
+                desenhar_texto(surface, txt_nome, self.game.fonte_sub, cor_texto, row_rect.left + 20, row_rect.centery, "esquerda")
+
+                # Controles de Quantidade (Direita)
+                if is_t:
+                    qtd = self.game.inimigos_treino_selecionados.get(tid, 0)
+                    bx_base = row_rect.right - 180
+                    
+                    # Botão Menos
+                    def dec(t=tid):
+                        self.game.inimigos_treino_selecionados[t] = max(0, self.game.inimigos_treino_selecionados.get(t, 0) - 1)
+                        self.game.sounds.play('menu_button')
+                    
+                    bm = Button(bx_base, row_rect.centery, self.btn_size, self.btn_size, "-", self.game.fonte_sub, callback=dec, id=f"dec_{tid}")
+                    bm.update((mx, my))
+                    if is_selected:
+                        pygame.draw.rect(surface, (10, 10, 15), bm.rect, border_radius=4)
+                        desenhar_texto(surface, "-", self.game.fonte_sub, AMARELO_DADO, bm.rect.centerx, bm.rect.centery)
+                    else:
+                        bm.draw(surface)
+                    self.game.botoes_menu.append(bm)
+
+                    # Contador de Quantidade (Fix de Contraste)
+                    desenhar_seletor_quantidade(surface, bx_base + 60, row_rect.centery, qtd, is_selected, self.game.fonte_sub)
+
+                    # Botão Mais
+                    def inc(t=tid):
+                        self.game.inimigos_treino_selecionados[t] = min(10, self.game.inimigos_treino_selecionados.get(t, 0) + 1)
+                        self.game.sounds.play('menu_button')
+
+                    bp = Button(bx_base + 120, row_rect.centery, self.btn_size, self.btn_size, "+", self.game.fonte_sub, callback=inc, id=f"inc_{tid}")
+                    bp.update((mx, my))
+                    if is_selected:
+                        pygame.draw.rect(surface, (10, 10, 15), bp.rect, border_radius=4)
+                        desenhar_texto(surface, "+", self.game.fonte_sub, AMARELO_DADO, bp.rect.centerx, bp.rect.centery)
+                    else:
+                        bp.draw(surface)
+                    self.game.botoes_menu.append(bp)
+
+            # Detalhes do Inimigo Selecionado (Painel lateral direito)
+            sel_idx = self.game.botao_selecionado - 4
+            if 0 <= sel_idx < len(items):
+                tid, data = items[sel_idx]
+                dx = rect_p.left + self.list_w + 100
+                desenhar_texto(surface, data["nome"], self.game.fonte_sub, data["cor"], dx, rect_p.top + 60, "esquerda")
+                
+                # Descrição com Wrap simples
+                palavras = data["desc"].split()
+                linhas, curr = [], ""
+                for p in palavras:
+                    if len(curr + p) < 25: curr += p + " "
+                    else: linhas.append(curr); curr = p + " "
+                linhas.append(curr)
+                for i, l in enumerate(linhas):
+                    desenhar_texto(surface, l, self.game.fonte_desc, BRANCO, dx, rect_p.top + 100 + i*30, "esquerda")
+
+        # Botão START / VOLTAR
+        txt_f = "INICIAR SIMULAÇÃO" if is_t else "VOLTAR AO MENU"
+        def final_action():
+            self.game.botao_selecionado = 99
+            self.game.acionar_botao()
+
+        btn_f = Button(cx, rect_p.bottom + 65, 450, 60, txt_f, self.game.fonte_sub, callback=final_action, id=99)
+        btn_f.update((mx, my), self.game.botao_selecionado)
+        btn_f.draw(surface)
+        self.game.botoes_menu.append(btn_f)
 
 
 def desenhar_texto(surface, texto, fonte, cor, x, y, alinhamento="centro"):

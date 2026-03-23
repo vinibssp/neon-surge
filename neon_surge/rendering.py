@@ -250,12 +250,13 @@ class Renderer:
 
     @staticmethod
     def _render_tela_inimigos(self, mx, my):
-        cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        is_t = (self.modo_jogo == "TREINO")
-        aba = getattr(self, "guia_aba", "COMUNS")
-        cor_t = VERDE_NEON if is_t else VERMELHO_SANGUE
+        from .hud.ui import TrainingMenuManager
+        if not hasattr(self, "training_manager"):
+            self.training_manager = TrainingMenuManager(self)
         
-        # Abas de Categoria
+        # Abas de Categoria (Renderizadas no topo do painel)
+        cx = LARGURA_TELA // 2
+        is_t = (self.modo_jogo == "TREINO")
         cats = ["COMUNS", "MINIBOSSES", "BOSSES"]
         if is_t: cats.append("GUIA")
         
@@ -266,93 +267,17 @@ class Renderer:
         for i, c in enumerate(cats):
             bx = start_x + (i * 240) + 120
             def change_tab(val=i):
+                self.guia_aba = cats[val]
                 self.botao_selecionado = val
-                self.acionar_botao()
+                self.sounds.play('menu_button')
 
             btn = Button(bx, 130, 220, 45, c, self.fonte_texto, callback=change_tab, id=i)
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
 
-        # Painel Principal
-        pw, ph = LARGURA_TELA - 80, 440
-        rect_p = pygame.Rect(40, 175, pw, ph)
-        self.tela.blit(criar_painel_transparente(pw, ph), rect_p.topleft)
-        desenhar_moldura(self.tela, rect_p, cor_t)
-
-        if aba == "GUIA":
-            Renderer._render_guia_treino(self, rect_p)
-        else:
-            items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == aba]
-            
-            # Lista de Inimigos (Esquerda)
-            for i, (tid, data) in enumerate(items):
-                iy = rect_p.top + 30 + i * 65
-                ix = rect_p.left + 240
-                
-                def select_enemy(idx=4+i):
-                    self.botao_selecionado = idx
-                    self.acionar_botao()
-
-                btn_inim = Button(ix, iy + 27, 420, 55, data["nome"], self.fonte_sub, callback=select_enemy, id=4+i)
-                btn_inim.update((mx, my), self.botao_selecionado)
-                btn_inim.draw(self.tela)
-                self.botoes_menu.append(btn_inim)
-
-                pygame.draw.circle(self.tela, data["cor"], (rect_p.left + 60, iy + 27), 10)
-                
-                if is_t:
-                    qtd = self.inimigos_treino_selecionados.get(tid, 0)
-                    bx_q = rect_p.left + 350
-                    is_sel = (self.botao_selecionado == 4+i)
-                    
-                    from .hud.ui import desenhar_seletor_quantidade
-                    desenhar_seletor_quantidade(self.tela, bx_q, iy + 27, qtd, is_sel, self.fonte_sub)
-
-                    def dec_enemy(t=tid):
-                        self.inimigos_treino_selecionados[t] = max(0, self.inimigos_treino_selecionados.get(t, 0) - 1)
-                        self.sounds.play('menu_button')
-
-                    btn_m = Button(bx_q - 45, iy + 27, 35, 35, "-", self.fonte_sub, callback=dec_enemy, id=f"dec_{tid}")
-                    btn_m.update((mx, my))
-                    btn_m.draw(self.tela)
-                    self.botoes_menu.append(btn_m)
-
-                    def inc_enemy(t=tid):
-                        self.inimigos_treino_selecionados[t] = min(10, self.inimigos_treino_selecionados.get(t, 0) + 1)
-                        self.sounds.play('menu_button')
-
-                    btn_p = Button(bx_q + 25, iy + 27, 35, 35, "+", self.fonte_sub, callback=inc_enemy, id=f"inc_{tid}")
-                    btn_p.update((mx, my))
-                    btn_p.draw(self.tela)
-                    self.botoes_menu.append(btn_p)
-
-            # Detalhes (Direita)
-            sel_idx = self.botao_selecionado - 4
-            if 0 <= sel_idx < len(items):
-                tid, data = items[sel_idx]
-                dx = rect_p.left + 480
-                desenhar_texto(self.tela, data["nome"], self.fonte_titulo, data["cor"], dx, rect_p.top + 70, "esquerda")
-                pygame.draw.line(self.tela, data["cor"], (dx, rect_p.top + 130), (rect_p.right - 40, rect_p.top + 130), 3)
-                
-                palavras = data["desc"].split()
-                linhas, curr = [], ""
-                for p in palavras:
-                    if len(curr + p) < 40: curr += p + " "
-                    else: linhas.append(curr); curr = p + " "
-                linhas.append(curr)
-                for i, l in enumerate(linhas):
-                    desenhar_texto(self.tela, l, self.fonte_texto, BRANCO, dx, rect_p.top + 160 + i*35, "esquerda")
-
-        txt_b = "INICIAR SIMULAÇÃO" if is_t else "VOLTAR AO MENU"
-        def final_action():
-            self.botao_selecionado = 99
-            self.acionar_botao()
-
-        btn_f = Button(cx, rect_p.bottom + 65, 400, 55, txt_b, self.fonte_sub, callback=final_action, id=99)
-        btn_f.update((mx, my), self.botao_selecionado)
-        btn_f.draw(self.tela)
-        self.botoes_menu.append(btn_f)
+        # Delegar o corpo da lista para o Manager
+        self.training_manager.render(self.tela, mx, my)
 
     @staticmethod
     def _render_guia_treino(self, rect):

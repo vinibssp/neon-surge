@@ -292,7 +292,17 @@ def executar(self):
                             self.sounds.play('menu_button')
 
                 elif self.estado == "TELA_INIMIGOS":
-                    # Ajuste de Quantidade (A/D) - Somente se um inimigo estiver selecionado
+                    # 1. Navegação Direta de Abas (Páginas)
+                    if event.key in [pygame.K_q, pygame.K_e]:
+                        direcao = -1 if event.key == pygame.K_q else 1
+                        cats = ["COMUNS", "MINIBOSSES", "BOSSES", "GUIA"]
+                        idx = (cats.index(self.guia_aba) + direcao) % len(cats)
+                        self.guia_aba = cats[idx]
+                        self.botao_selecionado = 0 # Reinicia seleção ao trocar aba
+                        self.sounds.play('menu_button')
+                        continue
+
+                    # 2. Ajuste de Quantidade (A/D) - Dedicado ao item focado
                     if event.key in [pygame.K_a, pygame.K_d]:
                         if isinstance(self.botao_selecionado, int) and self.botao_selecionado >= 4:
                             items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == self.guia_aba]
@@ -302,8 +312,9 @@ def executar(self):
                                 delta = -1 if event.key == pygame.K_a else 1
                                 self.inimigos_treino_selecionados[tid] = max(0, min(10, self.inimigos_treino_selecionados.get(tid, 0) + delta))
                                 self.sounds.play('menu_button')
-                                continue # Impede que A/D naveguem
+                                continue # Impede que A/D naveguem entre itens
 
+                    # 3. Navegação Vertical (W/S)
                     ids_disponiveis = []
                     for btn in self.botoes_menu:
                         if isinstance(btn.id, int) and btn.id not in ids_disponiveis:
