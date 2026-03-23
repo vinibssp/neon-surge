@@ -1,9 +1,12 @@
 import random
 import math
 import pygame
+import threading
+import time
 
 from ..constants import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
 from ..entities import BlackHole, Inimigo, Particula, Player, LavaManager
+from ..services.ranking import buscar_ranking_global
 
 
 MAX_PARTICULAS = 650
@@ -835,15 +838,46 @@ def _lidar_com_morte(self):
     elif self.modo_jogo == "CORRIDA_INFINITA":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
         self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
-        self.estado = "RANKING"
-        self.botao_selecionado = 0
+        self.entrar_ranking(veio_de_fim_partida=True)
     elif self.modo_jogo == "LABIRINTO":
         self.salvar_ranking(self.modo_jogo, self.fase_atual)
         self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
-        self.estado = "RANKING"
-        self.botao_selecionado = 0
+        self.entrar_ranking(veio_de_fim_partida=True)
     elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
         self.salvar_ranking(self.modo_jogo, self.tempo_sobrevivencia)
         self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
-        self.estado = "RANKING"
-        self.botao_selecionado = 0
+        self.entrar_ranking(veio_de_fim_partida=True)
+
+def entrar_ranking(self, veio_de_fim_partida=False):
+    """Navega para a tela de ranking e inicia o carregamento global."""
+    self.sounds.play('menu_accept')
+    self.estado = "RANKING"
+    self.botao_selecionado = 1 # Foco no botão MENU por padrão
+    self.ranking_aba = self.modo_jogo if self.modo_jogo != "" else "CORRIDA"
+    self.veio_de_fim_partida = veio_de_fim_partida
+    self.ranking_global = []
+    self.carregando_ranking = True
+    
+    def fetch():
+        # Pequeno delay se veio de fim de partida para dar tempo do POST ser processado pelo Supabase
+        if veio_de_fim_partida:
+            time.sleep(1.2)
+        res = buscar_ranking_global(self.ranking_aba)
+        self.ranking_global = res
+        self.carregando_ranking = False
+        
+    threading.Thread(target=fetch, daemon=True).start()
+
+def trocar_aba_ranking(self, nova_aba):
+    if self.ranking_aba == nova_aba: return
+    self.sounds.play('menu_button')
+    self.ranking_aba = nova_aba
+    self.ranking_global = []
+    self.carregando_ranking = True
+    
+    def fetch():
+        res = buscar_ranking_global(nova_aba)
+        self.ranking_global = res
+        self.carregando_ranking = False
+        
+    threading.Thread(target=fetch, daemon=True).start()

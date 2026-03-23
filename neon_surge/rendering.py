@@ -31,8 +31,7 @@ class Renderer:
                     if isinstance(item, tuple) and len(item) >= 2:
                         rect, val = item[:2]
                         if rect.collidepoint(mx, my):
-                            if isinstance(val, int):
-                                self.botao_selecionado = val
+                            self.botao_selecionado = val
                     elif hasattr(item, "collidepoint") and item.collidepoint(mx, my):
                         # Fallback para quando ainda for apenas Rect
                         pass 
@@ -130,8 +129,18 @@ class Renderer:
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
         modos = self.obter_pads_menu()
         
+        # Botão Ranking (Superior Direito)
+        btn_rank = pygame.Rect(LARGURA_TELA - 200, 20, 180, 45)
+        h_rank = btn_rank.collidepoint(mx, my) or (self.botao_selecionado == "IR_RANKING")
+        pygame.draw.rect(self.tela, AZUL_ESCURO, btn_rank, border_radius=8)
+        pygame.draw.rect(self.tela, AMARELO_DADO if h_rank else CINZA_ESCURO, btn_rank, 2, border_radius=8)
+        desenhar_texto(self.tela, "🏆 RANKING", self.fonte_sub, AMARELO_DADO if h_rank else BRANCO, btn_rank.centerx, btn_rank.centery)
+        self.botoes_hitboxes.append((btn_rank, "IR_RANKING"))
+
         # Info do Modo (Painel Superior)
-        sel = next((m for m in modos if m["id"] == self.botao_selecionado), modos[0])
+        # Se for string (Ranking), pegamos o primeiro modo apenas para exibir algo no painel
+        id_busca = self.botao_selecionado if isinstance(self.botao_selecionado, int) else modos[0]["id"]
+        sel = next((m for m in modos if m["id"] == id_busca), modos[0])
 
         # Painel Descritivo - Refinado
         pw, ph = 1000, 190
@@ -263,34 +272,99 @@ class Renderer:
     @staticmethod
     def _render_ranking(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        desenhar_texto(self.tela, "SISTEMA DESATIVADO", self.fonte_titulo, VERMELHO_SANGUE, cx, 70)
+        aba_atual = getattr(self, "ranking_aba", "CORRIDA")
+        veio_de_fim = getattr(self, "veio_de_fim_partida", False)
         
-        pw, ph = 840, 380
-        rect = pygame.Rect(cx - pw//2, 150, pw, ph)
+        # Cabeçalho
+        desenhar_texto(self.tela, "LEADERBOARDS MULTIVERSAIS", self.fonte_titulo, AMARELO_DADO, cx, 60)
+        
+        if not veio_de_fim:
+            # Seleção de Abas apenas se NÃO vier de fim de partida
+            modos_rank = ["CORRIDA", "SOBREVIVENCIA", "HARDCORE", "LABIRINTO", "CORRIDA_INFINITA"]
+            for i, m in enumerate(modos_rank):
+                rx = cx - 440 + (i * 220)
+                ativo = (aba_atual == m)
+                btn = desenhar_botao_dinamico(self.tela, m.replace("_", " "), self.fonte_desc, CIANO_NEON if ativo else CINZA_CLARO, rx, 115, False, 200, 40)
+                if btn.collidepoint(mx, my):
+                    pygame.draw.rect(self.tela, CIANO_NEON, btn, 2, border_radius=8)
+                self.botoes_hitboxes.append((btn, f"ABA_RANK_{m}"))
+        else:
+            # Título do Modo Atual
+            desenhar_texto(self.tela, f"MODO: {aba_atual.replace('_', ' ')}", self.fonte_sub, CIANO_NEON, cx, 115)
+
+        # Painel Principal
+        pw, ph = LARGURA_TELA - 100, 460
+        rect = pygame.Rect(50, 155, pw, ph)
         self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
         desenhar_moldura(self.tela, rect, CIANO_NEON)
-        
-        res = f"SCORE: {self.ultimo_tempo:.1f}s | POSIÇÃO: {self.ultima_posicao}º"
-        if self.modo_jogo in ["CORRIDA_INFINITA", "LABIRINTO"]:
-            res = f"FASE ALCANÇADA: {int(self.ultimo_tempo)} | POSIÇÃO: {self.ultima_posicao}º"
-        desenhar_texto(self.tela, res, self.fonte_sub, VERDE_NEON, cx, rect.top + 45)
 
-        chave = self.modo_jogo.capitalize()
-        if self.modo_jogo == "LABIRINTO": chave = "Labirinto_Infinito"
-        elif self.modo_jogo == "CORRIDA_INFINITA": chave = "Corrida_Infinita"
+        # Divisão Local vs Global
+        w_metade = (pw - 60) // 2
+        rect_local = pygame.Rect(rect.left + 20, rect.top + 20, w_metade, ph - 40)
+        rect_global = pygame.Rect(rect.centerx + 10, rect.top + 20, w_metade, ph - 40)
         
-        top = self.ranking.get(chave, [])[:5]
-        for i, r in enumerate(top):
-            y = rect.top + 120 + i*45
-            cor = AMARELO_DADO if (i+1 == self.ultima_posicao) else BRANCO
-            desenhar_texto(self.tela, f"{i+1}º {r['nome']}", self.fonte_sub, cor, rect.left + 100, y, "esquerda")
-            val = f"Fase {r.get('fase',0)}" if "fase" in r else f"{r.get('tempo',0):.1f}s"
-            desenhar_texto(self.tela, val, self.fonte_sub, cor, rect.right - 100, y, "direita")
+        # Helper para desenhar listas com destaque
+        def draw_rank_list(r_area, titulo, dados, is_global):
+            pygame.draw.rect(self.tela, (15, 25, 45), r_area, border_radius=12)
+            desenhar_texto(self.tela, titulo, self.fonte_sub, VERDE_NEON, r_area.centerx, r_area.top + 35)
+            pygame.draw.line(self.tela, VERDE_NEON, (r_area.left + 40, r_area.top + 60), (r_area.right - 40, r_area.top + 60), 2)
+            
+            if not dados and not (is_global and getattr(self, "carregando_ranking", False)):
+                desenhar_texto(self.tela, "NENHUM DADO ENCONTRADO", self.fonte_desc, CINZA_CLARO, r_area.centerx, r_area.centery)
+                return
 
-        by = rect.bottom + 70
-        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "REPETIR", self.fonte_sub, VERDE_NEON, cx - 240, by, self.botao_selecionado == 0, 220, 50), 0))
-        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 220, 50), 1))
-        self.botoes_hitboxes.append((desenhar_botao_dinamico(self.tela, "NOVO PLAYER", self.fonte_sub, ROSA_NEON, cx + 240, by, self.botao_selecionado == 2, 220, 50), 2))
+            if is_global and getattr(self, "carregando_ranking", False):
+                desenhar_texto(self.tela, "CARREGANDO DADOS...", self.fonte_desc, AMARELO_DADO, r_area.centerx, r_area.centery)
+                return
+
+            id_atual = getattr(self, "id_sessao_atual", None)
+
+            for i, item in enumerate(dados[:10]):
+                y = r_area.top + 95 + i * 34
+                
+                # Identificar se é o score atual (local ou global)
+                # Local usa 'id', Global pode não ter 'id' mas podemos comparar nome e score se necessário
+                is_current = False
+                if id_atual:
+                    if not is_global and item.get("id") == id_atual:
+                        is_current = True
+                    elif is_global:
+                        # No global comparamos metadados ou nome/score aproximado se não tivermos ID vindo do backend
+                        # (O ideal seria o Supabase retornar o ID, mas por segurança destacamos pelo menos o local)
+                        pass
+
+                nome = item.get("nome") or item.get("player_name", "???")
+                score = item.get("tempo") or item.get("fase") or item.get("score", 0)
+                
+                cor = VERDE_NEON if is_current else (AMARELO_DADO if i == 0 else BRANCO)
+                
+                if is_current:
+                    # Desenha um fundo ou borda verde para o item atual
+                    item_rect = pygame.Rect(r_area.left + 10, y - 17, r_area.width - 20, 32)
+                    pygame.draw.rect(self.tela, (0, 255, 0, 40), item_rect, border_radius=6)
+                    pygame.draw.rect(self.tela, VERDE_NEON, item_rect, 1, border_radius=6)
+
+                desenhar_texto(self.tela, f"{i+1}º", self.fonte_desc, cor, r_area.left + 35, y, "esquerda")
+                desenhar_texto(self.tela, str(nome).upper(), self.fonte_desc, cor, r_area.left + 85, y, "esquerda")
+                
+                txt_score = f"{float(score):.1f}s"
+                if "INFINITA" in aba_atual or "LABIRINTO" in aba_atual: txt_score = f"F{int(score)}"
+                
+                desenhar_texto(self.tela, txt_score, self.fonte_desc, cor, r_area.right - 35, y, "direita")
+
+        # Dados Locais
+        chave_local = aba_atual.capitalize()
+        if aba_atual == "LABIRINTO": chave_local = "Labirinto_Infinito"
+        elif aba_atual == "CORRIDA_INFINITA": chave_local = "Corrida_Infinita"
+        dados_locais = self.ranking.get(chave_local, [])
+        
+        draw_rank_list(rect_local, "💾 RECORDS LOCAIS", dados_locais, False)
+        draw_rank_list(rect_global, "🌐 TOP 10 GLOBAL", getattr(self, "ranking_global", []), True)
+
+        # Botões Inferiores
+        by = rect.bottom + 65
+        b_menu = desenhar_botao_dinamico(self.tela, "VOLTAR AO MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 350, 50)
+        self.botoes_hitboxes.append((b_menu, 1))
 
     @staticmethod
     def _render_configuracoes(self, mx, my):

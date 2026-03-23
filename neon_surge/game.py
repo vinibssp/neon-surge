@@ -10,6 +10,8 @@ from .systems.gameplay import (
     _resolver_colisao_labirinto,
     _spawn_inimigos,
     _spawn_unitario,
+    entrar_ranking,
+    trocar_aba_ranking,
     atualizar_jogo,
     atualizar_menu_interativo,
     entrar_menu_modo,
@@ -34,6 +36,8 @@ class NeonSurge:
     _resolver_colisao_labirinto = _resolver_colisao_labirinto
     _spawn_inimigos = _spawn_inimigos
     _spawn_unitario = _spawn_unitario
+    entrar_ranking = entrar_ranking
+    trocar_aba_ranking = trocar_aba_ranking
     atualizar_jogo = atualizar_jogo
     atualizar_menu_interativo = atualizar_menu_interativo
     _lidar_com_morte = _lidar_com_morte
@@ -225,4 +229,4 @@ class NeonSurge:
         except:
             pass
 
-    
+

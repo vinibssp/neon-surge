@@ -31,6 +31,10 @@ def acionar_botao(self):
             self.botao_selecionado = 0
 
     elif self.estado == "MENU_MODO":
+        if self.botao_selecionado == "IR_RANKING":
+            self.entrar_ranking()
+            return
+            
         if self.botao_selecionado == 0:
             self.modo_jogo = "CORRIDA"
         elif self.botao_selecionado == 1:
@@ -124,9 +128,9 @@ def acionar_botao(self):
             self.entrar_menu_modo()
 
     elif self.estado == "RANKING":
-        if self.botao_selecionado == 0:
-            self.fase_atual = 1
-            self.iniciar_fase()
+        if isinstance(self.botao_selecionado, str) and self.botao_selecionado.startswith("ABA_RANK_"):
+            nova_aba = self.botao_selecionado.replace("ABA_RANK_", "")
+            self.trocar_aba_ranking(nova_aba)
         elif self.botao_selecionado == 1:
             self.entrar_menu_modo()
             self.botao_selecionado = 0
@@ -306,10 +310,9 @@ def executar(self):
                         if isinstance(item, tuple) and len(item) >= 2:
                             rect, val = item[:2]
                             if rect.collidepoint(mx, my):
-                                if isinstance(val, int):
-                                    self.botao_selecionado = val
-                                    self.acionar_botao()
-                                    break
+                                self.botao_selecionado = val
+                                self.acionar_botao()
+                                break # Interromper processamento de clique após acionar
                         elif hasattr(item, "collidepoint") and item.collidepoint(mx, my):
                             # Fallback para compatibilidade básica se algo ainda for apenas Rect
                             # (não deve acontecer após as mudanças)
@@ -323,8 +326,10 @@ def executar(self):
                 if self.estado in ["CONFIGURACOES", "TELA_INFO_MODOS"]:
                     continue
 
-                if num_botoes > 0 and self.estado != "MENU_MODO" and self.botao_selecionado < 0:
-                    self.botao_selecionado = 0
+                if num_botoes > 0 and self.estado != "MENU_MODO":
+                    # Se o botão selecionado for string ou menor que zero, reseta para o primeiro
+                    if not isinstance(self.botao_selecionado, int) or self.botao_selecionado < 0:
+                         self.botao_selecionado = 0
 
                 if self.estado == "INPUT_NOME":
                     if event.key == pygame.K_BACKSPACE:
@@ -333,9 +338,22 @@ def executar(self):
                         self.nome_jogador += event.unicode
 
                 if self.estado == "MENU_MODO":
+                    if event.key == pygame.K_r: # Atalho para Ranking
+                        self.entrar_ranking()
+                        continue
+                    
                     ids_menu = [item["id"] for item in self.obter_pads_menu()]
-                    if self.botao_selecionado not in ids_menu:
-                        self.botao_selecionado = ids_menu[0]
+                    # Se o botão selecionado não for um dos IDs (ex: for "IR_RANKING"), reseta para o primeiro
+                    if not isinstance(self.botao_selecionado, int) or self.botao_selecionado not in ids_menu:
+                        if self.botao_selecionado != "IR_RANKING": # Mantém se for o ranking
+                             self.botao_selecionado = ids_menu[0]
+
+                    # Se estiver no botão de ranking, setas levam de volta pros modos
+                    if self.botao_selecionado == "IR_RANKING":
+                        if event.key in [pygame.K_DOWN, pygame.K_s, pygame.K_LEFT, pygame.K_a]:
+                            self.botao_selecionado = ids_menu[0]
+                            self.sounds.play('menu_button')
+                        continue
 
                     indice_atual = ids_menu.index(self.botao_selecionado)
                     cols_menu = 4
