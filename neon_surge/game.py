@@ -105,6 +105,7 @@ class NeonSurge:
 
         self.botao_selecionado = 0
         self.botoes_hitboxes = []
+        self.botoes_menu = []
         self.guia_aba = "MODOS"
 
         self.player = None

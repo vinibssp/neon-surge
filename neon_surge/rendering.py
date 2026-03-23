@@ -12,7 +12,7 @@ from .entities import Particula
 from .hud.ui import (
     criar_painel_transparente, desenhar_botao_dinamico, desenhar_brilho_neon,
     desenhar_fundo_cyberpunk, desenhar_grade_jogo, desenhar_icone_som, 
-    desenhar_icone_engrenagem, desenhar_texto, desenhar_moldura
+    desenhar_icone_engrenagem, desenhar_texto, desenhar_moldura, Button
 )
 from .data import INIMIGOS_DATA
 
@@ -23,21 +23,8 @@ class Renderer:
     def desenhar(self):
         """Método principal delegado do NeonSurge."""
         mx, my = self.obter_posicao_mouse()
-
-        # Sincronizar mouse com botões (exceto em gameplay fluido)
-        if self.estado not in ["JOGANDO"]:
-            if (mx, my) != getattr(self, "ultima_pos_mouse", (0, 0)):
-                for item in self.botoes_hitboxes:
-                    if isinstance(item, tuple) and len(item) >= 2:
-                        rect, val = item[:2]
-                        if rect.collidepoint(mx, my):
-                            self.botao_selecionado = val
-                    elif hasattr(item, "collidepoint") and item.collidepoint(mx, my):
-                        # Fallback para quando ainda for apenas Rect
-                        pass 
-                self.ultima_pos_mouse = (mx, my)
-
         self.botoes_hitboxes = []
+        self.botoes_menu = [] # Reinicia a cada frame para reconstrução dinâmica
         
         # Fundo base para menus
         if self.estado not in ["JOGANDO", "PAUSA"]:
@@ -64,6 +51,24 @@ class Renderer:
 
         if self.estado in render_map:
             render_map[self.estado](self, mx, my)
+
+        # Sincronizar mouse com seleção (híbrido) - DEPOIS de renderizar para ter os botões na lista
+        if self.estado not in ["JOGANDO"]:
+            mouse_moveu = (mx, my) != getattr(self, "ultima_pos_mouse", (0, 0))
+            if mouse_moveu:
+                self.ultima_pos_mouse = (mx, my)
+                # Primeiro checa botões da nova classe (precedência)
+                for btn in self.botoes_menu:
+                    if btn.rect.collidepoint(mx, my) and btn.id is not None:
+                        if isinstance(btn.id, int):
+                            self.botao_selecionado = btn.id
+                
+                # Depois checa hitboxes legadas
+                for item in self.botoes_hitboxes:
+                    if isinstance(item, tuple) and len(item) >= 2:
+                        rect, val = item[:2]
+                        if rect.collidepoint(mx, my):
+                            self.botao_selecionado = val
 
         # HUD Topo (Sempre visível em menus/jogo)
         Renderer._render_hud_topo(self)
@@ -111,8 +116,10 @@ class Renderer:
         cursor = "_" if int(time.time() * 2) % 2 == 0 else ""
         desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 40)
 
-        btn = desenhar_botao_dinamico(self.tela, "INICIAR PROTOCOLO", self.fonte_sub, VERDE_NEON, cx, cy + 160, self.botao_selecionado == 0)
-        self.botoes_hitboxes.append((btn, 0))
+        btn = Button(cx, cy + 160, 400, 55, "INICIAR PROTOCOLO", self.fonte_sub, callback=self.acionar_botao, id=0)
+        btn.update((mx, my), self.botao_selecionado)
+        btn.draw(self.tela)
+        self.botoes_menu.append(btn)
 
     @staticmethod
     def _render_pergunta_modo(self, mx, my):
@@ -120,9 +127,20 @@ class Renderer:
         desenhar_texto(self.tela, "PLAYER RECONHECIDO", self.fonte_titulo, VERDE_NEON, cx, cy - 120)
         modo = self.modo_jogo.replace("_", " ")
         
-        b1 = desenhar_botao_dinamico(self.tela, f"CONTINUAR EM {modo}", self.fonte_sub, CIANO_NEON, cx, cy + 20, self.botao_selecionado == 0)
-        b2 = desenhar_botao_dinamico(self.tela, "ALTERAR MODO DE JOGO", self.fonte_sub, ROSA_NEON, cx, cy + 100, self.botao_selecionado == 1)
-        self.botoes_hitboxes.extend([(b1, 0), (b2, 1)])
+        def cont():
+            self.botao_selecionado = 0
+            self.acionar_botao()
+        def alt():
+            self.botao_selecionado = 1
+            self.acionar_botao()
+
+        b1 = Button(cx, cy + 20, 500, 55, f"CONTINUAR EM {modo}", self.fonte_sub, callback=cont, id=0)
+        b2 = Button(cx, cy + 100, 500, 55, "ALTERAR MODO DE JOGO", self.fonte_sub, callback=alt, id=1)
+        
+        for b in [b1, b2]:
+            b.update((mx, my), self.botao_selecionado)
+            b.draw(self.tela)
+            self.botoes_menu.append(b)
 
     @staticmethod
     def _render_menu_modo(self, mx, my):
@@ -130,27 +148,28 @@ class Renderer:
         modos = self.obter_pads_menu()
         
         # Botão Ranking (Superior Direito)
-        btn_rank = pygame.Rect(LARGURA_TELA - 200, 20, 180, 45)
-        h_rank = btn_rank.collidepoint(mx, my) or (self.botao_selecionado == "IR_RANKING")
-        pygame.draw.rect(self.tela, AZUL_ESCURO, btn_rank, border_radius=8)
-        pygame.draw.rect(self.tela, AMARELO_DADO if h_rank else CINZA_ESCURO, btn_rank, 2, border_radius=8)
-        desenhar_texto(self.tela, "🏆 RANKING", self.fonte_sub, AMARELO_DADO if h_rank else BRANCO, btn_rank.centerx, btn_rank.centery)
-        self.botoes_hitboxes.append((btn_rank, "IR_RANKING"))
+        def ir_rank():
+            self.botao_selecionado = "IR_RANKING"
+            self.acionar_botao()
+        
+        btn_rank = Button(LARGURA_TELA - 110, 42, 180, 45, "🏆 RANKING", self.fonte_sub, callback=ir_rank, id="IR_RANKING")
+        btn_rank.update((mx, my), self.botao_selecionado)
+        btn_rank.draw(self.tela)
+        self.botoes_menu.append(btn_rank)
 
         # Botão Sair (Canto Inferior Esquerdo)
-        btn_sair = pygame.Rect(20, ALTURA_TELA - 65, 180, 45)
-        h_sair = btn_sair.collidepoint(mx, my) or (self.botao_selecionado == "SAIR_JOGO")
-        pygame.draw.rect(self.tela, (40, 10, 10), btn_sair, border_radius=8)
-        pygame.draw.rect(self.tela, VERMELHO_SANGUE if h_sair else CINZA_ESCURO, btn_sair, 2, border_radius=8)
-        desenhar_texto(self.tela, "🚪 SAIR", self.fonte_sub, VERMELHO_SANGUE if h_sair else BRANCO, btn_sair.centerx, btn_sair.centery)
-        self.botoes_hitboxes.append((btn_sair, "SAIR_JOGO"))
+        def sair():
+            self.botao_selecionado = "SAIR_JOGO"
+            self.acionar_botao()
+            
+        btn_sair = Button(110, ALTURA_TELA - 42, 180, 45, "🚪 SAIR", self.fonte_sub, callback=sair, id="SAIR_JOGO")
+        btn_sair.update((mx, my), self.botao_selecionado)
+        btn_sair.draw(self.tela)
+        self.botoes_menu.append(btn_sair)
 
-        # Info do Modo (Painel Superior)
-        # Se for string (Ranking), pegamos o primeiro modo apenas para exibir algo no painel
-        id_busca = self.botao_selecionado if isinstance(self.botao_selecionado, int) else modos[0]["id"]
+        id_busca = self.botao_selecionado if isinstance(self.botao_selecionado, int) else 0
         sel = next((m for m in modos if m["id"] == id_busca), modos[0])
 
-        # Painel Descritivo - Refinado
         pw, ph = 1000, 190
         rect_desc = pygame.Rect(cx - pw//2, cy - 230, pw, ph)
         self.tela.blit(criar_painel_transparente(pw, ph), rect_desc.topleft)
@@ -160,39 +179,48 @@ class Renderer:
         desenhar_texto(self.tela, sel["tag"], self.fonte_sub, BRANCO, cx, rect_desc.top + 110)
         desenhar_texto(self.tela, sel["descricao"], self.fonte_texto, BRANCO, cx, rect_desc.top + 155)
 
-        # Grid de 4 Colunas x 2 Linhas (Total 8 itens)
         cw, ch = 240, 95
         gx, gy = 20, 20
         cols = 4
+        rows = 2
         total_w = (cols * cw) + ((cols-1) * gx)
+        total_h = (rows * ch) + ((rows-1) * gy)
+        
         sx = cx - total_w // 2
         sy = cy + 10
 
         for i, m in enumerate(modos):
             r, c = i // cols, i % cols
-            rect = pygame.Rect(sx + c*(cw+gx), sy + r*(ch+gy), cw, ch)
-            ativo = (self.botao_selecionado == m["id"])
+            bx, by = sx + c*(cw+gx) + cw//2, sy + r*(ch+gy) + ch//2
             
-            # Cores dinâmicas para botões
-            cf = m["cor"] if ativo else (15, 20, 30)
-            ct = PRETO_FUNDO if ativo else BRANCO
-            
-            pygame.draw.rect(self.tela, cf, rect, border_radius=12)
-            pygame.draw.rect(self.tela, m["cor"] if not ativo else BRANCO, rect, 2, border_radius=12)
-            
-            desenhar_texto(self.tela, m["texto"], self.fonte_sub, ct, rect.centerx, rect.top + 35)
-            desenhar_texto(self.tela, m["tag"], self.fonte_desc, PRETO_FUNDO if ativo else m["cor"], rect.centerx, rect.top + 65)
-            self.botoes_hitboxes.append((rect, m["id"]))
+            def select_mode(val=m["id"]):
+                self.botao_selecionado = val
+                self.acionar_botao()
+
+            btn = Button(bx, by, cw, ch, m["texto"], self.fonte_sub, callback=select_mode, id=m["id"])
+            btn.update((mx, my), self.botao_selecionado)
+            btn.draw(self.tela)
+            self.botoes_menu.append(btn)
 
     @staticmethod
     def _render_info_modos(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
         aba = getattr(self, "guia_aba", "MODOS")
         
-        # Abas
-        b1 = desenhar_botao_dinamico(self.tela, "GUIA DE SISTEMA", self.fonte_texto, AMARELO_DADO if aba=="MODOS" else CINZA_CLARO, cx - 160, 130, self.botao_selecionado == 0, 280, 45)
-        b2 = desenhar_botao_dinamico(self.tela, "MAPEAMENTO DE TECLAS", self.fonte_texto, VERDE_NEON if aba=="HOTKEYS" else CINZA_CLARO, cx + 160, 130, self.botao_selecionado == 1, 280, 45)
-        self.botoes_hitboxes.extend([(b1, 0), (b2, 1)])
+        def set_aba_modos():
+            self.guia_aba = "MODOS"
+            self.botao_selecionado = 0
+        def set_aba_keys():
+            self.guia_aba = "HOTKEYS"
+            self.botao_selecionado = 1
+
+        b1 = Button(cx - 160, 130, 280, 45, "GUIA DE SISTEMA", self.fonte_texto, callback=set_aba_modos, id=0)
+        b2 = Button(cx + 160, 130, 280, 45, "MAPEAMENTO DE TECLAS", self.fonte_texto, callback=set_aba_keys, id=1)
+        
+        for b in [b1, b2]:
+            b.update((mx, my), self.botao_selecionado)
+            b.draw(self.tela)
+            self.botoes_menu.append(b)
 
         pw, ph = LARGURA_TELA - 100, 420
         rect = pygame.Rect(50, 175, pw, ph)
@@ -212,8 +240,13 @@ class Renderer:
                 desenhar_texto(self.tela, t + ":", self.fonte_sub, AMARELO_DADO, rect.left + 60, y, "esquerda")
                 desenhar_texto(self.tela, d, self.fonte_texto, BRANCO, rect.left + 60, y + 35, "esquerda")
 
-        btn_v = desenhar_botao_dinamico(self.tela, "RETORNAR AO MENU", self.fonte_sub, VERDE_NEON, cx, cy + 300, self.botao_selecionado == 2)
-        self.botoes_hitboxes.append((btn_v, 2))
+        def voltar():
+            self.botao_selecionado = 2
+            self.acionar_botao()
+        btn_v = Button(cx, cy + 300, 400, 55, "RETORNAR AO MENU", self.fonte_sub, callback=voltar, id=2)
+        btn_v.update((mx, my), self.botao_selecionado)
+        btn_v.draw(self.tela)
+        self.botoes_menu.append(btn_v)
 
     @staticmethod
     def _render_tela_inimigos(self, mx, my):
@@ -222,60 +255,121 @@ class Renderer:
         aba = getattr(self, "guia_aba", "COMUNS")
         cor_t = VERDE_NEON if is_t else VERMELHO_SANGUE
         
-        # Abas
+        # Abas de Categoria
         cats = ["COMUNS", "MINIBOSSES", "BOSSES"]
-        for i, c in enumerate(cats):
-            bx = cx - 280 + (i * 280)
-            btn = desenhar_botao_dinamico(self.tela, c, self.fonte_texto, cor_t if aba==c else CINZA_CLARO, bx, 130, self.botao_selecionado == i, 260, 45)
-            self.botoes_hitboxes.append((btn, i))
-
-        # Painel
-        pw, ph = LARGURA_TELA - 80, 440
-        rect = pygame.Rect(40, 175, pw, ph)
-        self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
-        desenhar_moldura(self.tela, rect, cor_t)
-
-        items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == aba]
+        if is_t: cats.append("GUIA")
         
-        # Lista (Esquerda)
-        for i, (tid, data) in enumerate(items):
-            iy = rect.top + 30 + i * 65
-            ir = pygame.Rect(rect.left + 30, iy, 380, 55)
-            foc = (self.botao_selecionado == 3 + i)
-            
-            pygame.draw.rect(self.tela, (*data["cor"], 50 if foc else 15), ir, border_radius=10)
-            pygame.draw.rect(self.tela, data["cor"] if foc else CINZA_ESCURO, ir, 2, border_radius=10)
-            
-            pygame.draw.circle(self.tela, data["cor"], (ir.left + 30, ir.centery), 10)
-            desenhar_texto(self.tela, data["nome"], self.fonte_sub, BRANCO, ir.left + 65, ir.centery, "esquerda")
-            
-            if is_t:
-                qtd = self.inimigos_treino_selecionados.get(tid, 0)
-                desenhar_texto(self.tela, f"QTD: {qtd}", self.fonte_sub, VERDE_NEON if qtd>0 else CINZA_CLARO, ir.right - 60, ir.centery)
-            self.botoes_hitboxes.append((ir, 3 + i))
+        n_abas = len(cats)
+        tw = n_abas * 240
+        start_x = cx - tw // 2
+        
+        for i, c in enumerate(cats):
+            bx = start_x + (i * 240) + 120
+            def change_tab(val=i):
+                self.botao_selecionado = val
+                self.acionar_botao()
 
-        # Detalhes (Direita)
-        sel_idx = self.botao_selecionado - 3
-        if 0 <= sel_idx < len(items):
-            tid, data = items[sel_idx]
-            dx = rect.left + 460
-            desenhar_texto(self.tela, data["nome"], self.fonte_titulo, data["cor"], dx, rect.top + 70, "esquerda")
-            pygame.draw.line(self.tela, data["cor"], (dx, rect.top + 130), (rect.right - 40, rect.top + 130), 3)
+            btn = Button(bx, 130, 220, 45, c, self.fonte_texto, callback=change_tab, id=i)
+            btn.update((mx, my), self.botao_selecionado)
+            btn.draw(self.tela)
+            self.botoes_menu.append(btn)
+
+        # Painel Principal
+        pw, ph = LARGURA_TELA - 80, 440
+        rect_p = pygame.Rect(40, 175, pw, ph)
+        self.tela.blit(criar_painel_transparente(pw, ph), rect_p.topleft)
+        desenhar_moldura(self.tela, rect_p, cor_t)
+
+        if aba == "GUIA":
+            Renderer._render_guia_treino(self, rect_p)
+        else:
+            items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == aba]
             
-            # Descrição Wrap
-            palavras = data["desc"].split()
-            linhas, curr = [], ""
-            for p in palavras:
-                if len(curr + p) < 45: curr += p + " "
-                else: linhas.append(curr); curr = p + " "
-            linhas.append(curr)
-            for i, l in enumerate(linhas):
-                desenhar_texto(self.tela, l, self.fonte_texto, BRANCO, dx, rect.top + 160 + i*35, "esquerda")
+            # Lista de Inimigos (Esquerda)
+            for i, (tid, data) in enumerate(items):
+                iy = rect_p.top + 30 + i * 65
+                ix = rect_p.left + 240
+                
+                def select_enemy(idx=4+i):
+                    self.botao_selecionado = idx
+                    self.acionar_botao()
+
+                btn_inim = Button(ix, iy + 27, 420, 55, data["nome"], self.fonte_sub, callback=select_enemy, id=4+i)
+                btn_inim.update((mx, my), self.botao_selecionado)
+                btn_inim.draw(self.tela)
+                self.botoes_menu.append(btn_inim)
+
+                pygame.draw.circle(self.tela, data["cor"], (rect_p.left + 60, iy + 27), 10)
+                
+                if is_t:
+                    qtd = self.inimigos_treino_selecionados.get(tid, 0)
+                    bx_q = rect_p.left + 350
+                    
+                    def dec_enemy(t=tid):
+                        self.inimigos_treino_selecionados[t] = max(0, self.inimigos_treino_selecionados.get(t, 0) - 1)
+                        self.sounds.play('menu_button')
+
+                    btn_m = Button(bx_q - 45, iy + 27, 35, 35, "-", self.fonte_sub, callback=dec_enemy, id=f"dec_{tid}")
+                    btn_m.update((mx, my))
+                    btn_m.draw(self.tela)
+                    self.botoes_menu.append(btn_m)
+
+                    desenhar_texto(self.tela, str(qtd), self.fonte_sub, VERDE_NEON if qtd > 0 else CINZA_CLARO, bx_q, iy + 27)
+
+                    def inc_enemy(t=tid):
+                        self.inimigos_treino_selecionados[t] = min(10, self.inimigos_treino_selecionados.get(t, 0) + 1)
+                        self.sounds.play('menu_button')
+
+                    btn_p = Button(bx_q + 25, iy + 27, 35, 35, "+", self.fonte_sub, callback=inc_enemy, id=f"inc_{tid}")
+                    btn_p.update((mx, my))
+                    btn_p.draw(self.tela)
+                    self.botoes_menu.append(btn_p)
+
+            # Detalhes (Direita)
+            sel_idx = self.botao_selecionado - 4
+            if 0 <= sel_idx < len(items):
+                tid, data = items[sel_idx]
+                dx = rect_p.left + 480
+                desenhar_texto(self.tela, data["nome"], self.fonte_titulo, data["cor"], dx, rect_p.top + 70, "esquerda")
+                pygame.draw.line(self.tela, data["cor"], (dx, rect_p.top + 130), (rect_p.right - 40, rect_p.top + 130), 3)
+                
+                palavras = data["desc"].split()
+                linhas, curr = [], ""
+                for p in palavras:
+                    if len(curr + p) < 40: curr += p + " "
+                    else: linhas.append(curr); curr = p + " "
+                linhas.append(curr)
+                for i, l in enumerate(linhas):
+                    desenhar_texto(self.tela, l, self.fonte_texto, BRANCO, dx, rect_p.top + 160 + i*35, "esquerda")
 
         txt_b = "INICIAR SIMULAÇÃO" if is_t else "VOLTAR AO MENU"
-        last_idx = 3 + len(items)
-        btn_f = desenhar_botao_dinamico(self.tela, txt_b, self.fonte_sub, cor_t if is_t else CIANO_NEON, cx, rect.bottom + 65, self.botao_selecionado == last_idx)
-        self.botoes_hitboxes.append((btn_f, last_idx))
+        def final_action():
+            self.botao_selecionado = 99
+            self.acionar_botao()
+
+        btn_f = Button(cx, rect_p.bottom + 65, 400, 55, txt_b, self.fonte_sub, callback=final_action, id=99)
+        btn_f.update((mx, my), self.botao_selecionado)
+        btn_f.draw(self.tela)
+        self.botoes_menu.append(btn_f)
+
+    @staticmethod
+    def _render_guia_treino(self, rect):
+        cx = rect.centerx
+        desenhar_texto(self.tela, "PROTOCOLOS DE TREINAMENTO", self.fonte_sub, VERDE_NEON, cx, rect.top + 50)
+        
+        instrucoes = [
+            ("PERSONALIZAÇÃO", "Selecione a quantidade de cada inimigo usando os botões [+] e [-]."),
+            ("COMBATE REALISTA", "Inimigos manterão seus comportamentos e danos originais."),
+            ("IMORTALIDADE", "Neste modo, sua nave não é destruída. Use para aprender padrões."),
+            ("CONTROLES", "Use as setas para navegar e clique ou use ENTER para ajustar."),
+            ("EXPERIMENTAL", "Você pode spawnar até 10 unidades de cada tipo simultaneamente.")
+        ]
+        
+        for i, (tit, desc) in enumerate(instrucoes):
+            y = rect.top + 110 + i * 65
+            desenhar_texto(self.tela, f"• {tit}:", self.fonte_texto, VERDE_NEON, rect.left + 60, y, "esquerda")
+            desenhar_texto(self.tela, desc, self.fonte_desc, BRANCO, rect.left + 60, y + 25, "esquerda")
+
 
     @staticmethod
     def _render_ranking(self, mx, my):
@@ -283,35 +377,32 @@ class Renderer:
         aba_atual = getattr(self, "ranking_aba", "CORRIDA")
         veio_de_fim = getattr(self, "veio_de_fim_partida", False)
         
-        # Cabeçalho
         desenhar_texto(self.tela, "LEADERBOARDS MULTIVERSAIS", self.fonte_titulo, AMARELO_DADO, cx, 60)
         
         if not veio_de_fim:
-            # Seleção de Abas apenas se NÃO vier de fim de partida
             modos_rank = ["CORRIDA", "SOBREVIVENCIA", "HARDCORE", "LABIRINTO", "CORRIDA_INFINITA"]
             for i, m in enumerate(modos_rank):
                 rx = cx - 440 + (i * 220)
-                ativo = (aba_atual == m)
-                btn = desenhar_botao_dinamico(self.tela, m.replace("_", " "), self.fonte_desc, CIANO_NEON if ativo else CINZA_CLARO, rx, 115, False, 200, 40)
-                if btn.collidepoint(mx, my):
-                    pygame.draw.rect(self.tela, CIANO_NEON, btn, 2, border_radius=8)
-                self.botoes_hitboxes.append((btn, f"ABA_RANK_{m}"))
+                def change_rank(val=m):
+                    self.trocar_aba_ranking(val)
+                    self.botao_selecionado = f"ABA_RANK_{val}"
+                
+                btn = Button(rx, 115, 200, 40, m.replace("_", " "), self.fonte_desc, callback=change_rank, id=f"ABA_RANK_{m}")
+                btn.update((mx, my), self.botao_selecionado)
+                btn.draw(self.tela)
+                self.botoes_menu.append(btn)
         else:
-            # Título do Modo Atual
             desenhar_texto(self.tela, f"MODO: {aba_atual.replace('_', ' ')}", self.fonte_sub, CIANO_NEON, cx, 115)
 
-        # Painel Principal
         pw, ph = LARGURA_TELA - 100, 460
         rect = pygame.Rect(50, 155, pw, ph)
         self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
         desenhar_moldura(self.tela, rect, CIANO_NEON)
 
-        # Divisão Local vs Global
         w_metade = (pw - 60) // 2
         rect_local = pygame.Rect(rect.left + 20, rect.top + 20, w_metade, ph - 40)
         rect_global = pygame.Rect(rect.centerx + 10, rect.top + 20, w_metade, ph - 40)
         
-        # Helper para desenhar listas com destaque
         def draw_rank_list(r_area, titulo, dados, is_global):
             pygame.draw.rect(self.tela, (15, 25, 45), r_area, border_radius=12)
             desenhar_texto(self.tela, titulo, self.fonte_sub, VERDE_NEON, r_area.centerx, r_area.top + 35)
@@ -325,36 +416,24 @@ class Renderer:
                 desenhar_texto(self.tela, "CARREGANDO DADOS...", self.fonte_desc, AMARELO_DADO, r_area.centerx, r_area.centery)
                 return
 
-            id_atual = getattr(self, "id_sessao_atual", None)
-            destacou_nesta_lista = False
-
             for i, item in enumerate(dados[:10]):
                 y = r_area.top + 95 + i * 34
-                
-                # Identificar se é o score atual (local ou global)
-                # O highlight usa player_name + score exato
                 is_current = False
                 nome = item.get("nome") or item.get("player_name", "???")
                 score = item.get("tempo") or item.get("fase") or item.get("score", 0)
                 
-                if veio_de_fim and not destacou_nesta_lista:
+                if veio_de_fim:
                     if str(nome).upper() == getattr(self, "nome_jogador", "").upper():
-                        # Checar se o score bate com o recém-salvo arredondando para evitar diferenças do global
                         if f"{float(score):.1f}" == f"{getattr(self, 'ultimo_tempo', -1.0):.1f}":
                             is_current = True
-                            destacou_nesta_lista = True
                 
                 cor = VERDE_NEON if is_current else (AMARELO_DADO if i == 0 else BRANCO)
-
                 desenhar_texto(self.tela, f"{i+1}º", self.fonte_desc, cor, r_area.left + 35, y, "esquerda")
                 desenhar_texto(self.tela, str(nome).upper(), self.fonte_desc, cor, r_area.left + 85, y, "esquerda")
-                
                 txt_score = f"{float(score):.1f}s"
                 if "INFINITA" in aba_atual or "LABIRINTO" in aba_atual: txt_score = f"F{int(score)}"
-                
                 desenhar_texto(self.tela, txt_score, self.fonte_desc, cor, r_area.right - 35, y, "direita")
 
-        # Dados Locais
         chave_local = aba_atual.capitalize()
         if aba_atual == "LABIRINTO": chave_local = "Labirinto_Infinito"
         elif aba_atual == "CORRIDA_INFINITA": chave_local = "Corrida_Infinita"
@@ -363,197 +442,158 @@ class Renderer:
         draw_rank_list(rect_local, "💾 RECORDS LOCAIS", dados_locais, False)
         draw_rank_list(rect_global, "🌐 TOP 10 GLOBAL", getattr(self, "ranking_global", []), True)
 
-        # Botões Inferiores
         by = rect.bottom + 65
+        def ir_menu():
+            self.botao_selecionado = 1 if veio_de_fim else 0
+            self.acionar_botao()
+        def tentar():
+            self.botao_selecionado = 0
+            self.acionar_botao()
+        def novo():
+            self.botao_selecionado = 2
+            self.acionar_botao()
+
         if veio_de_fim:
-            b_tentar = desenhar_botao_dinamico(self.tela, "TENTAR NOVAMENTE", self.fonte_sub, CIANO_NEON, cx - 280, by, self.botao_selecionado == 0, 250, 45)
-            self.botoes_hitboxes.append((b_tentar, 0))
-            
-            b_menu = desenhar_botao_dinamico(self.tela, "MENU PRINCIPAL", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 1, 250, 45)
-            self.botoes_hitboxes.append((b_menu, 1))
-            
-            b_novo = desenhar_botao_dinamico(self.tela, "NOVO JOGADOR", self.fonte_sub, CIANO_NEON, cx + 280, by, self.botao_selecionado == 2, 250, 45)
-            self.botoes_hitboxes.append((b_novo, 2))
+            b1 = Button(cx - 280, by, 250, 45, "TENTAR NOVAMENTE", self.fonte_sub, callback=tentar, id=0)
+            b2 = Button(cx, by, 250, 45, "MENU PRINCIPAL", self.fonte_sub, callback=ir_menu, id=1)
+            b3 = Button(cx + 280, by, 250, 45, "NOVO JOGADOR", self.fonte_sub, callback=novo, id=2)
+            for b in [b1, b2, b3]:
+                b.update((mx, my), self.botao_selecionado)
+                b.draw(self.tela)
+                self.botoes_menu.append(b)
         else:
-            b_menu = desenhar_botao_dinamico(self.tela, "VOLTAR AO MENU", self.fonte_sub, CIANO_NEON, cx, by, self.botao_selecionado == 0, 350, 50)
-            self.botoes_hitboxes.append((b_menu, 0))
+            btn = Button(cx, by, 350, 50, "VOLTAR AO MENU", self.fonte_sub, callback=ir_menu, id=0)
+            btn.update((mx, my), self.botao_selecionado)
+            btn.draw(self.tela)
+            self.botoes_menu.append(btn)
 
     @staticmethod
     def _render_configuracoes(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        pw, ph = 840, 620 # Painel levemente maior para melhores margens
+        pw, ph = 840, 620
         rect = pygame.Rect(cx - pw//2, cy - ph//2, pw, ph)
-        
-        # Fundo e Moldura
         self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
         desenhar_moldura(self.tela, rect, CIANO_NEON, "CONFIGURAÇÕES DE SISTEMA", self.fonte_sub)
 
         def draw_neon_bar(label, y, vol, idx, cor):
             foc = (self.botao_selecionado == idx)
-            # Layout aprimorado: Label com margem esquerda generosa, Barra alinhada
-            lx = rect.left + 60
-            bx = cx - 40
+            lx, bx = rect.left + 60, cx - 40
             bw, bh = 340, 32
-            
-            # Label com destaque
-            cor_label = BRANCO if foc else CINZA_CLARO
-            desenhar_texto(self.tela, label, self.fonte_sub, cor_label, lx, y, "esquerda")
-            
-            # Container da barra
+            desenhar_texto(self.tela, label, self.fonte_sub, BRANCO if foc else CINZA_CLARO, lx, y, "esquerda")
             rect_bg = pygame.Rect(bx, y - bh//2, bw, bh)
             pygame.draw.rect(self.tela, (12, 22, 40), rect_bg, border_radius=10)
             pygame.draw.rect(self.tela, cor if foc else CINZA_ESCURO, rect_bg, 2, border_radius=10)
             
-            # Segmentos com padding interno refinado
-            num_segmentos = 10
-            padding_interno = 6
-            seg_w = (bw - (padding_interno * 2)) // num_segmentos
-            preenchidos = int(vol * num_segmentos)
-            
-            for i in range(num_segmentos):
-                seg_rect = pygame.Rect(bx + padding_interno + i*seg_w + 2, y - bh//2 + 6, seg_w - 4, bh - 12)
-                if i < preenchidos:
-                    pygame.draw.rect(self.tela, cor, seg_rect, border_radius=3)
-                    if foc:
-                        desenhar_brilho_neon(self.tela, cor, seg_rect.centerx, seg_rect.centery, 10, 1)
-                else:
-                    pygame.draw.rect(self.tela, (25, 35, 55), seg_rect, border_radius=3)
+            num_seg, pad = 10, 6
+            seg_w = (bw - (pad * 2)) // num_seg
+            pre = int(vol * num_seg)
+            for i in range(num_seg):
+                sr = pygame.Rect(bx + pad + i*seg_w + 2, y - bh//2 + 6, seg_w - 4, bh - 12)
+                if i < pre:
+                    pygame.draw.rect(self.tela, cor, sr, border_radius=3)
+                    if foc: desenhar_brilho_neon(self.tela, cor, sr.centerx, sr.centery, 10, 1)
+                else: pygame.draw.rect(self.tela, (25, 35, 55), sr, border_radius=3)
 
-            # Botões +/- com espaçamento maior
-            h_menos = pygame.Rect(bx - 65, y - 22, 44, 44)
-            h_mais = pygame.Rect(bx + bw + 21, y - 22, 44, 44)
+            def m_vol(): self.alterar_volume_musica(-0.1) if idx==0 else self.alterar_volume_sfx(-0.1)
+            def p_vol(): self.alterar_volume_musica(0.1) if idx==0 else self.alterar_volume_sfx(0.1)
             
-            def draw_adj_btn(r, txt, active):
-                h = r.collidepoint(mx, my)
-                c = cor if h else (cor if active else (45, 55, 75))
-                pygame.draw.rect(self.tela, c, r, border_radius=8, width=0 if h else 2)
-                desenhar_texto(self.tela, txt, self.fonte_sub, PRETO_FUNDO if h else BRANCO, r.centerx, r.centery)
+            bm = Button(bx - 42, y, 44, 44, "-", self.fonte_sub, callback=m_vol, id=f"v{idx}_-")
+            bp = Button(bx + bw + 42, y, 44, 44, "+", self.fonte_sub, callback=p_vol, id=f"v{idx}_+")
+            for b in [bm, bp]:
+                b.update((mx, my))
+                b.draw(self.tela)
+                self.botoes_menu.append(b)
 
-            draw_adj_btn(h_menos, "-", foc)
-            draw_adj_btn(h_mais, "+", foc)
-            
-            self.botoes_hitboxes.append((h_menos, f"val_{idx}_-"))
-            self.botoes_hitboxes.append((h_mais, f"val_{idx}_+"))
-            self.botoes_hitboxes.append((pygame.Rect(rect.left + 40, y-35, pw - 80, 70), idx))
-
-        # Posicionamento vertical com gaps constantes e equilibrados
-        start_y = rect.top + 140
-        gap_y = 110
+        draw_neon_bar("VOLUME MÚSICA", rect.top + 140, self.sounds.volume_musica, 0, CIANO_NEON)
+        draw_neon_bar("EFEITOS SONOROS", rect.top + 250, self.sounds.volume_sfx, 1, ROSA_NEON)
         
-        draw_neon_bar("VOLUME MÚSICA", start_y, self.sounds.volume_musica, 0, CIANO_NEON)
-        draw_neon_bar("EFEITOS SONOROS", start_y + gap_y, self.sounds.volume_sfx, 1, ROSA_NEON)
-        
-        # Card de Resolução (Layout Card Largo)
-        ry = start_y + gap_y * 2
+        ry = rect.top + 360
         foc_res = (self.botao_selecionado == 2)
         rect_res = pygame.Rect(rect.left + 50, ry - 45, pw - 100, 90)
-        
         pygame.draw.rect(self.tela, (18, 28, 48), rect_res, border_radius=15)
         pygame.draw.rect(self.tela, VERDE_NEON if foc_res else CINZA_ESCURO, rect_res, 2, border_radius=15)
-        
         desenhar_texto(self.tela, "RESOLUÇÃO DE VÍDEO", self.fonte_sub, BRANCO if foc_res else CINZA_CLARO, rect.left + 80, ry, "esquerda")
         
         res_txt = f"{self.resolucoes[self.res_idx][0]}x{self.resolucoes[self.res_idx][1]}"
         if self.is_fullscreen: res_txt = f"FULLSCREEN [{res_txt}]"
-        
-        # Texto da resolução e setas com margens generosas
         tx_pos = rect.left + 560
         desenhar_texto(self.tela, res_txt, self.fonte_sub, VERDE_NEON, tx_pos, ry)
         
-        btn_l = pygame.Rect(tx_pos - 160, ry - 22, 44, 44)
-        btn_r = pygame.Rect(tx_pos + 115, ry - 22, 44, 44)
-        
-        for r, t, act in [(btn_l, "<", "res_-"), (btn_r, ">", "res_+")]:
-            h = r.collidepoint(mx, my)
-            pygame.draw.rect(self.tela, VERDE_NEON if h else (45, 55, 75), r, border_radius=8, width=0 if h else 2)
-            desenhar_texto(self.tela, t, self.fonte_sub, PRETO_FUNDO if h else BRANCO, r.centerx, r.centery)
-            self.botoes_hitboxes.append((r, act))
-        
-        self.botoes_hitboxes.append((rect_res, 2))
+        def res_m(): self.alterar_resolucao(-1)
+        def res_p(): self.alterar_resolucao(1)
+        bl = Button(tx_pos - 160, ry, 44, 44, "<", self.fonte_sub, callback=res_m, id="res_-")
+        br = Button(tx_pos + 115, ry, 44, 44, ">", self.fonte_sub, callback=res_p, id="res_+")
+        for b in [bl, br]:
+            b.update((mx, my))
+            b.draw(self.tela)
+            self.botoes_menu.append(b)
 
-        # Botão Confirmar no rodapé com boa distância do conteúdo
-        btn_c = desenhar_botao_dinamico(self.tela, "SALVAR E RETORNAR AO MENU", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 80, self.botao_selecionado == 3, 450, 60)
-        self.botoes_hitboxes.append((btn_c, 3))
+        btn_c = Button(cx, rect.bottom - 80, 450, 60, "SALVAR E RETORNAR AO MENU", self.fonte_sub, callback=self.acionar_botao, id=3)
+        btn_c.update((mx, my), self.botao_selecionado)
+        btn_c.draw(self.tela)
+        self.botoes_menu.append(btn_c)
 
     @staticmethod
     def _render_gameplay(self, mx, my):
-        # Shake de tela
         off_x = random.randint(-8, 8) if self.shake_frames > 0 else 0
         off_y = random.randint(-8, 8) if self.shake_frames > 0 else 0
         if self.shake_frames > 0 and self.estado == "JOGANDO": self.shake_frames -= 1
-
         self.tela.fill(PRETO_FUNDO)
         surf = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
         desenhar_grade_jogo(surf)
-
-        # Labirinto
         if self.modo_jogo == "LABIRINTO":
             for w in self.labirinto_paredes:
                 pygame.draw.rect(surf, (22, 34, 58), w)
                 pygame.draw.rect(surf, CIANO_NEON, w, 1)
             Renderer._render_lab_ui(self, surf)
-
-        # Portais
         Renderer._render_portais(self, surf)
-
-        # Entidades
         for d in self.coletaveis:
             desenhar_brilho_neon(surf, AMARELO_DADO, d.x, d.y, 6, 2)
             pygame.draw.rect(surf, AMARELO_DADO, (int(d.x)-6, int(d.y)-6, 12, 12), border_radius=2)
-
         if self.portal_aberto: Renderer._render_portal_saida(self, surf)
-
         for p in self.particulas: p.draw(surf)
         for i in self.inimigos: i.draw(surf)
         for b in self.buracos_negros: b.draw(surf)
-        
-        # Lava (Survival)
         if self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
             self.lava_manager.draw(surf, self.fonte_titulo, self.fonte_sub)
-
         Renderer._render_projeteis(self, surf)
-        
         self.player.draw(surf)
         self.tela.blit(surf, (off_x, off_y))
-
-        # HUD Gameplay
         Renderer._render_hud_gameplay(self)
-
-        # Menu de Pausa Overlay
-        if self.estado == "PAUSA":
-            Renderer._render_pausa(self)
+        if self.estado == "PAUSA": Renderer._render_pausa(self, mx, my)
 
     @staticmethod
-    def _render_pausa(self):
+    def _render_pausa(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
         overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         self.tela.blit(overlay, (0, 0))
-        
         desenhar_texto(self.tela, "SISTEMA EM PAUSA", self.fonte_titulo, BRANCO, cx, cy - 120)
         
-        btns = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE SISTEMA", AMARELO_DADO)]
-        if self.modo_jogo == "CORRIDA": btns.append(("REINICIAR CORRIDA", CIANO_NEON))
-        btns.append(("ABANDONAR MISSÃO", VERMELHO_SANGUE))
+        btns_data = [("CONTINUAR OPERAÇÃO", VERDE_NEON), ("AJUSTES DE SISTEMA", AMARELO_DADO)]
+        if self.modo_jogo == "CORRIDA": btns_data.append(("REINICIAR CORRIDA", CIANO_NEON))
+        btns_data.append(("ABANDONAR MISSÃO", VERMELHO_SANGUE))
         
-        for i, (t, c) in enumerate(btns):
-            y = cy + i * 70
-            rect = desenhar_botao_dinamico(self.tela, t, self.fonte_sub, c, cx, y, self.botao_selecionado == i, 400, 50)
-            self.botoes_hitboxes.append((rect, i))
+        for i, (t, c) in enumerate(btns_data):
+            def cb(idx=i):
+                self.botao_selecionado = idx
+                self.acionar_botao()
+            btn = Button(cx, cy + i * 70, 400, 50, t, self.fonte_sub, callback=cb, id=i)
+            btn.update((mx, my), self.botao_selecionado)
+            btn.draw(self.tela)
+            self.botoes_menu.append(btn)
 
     @staticmethod
     def _render_lab_ui(self, surf):
         t = max(0.0, float(getattr(self, "labirinto_tempo_restante", 0.0)))
         cor = VERMELHO_SANGUE if t < 8 else (AMARELO_DADO if t < 15 else CIANO_NEON)
         desenhar_texto(surf, f"TEMPO: {t:04.1f}s", self.fonte_sub, cor, LARGURA_TELA // 2, 90)
-
         for a in self.labirinto_armadilhas:
             p = abs(math.sin((time.time()*8) + a.get("fase",0)))
             r = a["raio"] + p*2.5
             desenhar_brilho_neon(surf, VERMELHO_SANGUE, a["pos"].x, a["pos"].y, r+4, 2)
             pygame.draw.circle(surf, VERMELHO_SANGUE, (int(a["pos"].x), int(a["pos"].y)), int(r))
             pygame.draw.circle(surf, BRANCO, (int(a["pos"].x), int(a["pos"].y)), max(1, int(r//3)))
-
         for g in self.labirinto_fantasmas:
             Renderer._draw_fancy_circle(surf, g["pos"], g.get("raio",10), g.get("cor", ROSA_NEON))
 
@@ -565,12 +605,10 @@ class Renderer:
             pulso = abs(math.sin(time.time()*6)) * 3
             r = r_base + pulso
             c = (int(p["pos"].x), int(p["pos"].y))
-            
             desenhar_brilho_neon(surf, cor, c[0], c[1], r+2, 3)
             pygame.draw.circle(surf, (*cor, 120), c, int(r+3))
             pygame.draw.circle(surf, PRETO_FUNDO, c, int(r-4))
             pygame.draw.circle(surf, cor, c, int(r), 3)
-            
             ang = (time.time()*6) % (math.pi*2)
             pygame.draw.arc(surf, BRANCO, pygame.Rect(c[0]-r, c[1]-r, r*2, r*2), ang, ang+math.pi*1.3, 4)
 
@@ -580,8 +618,7 @@ class Renderer:
             pos = pr.get("pos_visual", (pr["pos"].x, pr["pos"].y))
             cor = pr.get("cor", LARANJA_NEON)
             if pr.get("tipo") == "bomba":
-                alvo = pr["alvo_final"]
-                re = pr["raio_explosao"]
+                alvo, re = pr["alvo_final"], pr["raio_explosao"]
                 alpha = int(80 + math.sin(time.time()*15)*40)
                 aviso = pygame.Surface((re*2, re*2), pygame.SRCALPHA)
                 pygame.draw.circle(aviso, (*cor, alpha), (re, re), re)
@@ -594,14 +631,12 @@ class Renderer:
 
     @staticmethod
     def _render_hud_gameplay(self):
-        # Lógica de Score e Recorde
         m = self.modo_jogo
         if m == "CORRIDA":
             cur, key = self.tempo_corrida, "Corrida"
             best = self.ranking.get(key, [{}])[0].get("tempo", cur) if self.ranking.get(key) else cur
             txt = f"{cur:.1f}s / MELHOR: {best:.1f}s"
-        elif m == "TREINO":
-            txt = f"MORTES: {int(self.mortes_total_jogador)}"
+        elif m == "TREINO": txt = f"MORTES: {int(self.mortes_total_jogador)}"
         elif m in ["SOBREVIVENCIA", "HARDCORE"]:
             cur, key = self.tempo_sobrevivencia, m.capitalize()
             best = self.ranking.get(key, [{}])[0].get("tempo", cur) if self.ranking.get(key) else cur
@@ -611,7 +646,6 @@ class Renderer:
             key = "Labirinto_Infinito" if m=="LABIRINTO" else "Corrida_Infinita"
             best = self.ranking.get(key, [{}])[0].get("fase", cur) if self.ranking.get(key) else cur
             txt = f"FASE: {cur} / RECORDE: {best}"
-
         desenhar_texto(self.tela, txt, self.fonte_sub, VERDE_NEON, LARGURA_TELA - 20, 20, "direita")
 
     @staticmethod
@@ -633,41 +667,29 @@ class Renderer:
 
     @staticmethod
     def _desenhar_controle_volume(self, mx, my):
-        # Re-usando lógica original mas com visual limpo
         rx, ry = LARGURA_TELA - 410, ALTURA_TELA - 70
         self.tela.blit(criar_painel_transparente(390, 50), (rx, ry))
-        
         vol = "MUDO" if self.mutado else f"{int(self.volume_musica * 100)}%"
         desenhar_texto(self.tela, vol, self.fonte_sub, VERDE_NEON if not self.mutado else CINZA_CLARO, rx+20, ry+25, "esquerda")
         
-        # Botões de volume simplificados
-        Renderer._draw_vol_btn(self, "-", rx+180, ry+25, self.rect_vol_menos, mx, my)
-        Renderer._draw_vol_btn(self, "+", rx+290, ry+25, self.rect_vol_mais, mx, my)
-        Renderer._draw_mute_btn(self, rx+235, ry+25, mx, my)
-        Renderer._draw_config_btn(self, rx+350, ry+25, mx, my)
+        def m_vol(): self.alterar_volume(-0.1)
+        def p_vol(): self.alterar_volume(0.1)
+        def t_mute(): self.alternar_mute()
+        def ir_cfg(): self.estado_anterior_config = self.estado; self.estado = "CONFIGURACOES"; self.botao_selecionado = 0
 
-    @staticmethod
-    def _draw_vol_btn(self, txt, cx, cy, rect, mx, my):
-        rect.center = (cx, cy)
-        h = rect.collidepoint(mx, my)
-        pygame.draw.rect(self.tela, CIANO_NEON if h else (20,30,40), rect, border_radius=6)
-        desenhar_texto(self.tela, txt, self.fonte_sub, BRANCO, cx, cy)
+        b_m = Button(rx+180, ry+25, 40, 40, "-", self.fonte_sub, callback=m_vol, id="vol_-")
+        b_p = Button(rx+290, ry+25, 40, 40, "+", self.fonte_sub, callback=p_vol, id="vol_+")
+        b_mu = Button(rx+235, ry+25, 40, 40, "", self.fonte_sub, callback=t_mute, id="vol_mute")
+        b_cfg = Button(rx+350, ry+25, 40, 40, "", self.fonte_sub, callback=ir_cfg, id="vol_cfg")
+        
+        for b in [b_m, b_p, b_mu, b_cfg]:
+            b.update((mx, my))
+            b.draw(self.tela)
+            if b.id == "vol_mute": desenhar_icone_som(self.tela, b.rect.centerx, b.rect.centery, self.mutado, BRANCO)
+            elif b.id == "vol_cfg": desenhar_icone_engrenagem(self.tela, b.rect.centerx, b.rect.centery, BRANCO)
+            self.botoes_menu.append(b)
 
-    @staticmethod
-    def _draw_mute_btn(self, cx, cy, mx, my):
-        self.rect_vol_mute.center = (cx, cy)
-        h = self.rect_vol_mute.collidepoint(mx, my)
-        pygame.draw.rect(self.tela, ROSA_NEON if h else (20,30,40), self.rect_vol_mute, border_radius=6)
-        desenhar_icone_som(self.tela, cx, cy, self.mutado, BRANCO)
-
-    @staticmethod
-    def _draw_config_btn(self, cx, cy, mx, my):
-        self.rect_vol_config.center = (cx, cy)
-        h = self.rect_vol_config.collidepoint(mx, my)
-        pygame.draw.rect(self.tela, AMARELO_DADO if h else (20,30,40), self.rect_vol_config, border_radius=6)
-        desenhar_icone_engrenagem(self.tela, cx, cy, BRANCO)
-
-# Atalhos globais para facilitar o registro no NeonSurge
+# Atalhos
 def desenhar(self): Renderer.desenhar(self)
 def desenhar_controle_volume(self, mx, my): Renderer._desenhar_controle_volume(self, mx, my)
 def desenhar_menu_configuracoes(self, mx, my): Renderer._render_configuracoes(self, mx, my)

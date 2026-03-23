@@ -13,6 +13,80 @@ from ..constants import (
     ROSA_NEON,
     VERMELHO_SANGUE,
 )
+from ..data import UI_COLORS, UI_ANIMATION
+
+
+class Button:
+    def __init__(self, x, y, largura, altura, texto, fonte, callback=None, id=None):
+        self.rect = pygame.Rect(x - largura // 2, y - altura // 2, largura, altura)
+        self.texto = texto
+        self.fonte = fonte
+        self.callback = callback
+        self.id = id
+        
+        self.is_hovered = False
+        self.is_selected = False  # Para navegação via teclado
+        self.scale = 1.0
+        self.target_scale = 1.0
+        
+    def update(self, mouse_pos, current_selected_id=None):
+        # Hover via mouse
+        self.is_hovered = self.rect.collidepoint(mouse_pos)
+        
+        # Seleção via teclado (sincronizada por ID)
+        if current_selected_id is not None:
+            self.is_selected = (self.id == current_selected_id)
+        
+        # Animação de escala
+        self.target_scale = UI_ANIMATION["HOVER_SCALE"] if (self.is_hovered or self.is_selected) else 1.0
+        self.scale += (self.target_scale - self.scale) * 0.2
+
+    def draw(self, surface):
+        # Cores baseadas no estado
+        # Selecionado ou Hovered: Amarelo preenchido, texto escuro
+        # Inativo: Outline Ciano, texto claro
+        is_active = self.is_selected or self.is_hovered
+        cor_base = UI_COLORS["SELECTED"] if is_active else UI_COLORS["HIGHLIGHT"]
+        cor_texto = UI_COLORS["TEXT_SELECTED"] if is_active else UI_COLORS["TEXT_NORMAL"]
+        
+        # Rect animado
+        draw_rect = self.rect.copy()
+        if self.scale != 1.0:
+            new_w = int(self.rect.width * self.scale)
+            new_h = int(self.rect.height * self.scale)
+            draw_rect = pygame.Rect(0, 0, new_w, new_h)
+            draw_rect.center = self.rect.center
+
+        # Desenho do botão
+        bg_alpha = 255 if is_active else 0
+        surf_btn = pygame.Surface((draw_rect.width, draw_rect.height), pygame.SRCALPHA)
+        
+        if is_active:
+            # Bloco preenchido Amarelo
+            pygame.draw.rect(surf_btn, (*cor_base, bg_alpha), (0, 0, draw_rect.width, draw_rect.height), border_radius=4)
+            # Brilho extra se selecionado
+            pulso = math.sin(time.time() * UI_ANIMATION["PULSE_SPEED"]) * 2
+            pygame.draw.rect(surf_btn, BRANCO, (0, 0, draw_rect.width, draw_rect.height), 2, border_radius=4)
+        else:
+            # Apenas outline Ciano Neon
+            pygame.draw.rect(surf_btn, (*cor_base, 255), (0, 0, draw_rect.width, draw_rect.height), 2, border_radius=4)
+            # Leve preenchimento transparente para profundidade
+            pygame.draw.rect(surf_btn, (*cor_base, 20), (0, 0, draw_rect.width, draw_rect.height), border_radius=4)
+            
+        surface.blit(surf_btn, draw_rect.topleft)
+
+        # Texto
+        texto_render = f"> {self.texto} <" if is_active else self.texto
+        img_texto = self.fonte.render(texto_render, True, cor_texto)
+        rect_texto = img_texto.get_rect(center=self.rect.center)
+        surface.blit(img_texto, rect_texto)
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.is_hovered and self.callback:
+                self.callback()
+                return True
+        return False
 
 
 def desenhar_texto(surface, texto, fonte, cor, x, y, alinhamento="centro"):
@@ -29,8 +103,9 @@ def desenhar_texto(surface, texto, fonte, cor, x, y, alinhamento="centro"):
 
 
 def desenhar_botao_dinamico(surface, texto, fonte, cor_base, cx, cy, is_hovered, largura=500, altura=55):
+    """Mantido para compatibilidade legado, mas usa lógica similar ao Button."""
     texto_display = f"> {texto} <" if is_hovered else texto
-    cor_texto = PRETO_FUNDO if is_hovered else cor_base
+    cor_texto = PRETO_FUNDO if is_hovered else BRANCO
 
     rect_botao = pygame.Rect(0, 0, largura, altura)
     rect_botao.center = (cx, cy)
