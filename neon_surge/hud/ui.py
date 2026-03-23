@@ -5,12 +5,15 @@ import pygame
 
 from ..constants import (
     ALTURA_TELA,
+    AMARELO_DADO,
     BRANCO,
+    CINZA_CLARO,
     CINZA_ESCURO,
     COR_PAINEL,
     LARGURA_TELA,
     PRETO_FUNDO,
     ROSA_NEON,
+    VERDE_NEON,
     VERMELHO_SANGUE,
 )
 from ..data import UI_COLORS, UI_ANIMATION
@@ -157,9 +160,24 @@ def desenhar_icone_engrenagem(surface, cx, cy, cor):
 
 
 def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):
+    """Desenha um brilho neon circular em camadas."""
     for i in range(intensidade, 0, -1):
         cor_com_alpha = (*cor, 15)
         pygame.draw.circle(surface, cor_com_alpha, (int(pos_x), int(pos_y)), int(raio + (i * 4)))
+
+
+def desenhar_seletor_quantidade(surface, x, y, qtd, selecionado, fonte):
+    """Desenha o contador de quantidade com feedback de seleção."""
+    cor = AMARELO_DADO if selecionado else (VERDE_NEON if qtd > 0 else CINZA_CLARO)
+    
+    if selecionado and qtd > 0:
+        pulso = math.sin(time.time() * 15) * 4
+        desenhar_brilho_neon(surface, cor, x, y, 12 + pulso, 2)
+        
+    img = fonte.render(str(qtd), True, cor)
+    rect = img.get_rect(center=(x, y))
+    surface.blit(img, rect)
+    return rect
 
 
 def desenhar_fundo_cyberpunk(surface, tempo):

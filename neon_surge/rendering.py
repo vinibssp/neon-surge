@@ -304,7 +304,11 @@ class Renderer:
                 if is_t:
                     qtd = self.inimigos_treino_selecionados.get(tid, 0)
                     bx_q = rect_p.left + 350
+                    is_sel = (self.botao_selecionado == 4+i)
                     
+                    from .hud.ui import desenhar_seletor_quantidade
+                    desenhar_seletor_quantidade(self.tela, bx_q, iy + 27, qtd, is_sel, self.fonte_sub)
+
                     def dec_enemy(t=tid):
                         self.inimigos_treino_selecionados[t] = max(0, self.inimigos_treino_selecionados.get(t, 0) - 1)
                         self.sounds.play('menu_button')
@@ -313,8 +317,6 @@ class Renderer:
                     btn_m.update((mx, my))
                     btn_m.draw(self.tela)
                     self.botoes_menu.append(btn_m)
-
-                    desenhar_texto(self.tela, str(qtd), self.fonte_sub, VERDE_NEON if qtd > 0 else CINZA_CLARO, bx_q, iy + 27)
 
                     def inc_enemy(t=tid):
                         self.inimigos_treino_selecionados[t] = min(10, self.inimigos_treino_selecionados.get(t, 0) + 1)

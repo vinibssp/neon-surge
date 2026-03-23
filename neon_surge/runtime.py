@@ -4,6 +4,7 @@ import time
 import pygame
 
 from .constants import FPS
+from .data import INIMIGOS_DATA
 
 
 def acionar_botao(self):
@@ -177,17 +178,20 @@ def executar(self):
                         self.guia_aba = abas[idx]
                         self.botao_selecionado = idx
                         self.sounds.play('menu_button')
+                        continue
                     elif self.estado == "TELA_INIMIGOS":
                         cats = ["COMUNS", "MINIBOSSES", "BOSSES", "GUIA"]
                         idx = (cats.index(self.guia_aba) + direcao) % len(cats)
                         self.guia_aba = cats[idx]
                         self.botao_selecionado = idx
                         self.sounds.play('menu_button')
+                        continue
                     elif self.estado == "RANKING" and not getattr(self, "veio_de_fim_partida", False):
                         modos_rank = ["CORRIDA", "SOBREVIVENCIA", "HARDCORE", "LABIRINTO", "CORRIDA_INFINITA"]    
                         idx = (modos_rank.index(self.ranking_aba) + direcao) % len(modos_rank)
                         self.trocar_aba_ranking(modos_rank[idx])
                         self.botao_selecionado = f"ABA_RANK_{modos_rank[idx]}"
+                        continue
 
                 if event.key == pygame.K_ESCAPE:
                     self.sounds.play('menu_reject')
@@ -287,11 +291,40 @@ def executar(self):
                                 self.botao_selecionado = "SAIR_JOGO"
                             self.sounds.play('menu_button')
 
-                elif self.estado in ["TELA_INIMIGOS", "PAUSA", "RANKING"]:
+                elif self.estado == "TELA_INIMIGOS":
+                    # Ajuste de Quantidade (A/D) - Somente se um inimigo estiver selecionado
+                    if event.key in [pygame.K_a, pygame.K_d]:
+                        if isinstance(self.botao_selecionado, int) and self.botao_selecionado >= 4:
+                            items = [t for t in INIMIGOS_DATA.items() if t[1]["categoria"] == self.guia_aba]
+                            idx_inim = self.botao_selecionado - 4
+                            if 0 <= idx_inim < len(items):
+                                tid = items[idx_inim][0]
+                                delta = -1 if event.key == pygame.K_a else 1
+                                self.inimigos_treino_selecionados[tid] = max(0, min(10, self.inimigos_treino_selecionados.get(tid, 0) + delta))
+                                self.sounds.play('menu_button')
+                                continue # Impede que A/D naveguem
+
                     ids_disponiveis = []
-                    for item in self.botoes_hitboxes:
-                        if isinstance(item, tuple) and isinstance(item[1], int):
-                            if item[1] not in ids_disponiveis: ids_disponiveis.append(item[1])
+                    for btn in self.botoes_menu:
+                        if isinstance(btn.id, int) and btn.id not in ids_disponiveis:
+                            ids_disponiveis.append(btn.id)
+                    ids_disponiveis.sort()
+
+                    if ids_disponiveis:
+                        if not isinstance(self.botao_selecionado, int):
+                            self.botao_selecionado = ids_disponiveis[0]
+                        
+                        if event.key in [pygame.K_UP, pygame.K_w]:
+                            self.sounds.play('menu_button')
+                            idx_atual = ids_disponiveis.index(self.botao_selecionado) if self.botao_selecionado in ids_disponiveis else 0
+                            self.botao_selecionado = ids_disponiveis[(idx_atual - 1) % len(ids_disponiveis)]
+                        elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                            self.sounds.play('menu_button')
+                            idx_atual = ids_disponiveis.index(self.botao_selecionado) if self.botao_selecionado in ids_disponiveis else 0
+                            self.botao_selecionado = ids_disponiveis[(idx_atual + 1) % len(ids_disponiveis)]
+
+                elif self.estado in ["PAUSA", "RANKING"]:
+                    ids_disponiveis = []
                     for btn in self.botoes_menu:
                         if isinstance(btn.id, int) and btn.id not in ids_disponiveis:
                             ids_disponiveis.append(btn.id)
