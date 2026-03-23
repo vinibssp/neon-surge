@@ -295,52 +295,94 @@ class Renderer:
     @staticmethod
     def _render_configuracoes(self, mx, my):
         cx, cy = LARGURA_TELA // 2, ALTURA_TELA // 2
-        pw, ph = 680, 540
+        pw, ph = 800, 580
         rect = pygame.Rect(cx - pw//2, cy - ph//2, pw, ph)
-        self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
-        desenhar_moldura(self.tela, rect, CIANO_NEON, "AJUSTES DE SISTEMA", self.fonte_sub)
-
-        def draw_bar(label, y, vol, idx, cor):
-            foc = (self.botao_selecionado == idx)
-            if foc: pygame.draw.rect(self.tela, (*cor, 60), (rect.left+30, y-30, pw-60, 60), border_radius=12)
-            desenhar_texto(self.tela, label, self.fonte_sub, BRANCO if foc else CINZA_CLARO, cx - 220, y, "esquerda")
-            
-            # Barra de volume
-            bx, bw = cx, 240
-            pygame.draw.rect(self.tela, CINZA_ESCURO, (bx, y-12, bw, 24), border_radius=6)
-            pygame.draw.rect(self.tela, cor, (bx, y-12, int(bw * vol), 24), border_radius=6)
-            for i in range(1, 10):
-                pygame.draw.line(self.tela, PRETO_FUNDO, (bx + i*(bw/10), y-12), (bx + i*(bw/10), y+11), 1)
-            
-            # Hitboxes para botões - e + (mapeados para o idx da linha para hover correto)
-            self.botoes_hitboxes.append((pygame.Rect(bx - 50, y-20, 40, 40), f"val_{idx}_-"))
-            self.botoes_hitboxes.append((pygame.Rect(bx + bw + 10, y-20, 40, 40), f"val_{idx}_+"))
-            # Adiciona também o idx para garantir que o hover na linha funcione
-            self.botoes_hitboxes.append((pygame.Rect(rect.left+30, y-30, pw-60, 60), idx))
-
-        draw_bar("VOLUME MÚSICA", cy - 100, self.sounds.volume_musica, 0, CIANO_NEON)
-        draw_bar("EFEITOS SONOROS", cy, self.sounds.volume_sfx, 1, ROSA_NEON)
         
-        # Opção de Resolução
-        ry = cy + 100
+        # Fundo e Moldura
+        self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
+        desenhar_moldura(self.tela, rect, CIANO_NEON, "CONFIGURAÇÕES DE SISTEMA", self.fonte_sub)
+
+        def draw_neon_bar(label, y, vol, idx, cor):
+            foc = (self.botao_selecionado == idx)
+            bx, bw, bh = cx + 20, 320, 30
+            
+            # Label com destaque se focado
+            cor_label = BRANCO if foc else CINZA_CLARO
+            desenhar_texto(self.tela, label, self.fonte_sub, cor_label, cx - 120, y, "direita")
+            
+            # Container da barra
+            rect_bg = pygame.Rect(bx, y - bh//2, bw, bh)
+            pygame.draw.rect(self.tela, (10, 20, 35), rect_bg, border_radius=8)
+            pygame.draw.rect(self.tela, cor if foc else CINZA_ESCURO, rect_bg, 2, border_radius=8)
+            
+            # Preenchimento Segmentado
+            num_segmentos = 10
+            seg_w = (bw - 10) // num_segmentos
+            preenchidos = int(vol * num_segmentos)
+            
+            for i in range(num_segmentos):
+                seg_rect = pygame.Rect(bx + 5 + i*seg_w, y - bh//2 + 5, seg_w - 4, bh - 10)
+                if i < preenchidos:
+                    # Segmento ativo com glow se focado
+                    alpha = 255 if foc else 180
+                    pygame.draw.rect(self.tela, (*cor, alpha), seg_rect, border_radius=3)
+                    if foc:
+                        desenhar_brilho_neon(self.tela, cor, seg_rect.centerx, seg_rect.centery, 8, 1)
+                else:
+                    pygame.draw.rect(self.tela, (20, 30, 50), seg_rect, border_radius=3)
+
+            # Hitboxes (Mapeadas para controle fino)
+            h_menos = pygame.Rect(bx - 55, y - 20, 40, 40)
+            h_mais = pygame.Rect(bx + bw + 15, y - 20, 40, 40)
+            
+            # Botões de ajuste minimalistas
+            def draw_adj_btn(r, txt, active):
+                h = r.collidepoint(mx, my)
+                c = cor if h else (cor if active else (40, 50, 70))
+                pygame.draw.rect(self.tela, c, r, border_radius=6 if h else 4, width=0 if h else 2)
+                desenhar_texto(self.tela, txt, self.fonte_sub, PRETO_FUNDO if h else BRANCO, r.centerx, r.centery)
+
+            draw_adj_btn(h_menos, "-", foc)
+            draw_adj_btn(h_mais, "+", foc)
+            
+            self.botoes_hitboxes.append((h_menos, f"val_{idx}_-"))
+            self.botoes_hitboxes.append((h_mais, f"val_{idx}_+"))
+            self.botoes_hitboxes.append((pygame.Rect(cx - 380, y-30, 760, 60), idx))
+
+        # Volumes
+        draw_neon_bar("ÁUDIO BGM", cy - 120, self.sounds.volume_musica, 0, CIANO_NEON)
+        draw_neon_bar("EFEITOS SFX", cy - 30, self.sounds.volume_sfx, 1, ROSA_NEON)
+        
+        # Resolução (Estilo Card)
+        ry = cy + 90
         foc_res = (self.botao_selecionado == 2)
-        if foc_res: pygame.draw.rect(self.tela, (57, 255, 20, 60), (rect.left+30, ry-30, pw-60, 60), border_radius=12)
-        desenhar_texto(self.tela, "RESOLUÇÃO", self.fonte_sub, BRANCO if foc_res else CINZA_CLARO, cx - 220, ry, "esquerda")
+        rect_res = pygame.Rect(cx - 360, ry - 35, 720, 70)
+        
+        pygame.draw.rect(self.tela, (15, 25, 45), rect_res, border_radius=10)
+        pygame.draw.rect(self.tela, VERDE_NEON if foc_res else CINZA_ESCURO, rect_res, 2, border_radius=10)
+        
+        desenhar_texto(self.tela, "RESOLUÇÃO DE VÍDEO", self.fonte_sub, BRANCO if foc_res else CINZA_CLARO, cx - 120, ry, "direita")
         
         res_txt = f"{self.resolucoes[self.res_idx][0]}x{self.resolucoes[self.res_idx][1]}"
-        if self.is_fullscreen:
-            res_txt = f"FULLSCREEN ({res_txt})"
-            
-        bx, bw = cx, 240
-        desenhar_texto(self.tela, f"< {res_txt} >", self.fonte_sub, VERDE_NEON if foc_res else BRANCO, bx + bw//2, ry)
+        if self.is_fullscreen: res_txt = f"FULLSCREEN [{res_txt}]"
         
-        # Hitboxes para trocar resolução
-        self.botoes_hitboxes.append((pygame.Rect(bx - 20, ry-25, 50, 50), "res_-"))
-        self.botoes_hitboxes.append((pygame.Rect(bx + bw + 10, ry-25, 50, 50), "res_+"))
-        self.botoes_hitboxes.append((pygame.Rect(rect.left+30, ry-30, pw-60, 60), 2))
+        desenhar_texto(self.tela, res_txt, self.fonte_sub, VERDE_NEON, cx + 180, ry)
+        
+        # Setas de Resolução
+        btn_l = pygame.Rect(cx + 20, ry - 20, 40, 40)
+        btn_r = pygame.Rect(cx + 335, ry - 20, 40, 40)
+        
+        for r, t, act in [(btn_l, "<", "res_-"), (btn_r, ">", "res_+")]:
+            h = r.collidepoint(mx, my)
+            pygame.draw.rect(self.tela, VERDE_NEON if h else (40, 50, 70), r, border_radius=6, width=0 if h else 2)
+            desenhar_texto(self.tela, t, self.fonte_sub, PRETO_FUNDO if h else BRANCO, r.centerx, r.centery)
+            self.botoes_hitboxes.append((r, act))
+        
+        self.botoes_hitboxes.append((rect_res, 2))
 
-        btn = desenhar_botao_dinamico(self.tela, "CONFIRMAR E SAIR", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 70, self.botao_selecionado == 3, 350, 50)
-        self.botoes_hitboxes.append((btn, 3))
+        # Botão Confirmar
+        btn_c = desenhar_botao_dinamico(self.tela, "SALVAR E RETORNAR", self.fonte_sub, AMARELO_DADO, cx, rect.bottom - 70, self.botao_selecionado == 3, 400, 55)
+        self.botoes_hitboxes.append((btn_c, 3))
 
     @staticmethod
     def _render_gameplay(self, mx, my):
