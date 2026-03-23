@@ -107,24 +107,9 @@ class NeonSurge:
         self.limite_inimigos_corrida = 0
         self.temporizador_buraco_negro = 8.0
         self.buracos_negros = []
+        from .entities.hazards import LavaManager
+        self.lava_manager = LavaManager()
         self.labirinto_paredes = []
-        self.labirinto_area = None
-        self.labirinto_info = {}
-        self.labirinto_armadilhas = []
-        self.labirinto_fantasmas = []
-        self.labirinto_tempo_restante = 0.0
-        self.labirinto_tempo_max = 0.0
-        self.shake_frames = 0
-        self.tempo_global = 0
-
-        self.tempo_para_lava = 30
-        self.lava_ativa = False
-        self.tempo_lava_restante = 0.0
-        self.tipo_lava = 0
-        self.lava_hitboxes = []
-        self.aviso_lava = 0.0
-        self.lava_lado_horizontal = None
-        self.lava_lado_vertical = None
 
         self.ranking = self.carregar_ranking()
         self.ultima_pos_mouse = (0, 0)

@@ -20,8 +20,12 @@ def acionar_botao(self):
     elif self.estado == "PERGUNTA_MODO":
         self.veio_do_game_over = False
         if self.botao_selecionado == 0:
-            self.estado = "TELA_INIMIGOS"
-            self.botao_selecionado = 0
+            if self.modo_jogo == "TREINO":
+                self.estado = "TELA_INIMIGOS"
+                self.botao_selecionado = 0
+            else:
+                self.iniciar_fase()
+                self.estado = "JOGANDO"
         elif self.botao_selecionado == 1:
             self.entrar_menu_modo()
             self.botao_selecionado = 0
@@ -48,8 +52,13 @@ def acionar_botao(self):
             self.alternar_tela_cheia()
             return
 
-        self.estado = "TELA_INIMIGOS"
-        self.botao_selecionado = 0
+        if self.modo_jogo == "TREINO":
+            self.estado = "TELA_INIMIGOS"
+            self.botao_selecionado = 0
+        else:
+            self.fase_atual = 1
+            self.iniciar_fase()
+            self.estado = "JOGANDO"
 
     elif self.estado == "TELA_INFO_MODOS":
         if self.botao_selecionado == 0:

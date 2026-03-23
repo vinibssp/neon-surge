@@ -339,10 +339,6 @@ class Renderer:
         # Portais
         Renderer._render_portais(self, surf)
 
-        # Lava (Survival)
-        if self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
-            Renderer._render_lava(self, surf)
-
         # Entidades
         for d in self.coletaveis:
             desenhar_brilho_neon(surf, AMARELO_DADO, d.x, d.y, 6, 2)
@@ -353,6 +349,11 @@ class Renderer:
         for p in self.particulas: p.draw(surf)
         for i in self.inimigos: i.draw(surf)
         for b in self.buracos_negros: b.draw(surf)
+        
+        # Lava (Survival)
+        if self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
+            self.lava_manager.draw(surf, self.fonte_titulo, self.fonte_sub)
+
         Renderer._render_projeteis(self, surf)
         
         self.player.draw(surf)
@@ -397,26 +398,6 @@ class Renderer:
             
             ang = (time.time()*6) % (math.pi*2)
             pygame.draw.arc(surf, BRANCO, pygame.Rect(c[0]-r, c[1]-r, r*2, r*2), ang, ang+math.pi*1.3, 4)
-
-    @staticmethod
-    def _render_lava(self, surf):
-        if self.aviso_lava > 0.0 and self.tipo_lava != 0:
-            for r in self.lava_hitboxes:
-                s = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
-                al = int(100 + math.sin(time.time()*20)*50)
-                s.fill((255, 150, 0, al))
-                pygame.draw.rect(s, AMARELO_DADO, (0,0,r.width,r.height), 4)
-                surf.blit(s, (r.x, r.y))
-            desenhar_texto(surf, f"ALERTA DE LAVA: {int(self.aviso_lava)+1}s!", self.fonte_titulo, VERMELHO_SANGUE, LARGURA_TELA//2, 140)
-
-        if getattr(self, "lava_ativa", False):
-            if (self.tempo_lava_restante > 1.5) or (int(time.time()*8)%2 == 0):
-                for r in self.lava_hitboxes:
-                    s = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
-                    s.fill((255, 60, 0, 140))
-                    pygame.draw.rect(s, VERMELHO_SANGUE, (0,0,r.width,r.height), 4)
-                    surf.blit(s, (r.x, r.y))
-            desenhar_texto(surf, f"LAVA ATIVA: {self.tempo_lava_restante:.1f}s", self.fonte_sub, LARANJA_NEON, LARGURA_TELA//2, 90)
 
     @staticmethod
     def _render_projeteis(self, surf):

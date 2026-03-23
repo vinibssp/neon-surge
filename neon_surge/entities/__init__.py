@@ -1,12 +1,13 @@
 from .particle import ParticulaMenu, Particula
 from .player import Player
 from .enemy import Inimigo
-from .hazards import BlackHole
+from .hazards import BlackHole, LavaManager
 
 __all__ = [
     "ParticulaMenu",
     "Particula",
     "Player",
     "Inimigo",
-    "BlackHole"
+    "BlackHole",
+    "LavaManager"
 ]

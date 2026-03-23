@@ -3,7 +3,7 @@ import math
 import pygame
 
 from ..constants import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
-from ..entities import BlackHole, Inimigo, Particula, Player
+from ..entities import BlackHole, Inimigo, Particula, Player, LavaManager
 
 
 MAX_PARTICULAS = 650
@@ -369,14 +369,7 @@ def iniciar_fase(self):
     self.particulas.clear()
     self.portal_aberto = False
 
-    self.tempo_para_lava = 30.0
-    self.lava_ativa = False
-    self.tempo_lava_restante = 0.0
-    self.tipo_lava = 0
-    self.lava_hitboxes = []
-    self.aviso_lava = 0.0
-    self.lava_lado_horizontal = None
-    self.lava_lado_vertical = None
+    self.lava_manager.reset()
     self.temporizador_buraco_negro = 8.0
     self.buracos_negros.clear()
     self.labirinto_paredes = []
@@ -759,6 +752,32 @@ def atualizar_jogo(self):
                 self.salvar_ranking(self.modo_jogo, self.tempo_corrida)
                 self.estado = "RANKING"
                 self.botao_selecionado = 0
+
+    elif self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
+        self.tempo_sobrevivencia += self.dt
+        
+        # Spawn progressivo de inimigos
+        max_ini = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else MAX_INIMIGOS_HARDCORE
+        progressao = min(1.0, self.tempo_sobrevivencia / 300.0)
+        alvo_atual = 3 + int(progressao * (max_ini - 3))
+        
+        total_ativo = len(self.inimigos) + len(self.portais_inimigos)
+        if total_ativo < alvo_atual:
+            self.temporizador_spawn -= self.dt
+            if self.temporizador_spawn <= 0:
+                vel = 4.0 + (progressao * 3.5)
+                self._spawn_inimigos(1, vel)
+                self.temporizador_spawn = max(0.5, 2.0 - (progressao * 1.5))
+
+        # Gerenciamento de Lava
+        if self.tempo_sobrevivencia > 20:
+            intervalo_lava = 15 if self.modo_jogo == "HARDCORE" else 25
+            if int(self.tempo_sobrevivencia) % intervalo_lava == 0 and not self.lava_manager.ativa and self.lava_manager.aviso_tempo <= 0:
+                self.lava_manager.disparar_evento()
+
+        if self.lava_manager.update(self.player, self.dt, self.sounds):
+            self._lidar_com_morte()
+            return
 
     elif self.modo_jogo == "TREINO":
         # No modo treino, mantemos a quantidade que o jogador escolheu
