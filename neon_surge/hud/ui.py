@@ -163,11 +163,10 @@ class TrainingMenuManager:
 
             is_sel = (self.game.botao_selecionado == 4 + i)
             
-            # Nome e ID Técnico
+            # Nome Principal (Centralizado na linha)
             txt_n = data["nome"].upper()
             cor_n = AMARELO_DADO if is_sel else BRANCO
-            desenhar_texto(surface, txt_n, self.game.fonte_sub, cor_n, row_rect.left + 20, row_rect.centery - 8, "esquerda")
-            desenhar_texto(surface, tid.upper(), self.game.fonte_desc, (100, 100, 130), row_rect.left + 20, row_rect.centery + 12, "esquerda")
+            desenhar_texto(surface, txt_n, self.game.fonte_sub, cor_n, row_rect.left + 20, row_rect.centery, "esquerda")
 
             if is_t:
                 qtd = self.game.inimigos_treino_selecionados.get(tid, 0)
