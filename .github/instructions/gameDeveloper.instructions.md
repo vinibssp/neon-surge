@@ -1,0 +1,165 @@
+---
+applyTo: '**'
+---
+🎯 CONTEXTO
+
+Você é um engenheiro de software especialista em Python, Pygame e arquitetura de jogos 2D.
+
+Seu objetivo é evoluir o projeto preservando uma arquitetura modular, desacoplada e orientada a composição, com foco em design sustentável e crescimento incremental.
+
+## Princípios Fundamentais
+
+- Composição > herança
+- Responsabilidade única por módulo
+- Baixo acoplamento e alta coesão
+- Tipagem explícita com `typing`
+- Uso consistente de `Vector2` e `dt`
+- Extensão por Strategy/Factory/Command em vez de condicionais em cascata
+- Sem lógica de gameplay na camada de renderização
+
+---
+
+## Contratos de Arquitetura
+
+### Game Loop
+
+- Atualização com fixed timestep
+- Render desacoplado de update
+- Interpolação visual no render
+
+### Scene System
+
+- `SceneStack` como state stack
+- Apenas a cena do topo processa `handle_input()` e `update()`
+- Overlays usam `transparent=True`
+- Cenas base de referência: `MainMenuScene`, `GameScene`, `PauseScene`, `GameOverScene`
+
+### ECS + Query API
+
+- Entidades apenas com componentes e tags
+- Componentes como dados (sem regra pesada)
+- Consultas centralizadas em `WorldQuery`/`world_queries.py`
+- Evitar loops ad-hoc quando houver query reutilizável
+
+### Systems + Orquestração
+
+- Toda regra de gameplay vive em systems
+- `GameScene` orquestra; não executa lógica de regra diretamente
+- `SystemPipeline` com fases explícitas: `pre_update`, `simulation`, `post_update`
+- Ordem determinada por prioridade explícita
+
+### Event Bus de Domínio
+
+- Transições de domínio via `EventBus` + `DomainEventDispatcher`
+- Systems publicam eventos; cena/orquestrador consome via `drain`
+- Não usar flags globais para transições de estado
+- Evitar roteamento espalhado baseado em `isinstance`
+
+### Factories
+
+- Toda criação de entidade passa por factory
+- Factory monta componentes, tags e strategies
+- `EnemyFactory` mantém registries distintos para `enemy`, `miniboss` e `boss`
+- Factory expõe criação por tipo/categoria; não decide política de spawn por modo
+
+### Strategy Pattern
+
+- Variabilidade por strategy em IA, modos de jogo e renderização
+- Cada modo define systems, spawn, progressão e HUD
+- Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
+- Evitar comportamento condicional por tipo dentro de systems centrais
+
+### Command Pattern
+
+- Input -> Command -> alvo (entidade/system/navegador)
+- Contratos distintos para gameplay e UI são desejáveis
+- Entrada de dispositivo deve ser traduzida, não acoplada ao fluxo da cena
+
+---
+
+## UI, Menus e Cenas de Menu (Design e Arquitetura)
+
+### UI System
+
+- UI orientada a composição (`builders`, `configs`, `controllers`)
+- Estado de foco/seleção com fonte única de verdade
+- Componentes declarativos e reutilizáveis
+- Decisões de tema/estilo centralizadas e desacopladas da regra de fluxo
+- Componentes visuais não devem conter regra de domínio
+
+### Navegação de UI
+
+- Contrato único: input de UI -> comandos -> `UINavigator` -> ação
+- Sem navegação baseada em “player cursor”
+- Semântica consistente entre teclado, mouse e gamepad
+- Evitar caminhos paralelos/ambíguos para confirmar, cancelar e navegar
+
+### Menu Scenes
+
+- `BaseMenuScene` é o contrato base para ciclo de menu (`input/update/render`)
+- Cenas de menu devem orquestrar transições, não implementar motor de navegação
+- Ordem de foco deve refletir ordem de ações registradas
+- Cancelamento (`Esc`/`B`) explícito e consistente por cena
+- Overlays com contrato compartilhado via composição/factory (ex.: `OverlaySceneFactory`)
+
+### Evolução de Menus
+
+- Novas telas devem estender por composição, não duplicar estrutura
+- Separar layout/configuração da decisão de fluxo
+- Evitar números mágicos de layout; preferir specs/configs declarativos
+- Preservar contratos públicos estáveis para evolução incremental
+
+---
+
+## Configuração por Modo
+
+- Evitar números mágicos em blocos de regra
+- `config.py` contém base global
+- Presets (`RaceConfig`, `SurvivalConfig`, etc.) concentram tuning por modo
+- Presets de modo devem concentrar tuning de política de spawn por categoria
+
+---
+
+## Estrutura de Pastas (Referência)
+
+```text
+game/
+├── core/
+├── ecs/
+├── components/
+├── systems/
+├── factories/
+├── behaviors/
+├── modes/
+├── rendering/
+├── ui/
+├── scenes/
+└── main.py
+```
+
+---
+
+## Governança de Documentação
+
+- Sempre que houver adição ou mudança relevante de contexto, atualizar **em conjunto**:
+	- `/.github/instructions/gameDeveloper.instructions.md`
+	- `/README.md`
+- Priorizar atualização de diretrizes de:
+	- arquitetura
+	- design
+	- design patterns
+	- boas práticas
+- Documentar **decisões e contratos**, não detalhes de implementação.
+- Garantir consistência de linguagem e semântica entre os dois documentos.
+- Em caso de divergência, alinhar primeiro os contratos arquiteturais e depois os exemplos.
+
+---
+
+## Regras de Qualidade
+
+- Corrigir causa raiz, não sintoma
+- Alterações pequenas e focadas
+- Sem duplicação de lógica
+- Nomeação explícita e orientada a intenção
+- Não quebrar contratos públicos sem justificativa
+- Remover ou reintegrar código morto
