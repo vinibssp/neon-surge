@@ -3,71 +3,64 @@ from __future__ import annotations
 from typing import Callable
 
 import pygame
-from pygame import Vector2
 
 from game.config import PAUSE_OVERLAY_COLOR, SCREEN_HEIGHT, SCREEN_WIDTH
-from game.core.scene_stack import Scene
 from game.modes.game_mode_strategy import GameModeStrategy
-from game.ui.elements import Button, Container, Label
-from game.ui.navigation import UINavigationInputHandler, UINavigator
+from game.scenes.base_menu_scene import BaseMenuScene
+from game.scenes.overlay_scene_factory import OverlayActionBinding, OverlaySceneFactory
+from game.ui.components.overlay_builder import draw_overlay_backdrop
+from game.ui.types import UIControl
 
 
-class PauseScene(Scene):
+class PauseScene(BaseMenuScene):
     transparent = True
 
     def __init__(self, stack, retry_strategy_factory: Callable[[], GameModeStrategy]) -> None:
         super().__init__(stack)
         self.retry_strategy_factory = retry_strategy_factory
 
-        panel_size = Vector2(420, 320)
-        panel_pos = Vector2((SCREEN_WIDTH - panel_size.x) * 0.5, (SCREEN_HEIGHT - panel_size.y) * 0.5)
-        self.root = Container(position=panel_pos, size=panel_size, orientation="vertical", padding=16)
-        self.root.add_child(Label(position=Vector2(), size=Vector2(388, 44), text="Pausado"))
-
-        self.continue_button = Button(
-            position=Vector2(),
-            size=Vector2(388, 56),
-            text="Continuar",
-            callback=self._continue,
+        overlay = OverlaySceneFactory.build(
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            ui_manager=self.ui_manager,
+            title="Pausado",
+            panel_object_id="#overlay_panel",
+            panel_size=(420, 320),
+            action_bindings=(
+                OverlayActionBinding(
+                    key="continue",
+                    text="Continuar",
+                    rect=pygame.Rect(14, 248, 392, 58),
+                    object_id="#overlay_close_button",
+                    handler=self._continue,
+                ),
+                OverlayActionBinding(
+                    key="restart",
+                    text="Reiniciar",
+                    rect=pygame.Rect(14, 140, 392, 56),
+                    handler=self._restart,
+                ),
+                OverlayActionBinding(
+                    key="menu",
+                    text="Voltar ao menu",
+                    rect=pygame.Rect(14, 204, 392, 56),
+                    handler=self._back_to_menu,
+                ),
+            ),
+            on_cancel_key="continue",
         )
-        self.restart_button = Button(
-            position=Vector2(),
-            size=Vector2(388, 56),
-            text="Reiniciar",
-            callback=self._restart,
-        )
-        self.menu_button = Button(
-            position=Vector2(),
-            size=Vector2(388, 56),
-            text="Voltar ao menu",
-            callback=self._back_to_menu,
+        self.panel = overlay.panel
+        self.continue_button: UIControl = overlay.controls["continue"]
+        self.restart_button: UIControl = overlay.controls["restart"]
+        self.menu_button: UIControl = overlay.controls["menu"]
+
+        self.set_navigator(
+            buttons=overlay.navigation_buttons,
+            actions=overlay.navigation_actions,
+            on_cancel=overlay.cancel_action,
         )
 
-        self.root.add_child(self.continue_button)
-        self.root.add_child(self.restart_button)
-        self.root.add_child(self.menu_button)
-
-        self.ui_input = UINavigationInputHandler()
-        self.navigator = UINavigator(
-            buttons=[self.continue_button, self.restart_button, self.menu_button],
-            on_cancel=self._continue,
-        )
-
-    def handle_input(self, events: list[pygame.event.Event]) -> None:
-        commands = self.ui_input.build_commands(events)
-        for command in commands:
-            command.execute(self.navigator)
-
-    def update(self, dt: float) -> None:
-        self.root.update(dt)
-        self.navigator.sync_hover_state()
-
-    def render(self, screen: pygame.Surface) -> None:
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(140)
-        overlay.fill(PAUSE_OVERLAY_COLOR)
-        screen.blit(overlay, (0, 0))
-        self.root.render(screen)
+    def render_menu_background(self, screen: pygame.Surface) -> None:
+        draw_overlay_backdrop(screen, screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT), color=PAUSE_OVERLAY_COLOR)
 
     def _continue(self) -> None:
         self.stack.pop()

@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from typing import Callable
 
 import pygame
+import pygame_gui
 from pygame import Vector2
 
-from game.ui.elements import Button
+from game.ui.types import UIControl
 
 
 class UICommand(ABC):
@@ -28,6 +29,22 @@ class UINavigateCommand(UICommand):
 class UIConfirmCommand(UICommand):
     def execute(self, navigator: "UINavigator") -> None:
         navigator.confirm()
+
+
+@dataclass(frozen=True)
+class UISelectElementCommand(UICommand):
+    element: UIControl
+
+    def execute(self, navigator: "UINavigator") -> None:
+        navigator.select_by_element(self.element)
+
+
+@dataclass(frozen=True)
+class UIPressElementCommand(UICommand):
+    element: UIControl
+
+    def execute(self, navigator: "UINavigator") -> None:
+        navigator.press_element(self.element)
 
 
 @dataclass(frozen=True)
@@ -54,8 +71,14 @@ class UICancelCommand(UICommand):
 
 
 class UINavigator:
-    def __init__(self, buttons: list[Button], on_cancel: Callable[[], None] | None = None) -> None:
+    def __init__(
+        self,
+        buttons: list[UIControl],
+        actions: list[Callable[[], None]] | None = None,
+        on_cancel: Callable[[], None] | None = None,
+    ) -> None:
         self.buttons = buttons
+        self.actions = actions or []
         self.on_cancel = on_cancel
         self.selected_index = 0 if buttons else -1
         self.sync_hover_state()
@@ -69,17 +92,28 @@ class UINavigator:
 
     def select_by_position(self, position: Vector2) -> None:
         for index, button in enumerate(self.buttons):
-            if button.rect().collidepoint(position.x, position.y):
+            if self._button_rect(button).collidepoint(position.x, position.y):
                 self.selected_index = index
                 self.sync_hover_state()
                 return
 
+    def select_by_element(self, element: UIControl) -> bool:
+        for index, button in enumerate(self.buttons):
+            if button is element:
+                self.selected_index = index
+                self.sync_hover_state()
+                return True
+        return False
+
+    def press_element(self, element: UIControl) -> None:
+        if self.select_by_element(element):
+            self.confirm()
+
     def confirm(self) -> None:
         if self.selected_index < 0 or self.selected_index >= len(self.buttons):
             return
-        button = self.buttons[self.selected_index]
-        if button.callback is not None:
-            button.callback()
+        if self.selected_index < len(self.actions):
+            self.actions[self.selected_index]()
 
     def cancel(self) -> None:
         if self.on_cancel is not None:
@@ -87,7 +121,19 @@ class UINavigator:
 
     def sync_hover_state(self) -> None:
         for index, button in enumerate(self.buttons):
-            button.hovered = index == self.selected_index
+            is_selected = index == self.selected_index
+            self._apply_selection_state(button, is_selected)
+
+    @staticmethod
+    def _button_rect(button: UIControl) -> pygame.Rect:
+        return button.rect
+
+    @staticmethod
+    def _apply_selection_state(button: UIControl, is_selected: bool) -> None:
+        if is_selected:
+            button.select()
+            return
+        button.unselect()
 
 
 class UINavigationInputHandler:
@@ -106,10 +152,14 @@ class UINavigationInputHandler:
                 elif event.key == pygame.K_ESCAPE:
                     commands.append(UICancelCommand())
 
-            if event.type == pygame.MOUSEMOTION:
-                commands.append(UIMouseHoverCommand(position=Vector2(event.pos[0], event.pos[1])))
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                commands.append(UIMouseClickCommand(position=Vector2(event.pos[0], event.pos[1])))
+            if event.type == pygame_gui.UI_BUTTON_ON_HOVERED:
+                ui_element = event.ui_element
+                if isinstance(ui_element, pygame_gui.elements.UIButton):
+                    commands.append(UISelectElementCommand(element=ui_element))
+            elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+                ui_element = event.ui_element
+                if isinstance(ui_element, pygame_gui.elements.UIButton):
+                    commands.append(UIPressElementCommand(element=ui_element))
 
             if event.type == pygame.JOYHATMOTION:
                 if event.value[1] > 0:

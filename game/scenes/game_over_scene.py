@@ -3,16 +3,15 @@ from __future__ import annotations
 from typing import Callable
 
 import pygame
-from pygame import Vector2
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
-from game.core.scene_stack import Scene
-from game.ui.elements import Button, Container, Label
-from game.ui.navigation import UINavigationInputHandler, UINavigator
 from game.modes.game_mode_strategy import GameModeStrategy
+from game.scenes.base_menu_scene import BaseMenuScene
+from game.scenes.overlay_scene_factory import OverlayActionBinding, OverlaySceneFactory
+from game.ui.types import UIControl
 
 
-class GameOverScene(Scene):
+class GameOverScene(BaseMenuScene):
     def __init__(
         self,
         stack,
@@ -24,33 +23,41 @@ class GameOverScene(Scene):
         super().__init__(stack)
         self.reached_level = reached_level
         self.retry_strategy_factory = retry_strategy_factory
-        panel_size = Vector2(360, 260)
-        panel_pos = Vector2((SCREEN_WIDTH - panel_size.x) * 0.5, (SCREEN_HEIGHT - panel_size.y) * 0.5)
-        self.root = Container(position=panel_pos, size=panel_size, orientation="vertical", padding=16)
         subtitle_text = subtitle if subtitle is not None else f"Level {self.reached_level}"
-        self.root.add_child(Label(position=Vector2(), size=Vector2(320, 42), text=title))
-        self.root.add_child(Label(position=Vector2(), size=Vector2(320, 42), text=subtitle_text))
-        self.retry_button = Button(position=Vector2(), size=Vector2(320, 58), text="Retry", callback=self._retry)
-        self.root.add_child(self.retry_button)
-        self.menu_button = Button(position=Vector2(), size=Vector2(320, 58), text="Menu", callback=self._menu)
-        self.root.add_child(self.menu_button)
-        self.ui_input = UINavigationInputHandler()
-        self.navigator = UINavigator(
-            buttons=[self.retry_button, self.menu_button],
-            on_cancel=self._menu,
+        overlay = OverlaySceneFactory.build(
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            ui_manager=self.ui_manager,
+            title=title,
+            panel_object_id="#overlay_panel",
+            panel_size=(360, 260),
+            body_text=subtitle_text,
+            body_rect=pygame.Rect(14, 66, 332, 44),
+            action_bindings=(
+                OverlayActionBinding(
+                    key="retry",
+                    text="Retry",
+                    rect=pygame.Rect(14, 116, 332, 56),
+                    handler=self._retry,
+                ),
+                OverlayActionBinding(
+                    key="menu",
+                    text="Menu",
+                    rect=pygame.Rect(14, 182, 332, 58),
+                    object_id="#overlay_close_button",
+                    handler=self._menu,
+                ),
+            ),
+            on_cancel_key="menu",
         )
-
-    def handle_input(self, events: list[pygame.event.Event]) -> None:
-        commands = self.ui_input.build_commands(events)
-        for command in commands:
-            command.execute(self.navigator)
-
-    def update(self, dt: float) -> None:
-        self.root.update(dt)
-        self.navigator.sync_hover_state()
-
-    def render(self, screen: pygame.Surface) -> None:
-        self.root.render(screen)
+        self.panel = overlay.panel
+        self.subtitle_box = overlay.body
+        self.retry_button: UIControl = overlay.controls["retry"]
+        self.menu_button: UIControl = overlay.controls["menu"]
+        self.set_navigator(
+            buttons=overlay.navigation_buttons,
+            actions=overlay.navigation_actions,
+            on_cancel=overlay.cancel_action,
+        )
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene

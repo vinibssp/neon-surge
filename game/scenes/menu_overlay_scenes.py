@@ -1,93 +1,66 @@
 from __future__ import annotations
 
 import pygame
-from pygame import Vector2
+from pygame_gui.elements import UITextBox
 
-from game.config import MENU_MOUNTAIN_FILL_COLOR, PAUSE_OVERLAY_COLOR, SCREEN_HEIGHT, SCREEN_WIDTH
-from game.core.scene_stack import Scene
-from game.ui.elements import Button, Container, Label
-from game.ui.navigation import UINavigationInputHandler, UINavigator
+from game.config import PAUSE_OVERLAY_COLOR, SCREEN_HEIGHT, SCREEN_WIDTH
+from game.scenes.base_menu_scene import BaseMenuScene
+from game.scenes.overlay_scene_factory import OverlayActionBinding, OverlaySceneFactory
+from game.ui.components.base_widgets import create_button, create_centered_panel, create_text_box, create_title
+from game.ui.components.overlay_builder import draw_overlay_backdrop
+from game.ui.components.tab_builder import TabController, create_tab_controller
+from game.ui.types import (
+    UIControl,
+    ButtonConfig,
+    PanelConfig,
+    TabBarConfig,
+    TitleConfig,
+    TextBoxConfig,
+)
 
-NEON_CYAN = (0, 220, 255)
-NEON_MAGENTA = (255, 55, 220)
-WHITE = (245, 245, 245)
 
-
-class MenuOverlayScene(Scene):
+class MenuOverlayScene(BaseMenuScene):
     transparent = True
 
     def __init__(
         self,
         stack,
         title: str,
-        accent_color: tuple[int, int, int],
+        panel_object_id: str,
         body_text: str = "Painel em construcao...",
     ) -> None:
         super().__init__(stack)
-        panel_size = Vector2(560, 320)
-        panel_pos = Vector2((SCREEN_WIDTH - panel_size.x) * 0.5, (SCREEN_HEIGHT - panel_size.y) * 0.5)
-        self.root = Container(
-            position=panel_pos,
-            size=panel_size,
-            orientation="vertical",
-            padding=14,
-            draw_panel=True,
-            panel_color=MENU_MOUNTAIN_FILL_COLOR,
-            border_color=accent_color,
+        overlay = OverlaySceneFactory.build(
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            ui_manager=self.ui_manager,
+            title=title,
+            panel_object_id=panel_object_id,
+            panel_size=(560, 320),
+            body_text=body_text,
+            body_rect=pygame.Rect(14, 78, 530, 160),
+            action_bindings=(
+                OverlayActionBinding(
+                    key="close",
+                    text="x",
+                    rect=pygame.Rect(14, 248, 530, 58),
+                    object_id="#overlay_close_button",
+                    handler=self._close,
+                ),
+            ),
+            on_cancel_key="close",
         )
-        self.title_label = Label(
-            position=Vector2(),
-            size=Vector2(530, 54),
-            text=title,
-            color=accent_color,
-            draw_panel=False,
-            font_size=42,
-            margin=6,
+        self.panel = overlay.panel
+        self.body_text_box: UITextBox | None = overlay.body
+        self.close_button: UIControl = overlay.controls["close"]
+
+        self.set_navigator(
+            buttons=overlay.navigation_buttons,
+            actions=overlay.navigation_actions,
+            on_cancel=overlay.cancel_action,
         )
-        self.body_label = Label(
-            position=Vector2(),
-            size=Vector2(530, 120),
-            text=body_text,
-            color=(235, 235, 242),
-            draw_panel=False,
-            font_size=32,
-            margin=10,
-        )
-        self.close_button = Button(
-            position=Vector2(),
-            size=Vector2(530, 58),
-            text="x",
-            callback=self._close,
-            base_color=MENU_MOUNTAIN_FILL_COLOR,
-            hover_color=accent_color,
-            border_color=accent_color,
-            text_color=accent_color,
-            hover_border_color=WHITE,
-            hover_text_color=MENU_MOUNTAIN_FILL_COLOR,
-            font_size=40,
-        )
-        self.root.add_child(self.title_label)
-        self.root.add_child(self.body_label)
-        self.root.add_child(self.close_button)
 
-        self.ui_input = UINavigationInputHandler()
-        self.navigator = UINavigator(buttons=[self.close_button], on_cancel=self._close)
-
-    def handle_input(self, events: list[pygame.event.Event]) -> None:
-        commands = self.ui_input.build_commands(events)
-        for command in commands:
-            command.execute(self.navigator)
-
-    def update(self, dt: float) -> None:
-        self.root.update(dt)
-        self.navigator.sync_hover_state()
-
-    def render(self, screen: pygame.Surface) -> None:
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(140)
-        overlay.fill(PAUSE_OVERLAY_COLOR)
-        screen.blit(overlay, (0, 0))
-        self.root.render(screen)
+    def render_menu_background(self, screen: pygame.Surface) -> None:
+        draw_overlay_backdrop(screen, screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT), color=PAUSE_OVERLAY_COLOR)
 
     def _close(self) -> None:
         self.stack.pop()
@@ -95,9 +68,91 @@ class MenuOverlayScene(Scene):
 
 class SettingsOverlayScene(MenuOverlayScene):
     def __init__(self, stack) -> None:
-        super().__init__(stack, title="Configuracoes", accent_color=NEON_CYAN)
+        super().__init__(stack, title="Configuracoes", panel_object_id="#overlay_panel_settings")
 
 
-class HelpOverlayScene(MenuOverlayScene):
+class HelpOverlayScene(BaseMenuScene):
+    transparent = True
+
     def __init__(self, stack) -> None:
-        super().__init__(stack, title="Ajuda", accent_color=NEON_MAGENTA)
+        super().__init__(stack)
+
+        self.panel = create_centered_panel(
+            manager=self.ui_manager,
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            config=PanelConfig(size=(760, 430), object_id="#overlay_panel_help"),
+        )
+        self.title_label = create_title(
+            manager=self.ui_manager,
+            container=self.panel,
+            config=TitleConfig(text="Ajuda", rect=pygame.Rect(16, 12, 728, 42)),
+        )
+
+        self.tabs: TabController = create_tab_controller(
+            manager=self.ui_manager,
+            container=self.panel,
+            config=TabBarConfig(
+                labels=("Controles", "Modos de jogo", "Inimigos"),
+                object_ids=("#help_tab_controls", "#help_tab_modes", "#help_tab_enemies"),
+                top_left=(16, 60),
+                button_size=(236, 46),
+                gap=10,
+            ),
+            tab_keys=("controls", "modes", "enemies"),
+        )
+
+        self.content_box = create_text_box(
+            manager=self.ui_manager,
+            container=self.panel,
+            config=TextBoxConfig(html_text="", rect=pygame.Rect(16, 116, 728, 248), object_id="#help_content"),
+        )
+
+        self.close_button: UIControl = create_button(
+            manager=self.ui_manager,
+            container=self.panel,
+            config=ButtonConfig(text="x", rect=pygame.Rect(16, 372, 728, 46), object_id="#overlay_close_button"),
+        )
+
+        self._tab_content: dict[str, str] = {
+            "controls": (
+                "<b>Controles</b><br>"
+                "WASD: movimentacao<br>"
+                "Espaco: dash<br>"
+                "Esc: pausa/voltar<br>"
+                "Enter ou Espaco (menu): confirmar<br>"
+                "A/D ou Setas (menu): navegar<br>"
+                "Mouse: selecionar e clicar"
+            ),
+            "modes": (
+                "<b>Modos de jogo</b><br>"
+                "Corrida: colete energia e avance por portais.<br>"
+                "Resistencia: sobreviva ao aumento progressivo de pressao.<br>"
+                "1v1: enfrente um inimigo por vez e avance no portal."
+            ),
+            "enemies": (
+                "<b>Inimigos</b><br>"
+                "Follower: persegue o jogador continuamente.<br>"
+                "Shooter/Turrets: atacam a distancia com padroes proprios.<br>"
+                "Charge/Explosive: alta pressao com investida e explosao.<br>"
+                "Minibosses: variantes com escudo, sniper e espiral."
+            ),
+        }
+        self.selected_tab = "controls"
+
+        self.set_navigator(
+            buttons=[*self.tabs.buttons, self.close_button],
+            actions=[*self.tabs.build_actions(self._set_tab), self._close],
+            on_cancel=self._close,
+        )
+        self._set_tab("controls")
+
+    def render_menu_background(self, screen: pygame.Surface) -> None:
+        draw_overlay_backdrop(screen, screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT), color=PAUSE_OVERLAY_COLOR)
+
+    def _set_tab(self, tab_name: str) -> None:
+        self.selected_tab = tab_name
+        self.content_box.set_text(self._tab_content[tab_name])
+        self.tabs.set_active(tab_name)
+
+    def _close(self) -> None:
+        self.stack.pop()

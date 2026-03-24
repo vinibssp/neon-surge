@@ -5,6 +5,8 @@ Jogo 2D em Python + Pygame com arquitetura modular e desacoplada, seguindo ECS, 
 ## Requisitos
 
 - Python 3.11+
+- `pygame-ce`
+- `pygame_gui`
 - Dependências em `requirements.txt`
 
 ## Instalação
@@ -152,12 +154,35 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 
 Menus não dependem mais do player para navegação:
 
-- `UINavigator` separado
-- `UINavigationInputHandler` gera comandos de UI (`UINavigateCommand`, `UIConfirmCommand`, `UICancelCommand`, comandos de mouse)
-- funciona com teclado, mouse e gamepad sem alterar `Button`
-- API de UI limpa: `update(dt)` sem assinatura legada de `player_position/player_radius`
+- `UINavigator` é a fonte única de foco/seleção
+- `UINavigationInputHandler` traduz dispositivo em comandos de UI
+- mesma semântica de navegação para teclado, mouse e gamepad
+- cenas de menu consomem comandos; não roteiam lógica de navegação manualmente
 
-### 9) Query API completa
+### 9) Arquitetura de UI, Menus e Cenas de Menu
+
+#### Princípios de design
+
+- UI orientada a composição (builders/configs/controllers), sem herança profunda
+- contrato explícito entre input de UI, navegação e ações de cena
+- responsabilidade da cena: orquestrar fluxo; responsabilidade da UI: estado visual e estrutura
+- estilo visual centralizado em tema, sem decisões visuais espalhadas em regras de domínio
+
+#### Contratos arquiteturais
+
+- `BaseMenuScene` define o ciclo padrão de menu (input/update/render) e evita duplicação
+- cenas de menu registram `buttons` + `actions` no navigator; ações disparam transições de stack
+- overlays compartilham construção via factory de cena (`OverlaySceneFactory`) para consistência de contrato
+- componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
+
+#### Regras para Menu Scenes
+
+- menu scene não concentra detalhe de composição de widget em cascata
+- menu scene não usa estado global/flags implícitas para navegação
+- overlays usam `transparent=True` e mantêm comportamento previsível de cancelamento
+- extensões de menu devem adicionar novas ações/componentes sem alterar contratos base
+
+### 10) Query API completa
 
 - Consulta de mundo centralizada em `WorldQuery`
 - `PORTAL_SPAWN_QUERY` em `game/systems/world_queries.py` substitui loop ad-hoc remanescente
@@ -176,8 +201,8 @@ game/
 ├── behaviors/     # IA dos inimigos
 ├── modes/         # strategies de modo, progressão e presets
 ├── rendering/     # render strategies e utilitários visuais
-├── ui/            # elementos UI e navegação desacoplada
-└── scenes/        # menu, gameplay, pausa e game over
+├── ui/            # contratos, tema, navegação e componentes reutilizáveis
+└── scenes/        # orquestração de menu/gameplay e transições de stack
 ```
 
 ## Fluxo de Alto Nível
