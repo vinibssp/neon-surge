@@ -5,7 +5,7 @@ import threading
 import time
 
 from ..constants import ALTURA_TELA, AMARELO_DADO, CIANO_NEON, LARGURA_TELA, LARANJA_NEON, ROSA_NEON, ROXO_NEON, VERDE_NEON, VERMELHO_SANGUE
-from ..entities import BlackHole, Inimigo, Particula, Player, LavaManager
+from ..entities import BlackHole, Collectible, Inimigo, Particula, Player, LavaManager
 from ..services.ranking import buscar_ranking_global
 
 
@@ -410,7 +410,7 @@ def iniciar_fase(self):
             for _ in range(9):
                 x = random.randint(50, LARGURA_TELA - 50)
                 y = random.randint(110, ALTURA_TELA - 50)
-                self.coletaveis.append(pygame.math.Vector2(x, y))
+                self.coletaveis.append(Collectible(x, y))
 
             ex, ey = LARGURA_TELA // 2, 120
             while abs(ex - self.player.pos.x) < 300 and abs(ey - self.player.pos.y) < 300:
@@ -455,7 +455,7 @@ def iniciar_fase(self):
             for _ in range(5):
                 x = random.randint(50, LARGURA_TELA - 50)
                 y = random.randint(110, ALTURA_TELA - 50)
-                self.coletaveis.append(pygame.math.Vector2(x, y))
+                self.coletaveis.append(Collectible(x, y))
 
             limite_inimigos = 2 + min(self.fase_atual, 14)
             vel_inimigo = 4.0 + min((self.fase_atual * 0.18), 6.8)
@@ -732,14 +732,17 @@ def atualizar_jogo(self):
 
     elif self.modo_jogo in ["CORRIDA", "CORRIDA_INFINITA"]:
         self.tempo_corrida += self.dt
-        raio_coleta = 28 if self.modo_jogo == "CORRIDA" else 20
+        raio_coleta = 32 if self.modo_jogo == "CORRIDA" else 25
         for d in self.coletaveis[:]:
-            if self.player.pos.distance_to(d) < raio_coleta:
+            d.update(self.player.pos, self.dt)
+            
+            # Coleta apenas pelo Player
+            if self.player.pos.distance_to(d.pos) < raio_coleta:
                 self.sounds.play('coin_collect')
                 self.coletaveis.remove(d)
                 self.shake_frames = 2
-                for _ in range(10):
-                    self.particulas.append(Particula(d.x, d.y, AMARELO_DADO))
+                for _ in range(12):
+                    self.particulas.append(Particula(d.pos.x, d.pos.y, CIANO_NEON))
 
         if len(self.coletaveis) == 0 and not self.portal_aberto:
             self.portal_aberto = True

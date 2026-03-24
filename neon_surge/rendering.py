@@ -578,8 +578,7 @@ class Renderer:
             Renderer._render_lab_ui(self, surf)
         Renderer._render_portais(self, surf)
         for d in self.coletaveis:
-            desenhar_brilho_neon(surf, AMARELO_DADO, d.x, d.y, 6, 2)
-            pygame.draw.rect(surf, AMARELO_DADO, (int(d.x)-6, int(d.y)-6, 12, 12), border_radius=2)
+            d.draw(surf)
         if self.portal_aberto: Renderer._render_portal_saida(self, surf)
         for p in self.particulas: p.draw(surf)
         for i in self.inimigos: i.draw(surf)
