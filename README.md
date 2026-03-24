@@ -5,10 +5,10 @@
 *Novas habilidades e funcionalidades de interface/experiência do usuário (UX).*
 
 - [ ] **Mecânica de Parry:** Adicionar sistema para refletir/aparar ataques no tempo exato.
-- [ ] **Aba de Ranking:** Criar leaderboard no menu principal para mostrar pontuações.
-- [ ] **Causa da Morte:** Exibir na tela de Game Over qual foi o mob, boss ou hazard que matou o jogador.
+- [x] **Aba de Ranking:** Criar leaderboard no menu principal para mostrar pontuações.
+- [X] **Causa da Morte:** Exibir na tela de Game Over qual foi o mob, boss ou hazard que matou o jogador.
 - [ ] **Atualizar Guia do Player:** Inserir as novas mecânicas, explicações dos novos modos e arquivo de ameaças.
-- [ ] **Atualizar Arquivo de Ameaças:** Cadastrar todos os novos inimigos e obstáculos no bestiário/arquivo do jogo.
+- [X] **Atualizar Arquivo de Ameaças:** Cadastrar todos os novos inimigos e obstáculos no bestiário/arquivo do jogo.
 
 
 ## Novos Inimigos (Mobs)

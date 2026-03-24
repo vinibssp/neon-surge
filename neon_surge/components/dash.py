@@ -2,7 +2,7 @@ import pygame
 
 
 class DashAbility:
-    """Space-bar dash — brief invincibility window in the direction of movement."""
+    """Space or Shift dash — brief invincibility window in the direction of movement."""
 
     def __init__(self, speed: float, duration: int, cooldown: int) -> None:
         self.speed = speed

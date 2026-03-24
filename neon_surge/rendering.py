@@ -14,7 +14,7 @@ from .hud.ui import (
     desenhar_fundo_cyberpunk, desenhar_grade_jogo, desenhar_icone_som, 
     desenhar_icone_engrenagem, desenhar_icone_trofeu, desenhar_icone_porta,
     desenhar_icone_caveira, desenhar_icone_disco, desenhar_icone_globo,
-    desenhar_texto, desenhar_moldura, Button
+    desenhar_texto, desenhar_moldura, desenhar_tecla, Button
 )
 from .data import INIMIGOS_DATA
 
@@ -232,11 +232,49 @@ class Renderer:
         desenhar_moldura(self.tela, rect, AMARELO_DADO if aba=="MODOS" else VERDE_NEON)
 
         if aba == "HOTKEYS":
-            items = [("WASD / SETAS", "Movimentação da Nave"), ("SPACE / L-SHIFT", "DASH: Impulso e Invencibilidade"), ("TECLA ESC", "Menu de Pausa / Retornar"), ("TECLA F11", "Alternar Visualização de Tela"), ("TECLAS + / -", "Ajuste Dinâmico de Volume")]
-            for i, (k, d) in enumerate(items):
-                y = rect.top + 60 + i * 70
-                desenhar_texto(self.tela, k, self.fonte_sub, CIANO_NEON, cx - 60, y, "direita")
-                desenhar_texto(self.tela, d, self.fonte_texto, BRANCO, cx + 60, y, "esquerda")
+            # Configuração de teclas e descrições
+            hotkey_data = [
+                (["W", "A", "S", "D"], "Movimentação da Nave"),
+                (["SPACE", "SHIFT"], "DASH: Impulso e Invencibilidade"),
+                (["ESC"], "Menu de Pausa / Retornar"),
+                (["F11"], "Alternar Visualização de Tela"),
+                (["+", "-"], "Ajuste Dinâmico de Volume")
+            ]
+            
+            start_y = rect.top + 60
+            for i, (keys, desc) in enumerate(hotkey_data):
+                y_pos = start_y + i * 65
+                
+                # Renderizar teclas (direita alinhada ao centro)
+                current_x = cx - 40
+                total_w = 0
+                
+                # Calcular largura total para alinhar à direita
+                key_width = 34
+                total_w = len(keys) * key_width + (len(keys)-1) * 10
+                start_x_keys = current_x - total_w
+                
+                for k in keys:
+                    # Teclas largas (SPACE, SHIFT, ETC) precisam de mais espaço
+                    w_key = 28
+                    if len(k) > 1 and k not in ["F11"]: w_key = 60
+                    
+                    # Adaptação básica para desenhar_tecla que espera w=28 fixo,
+                    # mas vamos desenhar centralizado na posição calculada
+                    if len(k) > 1 and k not in ["F11", "ESC"]:
+                        # Hack visual para teclas largas: desenha texto com moldura manual se desenhar_tecla não suportar largura variável
+                        # Mas vamos usar desenhar_texto com fundo por enquanto ou simplificar para desenhar_tecla
+                        # Para manter consistência, usamos desenhar_tecla mas aceitamos que vai ficar pequeno ou ajustamos
+                        # Vamos ajustar desenhar_tecla para aceitar largura? Não, vamos usar simplificação:
+                        desenhar_tecla(self.tela, start_x_keys + w_key//2, y_pos, k[:3], self.fonte_desc) # Abrevia se longo
+                        start_x_keys += w_key + 6
+                    else:
+                        desenhar_tecla(self.tela, start_x_keys + 14, y_pos, k, self.fonte_desc)
+                        start_x_keys += 34
+                
+                # Descrição
+                desenhar_texto(self.tela, desc, self.fonte_texto, BRANCO, cx + 40, y_pos, "esquerda")
+                
         else:
             regras = [("OBJETIVOS", "Avance eliminando ameaças e coletando núcleos de energia."), ("AMEAÇAS", "Analise os padrões de ataque no banco de dados antes de iniciar."), ("PONTUAÇÃO", "Tempo de sobrevivência e precisão definem sua posição no ranking."), ("MODO TREINO", "Customize o ambiente para dominar as mecânicas de combate.")]
             for i, (t, d) in enumerate(regras):

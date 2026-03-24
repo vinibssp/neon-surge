@@ -79,7 +79,7 @@ class Player:
 
         # 2. Handle Dash logic
         triggered_shake = False
-        if teclas[pygame.K_SPACE] and self.dash.ready:
+        if (teclas[pygame.K_SPACE] or teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]) and self.dash.ready:
             # Determine dash direction: input -> velocity -> memory
             if move_vec.length_squared() > 0:
                 direcao_dash = move_vec
