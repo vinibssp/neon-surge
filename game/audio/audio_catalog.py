@@ -67,7 +67,7 @@ def build_default_audio_catalog() -> AudioCatalog:
         "PlayerDied": "player_death",
         "CollectibleCollected": "collectible",
         "EnemyShotFired": "enemy_shoot",
-        "PortalActivated": "portal_activated",
+        # "PortalActivated": "portal_activated",
         "PortalEntered": "portal_enter",
         "ExplosionTriggered": "explosion",
     }
