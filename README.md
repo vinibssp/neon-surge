@@ -67,16 +67,16 @@ O núcleo ECS fica em `game/ecs` e a consulta foi centralizada via `WorldQuery`:
 - `GameWorld.query(WorldQuery)` para filtros reutilizáveis
 - catálogo de queries em `game/systems/world_queries.py` para evitar loops duplicados
 
-### 4) Domain Event Bus + Dispatcher
+### 4) Domain Event Bus
 
-Eventos de domínio substituem flags de estado:
+Eventos de domínio seguem um barramento único:
 
-- `EventBus` em `game/core/events.py`
+- `EventBus` global compartilhado pelo `SceneStack`
 - eventos principais: `PlayerDied`, `PortalEntered`, `EnemySpawned`
 - eventos adicionais de telemetria/domínio: `CollectibleCollected`, `SpawnPortalDestroyed`, `DashStarted`, `BulletExpired`, `LifetimeExpired`
 - systems publicam eventos em `EventBus`
-- `GameScene` drena a fila e distribui via `DomainEventDispatcher.on(...)`
-- handlers tipados removem `if isinstance(...)` espalhado na cena
+- consumidores transversais (ex.: áudio/UI) podem registrar handlers diretamente no `EventBus`
+- `GameScene` registra/desregistra handlers de gameplay em `on_enter()`/`on_exit()`
 
 ### 5) Factory Pattern + Registry
 

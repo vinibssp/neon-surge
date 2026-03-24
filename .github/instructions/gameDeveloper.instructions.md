@@ -50,8 +50,9 @@ Seu objetivo é evoluir o projeto preservando uma arquitetura modular, desacopla
 
 ### Event Bus de Domínio
 
-- Transições de domínio via `EventBus` + `DomainEventDispatcher`
-- Systems publicam eventos; cena/orquestrador consome via `drain`
+- Um único `EventBus` global para eventos de domínio (sem barramentos paralelos)
+- Systems publicam no `EventBus`; consumidores transversais (áudio/UI) registram handlers diretamente nele
+- `GameScene` registra/desregistra handlers de gameplay no ciclo `on_enter()`/`on_exit()`
 - Não usar flags globais para transições de estado
 - Evitar roteamento espalhado baseado em `isinstance`
 

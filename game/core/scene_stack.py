@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 
 import pygame
 
+from game.core.events import EventBus
+
 
 class Scene(ABC):
     transparent: bool = False
@@ -33,6 +35,7 @@ class Scene(ABC):
 class SceneStack:
     def __init__(self) -> None:
         self._stack: list[Scene] = []
+        self.event_bus = EventBus()
 
     def push(self, scene: Scene) -> None:
         self._stack.append(scene)

@@ -12,12 +12,11 @@ from game.core.events import (
     BulletExpired,
     CollectibleCollected,
     DashStarted,
-    DomainEvent,
-    DomainEventDispatcher,
     EnemySpawned,
     LifetimeExpired,
     PlayerDied,
     PortalEntered,
+    SubscriptionToken,
     SpawnPortalDestroyed,
 )
 from game.core.input_handler import InputHandler
@@ -38,7 +37,7 @@ class GameScene(Scene):
     def __init__(self, stack, mode: GameModeStrategy) -> None:
         super().__init__(stack)
         self.mode = mode
-        self.world = GameWorld(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
+        self.world = GameWorld(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, event_bus=self.stack.event_bus)
         self.input_handler = InputHandler()
         self.elapsed_time = 0.0
         self.level_portal_spawned = False
@@ -52,18 +51,17 @@ class GameScene(Scene):
         self.level_progression = self.mode.build_level_progression_strategy()
         self.render_system = RenderSystem(self.world)
         self.system_pipeline = SystemPipeline(systems=self.mode.build_systems(self.world))
-        self.event_dispatcher = DomainEventDispatcher()
+        self._event_tokens: list[SubscriptionToken] = []
+        self._transition_in_progress = False
         self.stats_collector = StatsCollector()
         self.session_stats = self.stats_collector.stats
-        self._pending_events: list[DomainEvent] | None = None
+
+    def on_enter(self) -> None:
         self._register_event_handlers()
         self.mode.on_enter(self)
 
-    def on_enter(self) -> None:
-        pass
-
     def on_exit(self) -> None:
-        pass
+        self._unregister_event_handlers()
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
@@ -87,11 +85,6 @@ class GameScene(Scene):
         self.system_pipeline.update(dt)
         self.world.apply_pending()
 
-        self._pending_events = self.world.event_bus.drain()
-        while self._pending_events:
-            event = self._pending_events.pop(0)
-            self.event_dispatcher.dispatch(event)
-
     def render(self, screen: pygame.Surface) -> None:
         self.background_renderer.render(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.render_system.render(screen)
@@ -100,7 +93,7 @@ class GameScene(Scene):
     def setup_level(self, level: int) -> None:
         self.world.level = level
         self.level_portal_spawned = False
-        self.world.event_bus.drain()
+        self._transition_in_progress = False
 
         if self.world.player is None:
             player = PlayerFactory.create(Vector2(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5))
@@ -141,25 +134,34 @@ class GameScene(Scene):
         )
 
     def _register_event_handlers(self) -> None:
-        self.event_dispatcher.on(PlayerDied, self._on_player_died)
-        self.event_dispatcher.on(PortalEntered, self._on_portal_entered)
-        self.event_dispatcher.on(EnemySpawned, self.stats_collector.on_enemy_spawned)
-        self.event_dispatcher.on(CollectibleCollected, self.stats_collector.on_collectible_collected)
-        self.event_dispatcher.on(SpawnPortalDestroyed, self.stats_collector.on_spawn_portal_destroyed)
-        self.event_dispatcher.on(DashStarted, self.stats_collector.on_dash_started)
-        self.event_dispatcher.on(BulletExpired, self.stats_collector.on_bullet_expired)
-        self.event_dispatcher.on(LifetimeExpired, self.stats_collector.on_lifetime_expired)
+        event_bus = self.stack.event_bus
+        self._event_tokens = [
+            event_bus.on(PlayerDied, self._on_player_died),
+            event_bus.on(PortalEntered, self._on_portal_entered),
+            event_bus.on(EnemySpawned, self.stats_collector.on_enemy_spawned),
+            event_bus.on(CollectibleCollected, self.stats_collector.on_collectible_collected),
+            event_bus.on(SpawnPortalDestroyed, self.stats_collector.on_spawn_portal_destroyed),
+            event_bus.on(DashStarted, self.stats_collector.on_dash_started),
+            event_bus.on(BulletExpired, self.stats_collector.on_bullet_expired),
+            event_bus.on(LifetimeExpired, self.stats_collector.on_lifetime_expired),
+        ]
+
+    def _unregister_event_handlers(self) -> None:
+        event_bus = self.stack.event_bus
+        for token in self._event_tokens:
+            event_bus.off(token)
+        self._event_tokens.clear()
 
     def _on_player_died(self, event: PlayerDied) -> None:
         del event
-        self._clear_pending_events()
+        if self._transition_in_progress:
+            return
+        self._transition_in_progress = True
         self.mode.on_player_death(self)
 
     def _on_portal_entered(self, event: PortalEntered) -> None:
         del event
-        self._clear_pending_events()
+        if self._transition_in_progress:
+            return
+        self._transition_in_progress = True
         self.level_progression.on_level_portal_crossed(self)
-
-    def _clear_pending_events(self) -> None:
-        if self._pending_events is not None:
-            self._pending_events.clear()
