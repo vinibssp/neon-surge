@@ -158,16 +158,7 @@ class TrainingMenuManager:
             ry = start_y + i * self.row_h
             row_rect = pygame.Rect(rect_p.left + 35, ry - self.row_h//2 + 5, self.list_w, self.row_h - 10)
             
-            if self.game.mouse_moveu and row_rect.collidepoint(mx, my):
-                self.game.botao_selecionado = 4 + i
-
-            is_sel = (self.game.botao_selecionado == 4 + i)
-            
-            # Nome Principal (Centralizado na linha)
-            txt_n = data["nome"].upper()
-            cor_n = AMARELO_DADO if is_sel else BRANCO
-            desenhar_texto(surface, txt_n, self.game.fonte_sub, cor_n, row_rect.left + 20, row_rect.centery, "esquerda")
-
+            # Botões de ação (+/-) devem vir ANTES da linha para terem prioridade no clique
             if is_t:
                 qtd = self.game.inimigos_treino_selecionados.get(tid, 0)
                 bx = row_rect.right - 160
@@ -181,13 +172,39 @@ class TrainingMenuManager:
 
                 for d_x, txt, cb, cor in [(0, "-", dec, VERMELHO_SANGUE), (120, "+", inc, VERDE_NEON)]:
                     btn_r = pygame.Rect(bx + d_x - self.btn_size//2, row_rect.centery - self.btn_size//2, self.btn_size, self.btn_size)
-                    is_h = btn_r.collidepoint(mx, my)
+                    
+                    # Criar objeto Button para gerenciar hover e clique corretamente
+                    btn_obj = Button(btn_r.centerx, btn_r.centery, self.btn_size, self.btn_size, txt, self.game.fonte_sub, callback=cb, id=f"act_{tid}_{txt}", cor=cor)
+                    btn_obj.update((mx, my))
+                    
+                    is_h = btn_obj.is_hovered
                     pygame.draw.rect(surface, (15, 20, 30), btn_r, border_radius=6)
                     pygame.draw.rect(surface, cor if is_h else (*cor, 100), btn_r, 2, border_radius=6)
                     desenhar_texto(surface, txt, self.game.fonte_sub, cor if is_h else BRANCO, btn_r.centerx, btn_r.centery)
-                    self.game.botoes_menu.append(Button(btn_r.centerx, btn_r.centery, self.btn_size, self.btn_size, txt, self.game.fonte_sub, callback=cb, id=f"act_{tid}_{txt}", cor=cor))
+                    self.game.botoes_menu.append(btn_obj)
 
-                desenhar_seletor_quantidade(surface, bx + 60, row_rect.centery, qtd, is_sel, self.game.fonte_sub)
+                desenhar_seletor_quantidade(surface, bx + 60, row_rect.centery, qtd, (self.game.botao_selecionado == 4 + i), self.game.fonte_sub)
+
+            # Botão da linha para permitir seleção via clique
+            def selecionar_linha(val=4+i):
+                self.game.botao_selecionado = val
+                # Se for modo treino, o clique na linha também pode servir para dar foco
+                # ou poderíamos até fazer o clique alternar entre 0 e 1 inimigo
+                self.game.sounds.play('menu_button')
+
+            row_btn = Button(row_rect.centerx, row_rect.centery, row_rect.width, row_rect.height, "", self.game.fonte_sub, callback=selecionar_linha, id=4+i)
+            row_btn.update((mx, my), self.game.botao_selecionado)
+            self.game.botoes_menu.append(row_btn)
+
+            if self.game.mouse_moveu and row_btn.is_hovered:
+                self.game.botao_selecionado = 4 + i
+
+            is_sel = (self.game.botao_selecionado == 4 + i)
+            
+            # Nome Principal (Centralizado na linha)
+            txt_n = data["nome"].upper()
+            cor_n = AMARELO_DADO if is_sel else BRANCO
+            desenhar_texto(surface, txt_n, self.game.fonte_sub, cor_n, row_rect.left + 20, row_rect.centery, "esquerda")
 
     def _render_tactical_data(self, surface, data, dx, dy):
         det_w = 380
