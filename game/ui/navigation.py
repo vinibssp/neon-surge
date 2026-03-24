@@ -27,6 +27,14 @@ class UINavigateCommand(UICommand):
 
 
 @dataclass(frozen=True)
+class UINavigateDirectionalCommand(UICommand):
+    direction: str
+
+    def execute(self, navigator: "UINavigator") -> None:
+        navigator.move_directional(self.direction)
+
+
+@dataclass(frozen=True)
 class UIConfirmCommand(UICommand):
     def execute(self, navigator: "UINavigator") -> None:
         navigator.confirm()
@@ -78,11 +86,15 @@ class UINavigator:
         actions: list[Callable[[], None]] | None = None,
         on_cancel: Callable[[], None] | None = None,
         event_bus: EventBus | None = None,
+        directional_resolver: Callable[[int, str, int], int] | None = None,
+        use_button_selection_state: bool = True,
     ) -> None:
         self.buttons = buttons
         self.actions = actions or []
         self.on_cancel = on_cancel
         self.event_bus = event_bus
+        self.directional_resolver = directional_resolver
+        self.use_button_selection_state = use_button_selection_state
         self.selected_index = 0 if buttons else -1
         self.sync_hover_state()
 
@@ -91,6 +103,22 @@ class UINavigator:
             return
         previous_index = self.selected_index
         next_index = (self.selected_index + delta) % len(self.buttons)
+        self.selected_index = next_index
+        self.sync_hover_state()
+        if self.selected_index != previous_index:
+            self._publish_navigated()
+
+    def move_directional(self, direction: str) -> None:
+        if not self.buttons:
+            return
+        previous_index = self.selected_index
+        if self.directional_resolver is not None:
+            next_index = self.directional_resolver(self.selected_index, direction, len(self.buttons))
+        else:
+            default_delta = -1 if direction in ("left", "up") else 1
+            next_index = (self.selected_index + default_delta) % len(self.buttons)
+        if next_index < 0 or next_index >= len(self.buttons):
+            return
         self.selected_index = next_index
         self.sync_hover_state()
         if self.selected_index != previous_index:
@@ -143,6 +171,10 @@ class UINavigator:
         self.event_bus.publish(UINavigated(index=self.selected_index))
 
     def sync_hover_state(self) -> None:
+        if not self.use_button_selection_state:
+            for button in self.buttons:
+                button.unselect()
+            return
         for index, button in enumerate(self.buttons):
             is_selected = index == self.selected_index
             self._apply_selection_state(button, is_selected)
@@ -166,10 +198,14 @@ class UINavigationInputHandler:
         commands: list[UICommand] = []
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a):
-                    commands.append(UINavigateCommand(delta=-1))
-                elif event.key in (pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d):
-                    commands.append(UINavigateCommand(delta=1))
+                if event.key in (pygame.K_UP, pygame.K_w):
+                    commands.append(UINavigateDirectionalCommand(direction="up"))
+                elif event.key in (pygame.K_DOWN, pygame.K_s):
+                    commands.append(UINavigateDirectionalCommand(direction="down"))
+                elif event.key in (pygame.K_LEFT, pygame.K_a):
+                    commands.append(UINavigateDirectionalCommand(direction="left"))
+                elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                    commands.append(UINavigateDirectionalCommand(direction="right"))
                 elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                     commands.append(UIConfirmCommand())
                 elif event.key == pygame.K_ESCAPE:
@@ -185,15 +221,24 @@ class UINavigationInputHandler:
                     commands.append(UIPressElementCommand(element=ui_element))
 
             if event.type == pygame.JOYHATMOTION:
+                if event.value[0] > 0:
+                    commands.append(UINavigateDirectionalCommand(direction="right"))
+                elif event.value[0] < 0:
+                    commands.append(UINavigateDirectionalCommand(direction="left"))
                 if event.value[1] > 0:
-                    commands.append(UINavigateCommand(delta=-1))
+                    commands.append(UINavigateDirectionalCommand(direction="up"))
                 elif event.value[1] < 0:
-                    commands.append(UINavigateCommand(delta=1))
+                    commands.append(UINavigateDirectionalCommand(direction="down"))
             elif event.type == pygame.JOYAXISMOTION and event.axis == 1:
                 if event.value <= -self.AXIS_DEADZONE:
-                    commands.append(UINavigateCommand(delta=-1))
+                    commands.append(UINavigateDirectionalCommand(direction="up"))
                 elif event.value >= self.AXIS_DEADZONE:
-                    commands.append(UINavigateCommand(delta=1))
+                    commands.append(UINavigateDirectionalCommand(direction="down"))
+            elif event.type == pygame.JOYAXISMOTION and event.axis == 0:
+                if event.value <= -self.AXIS_DEADZONE:
+                    commands.append(UINavigateDirectionalCommand(direction="left"))
+                elif event.value >= self.AXIS_DEADZONE:
+                    commands.append(UINavigateDirectionalCommand(direction="right"))
             elif event.type == pygame.JOYBUTTONDOWN and event.button == 0:
                 commands.append(UIConfirmCommand())
             elif event.type == pygame.JOYBUTTONDOWN and event.button == 1:

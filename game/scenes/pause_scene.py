@@ -31,7 +31,6 @@ class PauseScene(BaseMenuScene):
                     key="continue",
                     text="Continuar",
                     rect=pygame.Rect(14, 248, 392, 58),
-                    object_id="#overlay_close_button",
                     handler=self._continue,
                 ),
                 OverlayActionBinding(
@@ -42,8 +41,9 @@ class PauseScene(BaseMenuScene):
                 ),
                 OverlayActionBinding(
                     key="menu",
-                    text="Voltar ao menu",
-                    rect=pygame.Rect(14, 204, 392, 56),
+                    text="X",
+                    rect=pygame.Rect(362, 14, 44, 44),
+                    object_id="#overlay_close_button",
                     handler=self._back_to_menu,
                 ),
             ),

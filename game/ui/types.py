@@ -63,7 +63,7 @@ class OverlayMenuConfig:
     title: str
     panel_object_id: str
     panel_size: tuple[int, int] = (560, 320)
-    close_button_text: str = "x"
+    close_button_text: str = "X"
 
 
 @dataclass(frozen=True)

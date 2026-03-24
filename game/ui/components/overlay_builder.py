@@ -72,7 +72,7 @@ def create_overlay_menu(
                 OverlayActionConfig(
                     key="close",
                     text=config.close_button_text,
-                    rect=pygame.Rect(14, config.panel_size[1] - 72, config.panel_size[0] - 28, 58),
+                    rect=pygame.Rect(config.panel_size[0] - 58, 14, 44, 44),
                     object_id="#overlay_close_button",
                 ),
             ),

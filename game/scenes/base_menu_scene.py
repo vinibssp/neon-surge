@@ -23,12 +23,16 @@ class BaseMenuScene(Scene):
         buttons: list[UIControl],
         actions: list[Callable[[], None]] | None = None,
         on_cancel: Callable[[], None] | None = None,
+        directional_resolver: Callable[[int, str, int], int] | None = None,
+        use_button_selection_state: bool = True,
     ) -> None:
         self.navigator = UINavigator(
             buttons=buttons,
             actions=actions,
             on_cancel=on_cancel,
             event_bus=self.stack.event_bus,
+            directional_resolver=directional_resolver,
+            use_button_selection_state=use_button_selection_state,
         )
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:

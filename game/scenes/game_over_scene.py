@@ -42,8 +42,8 @@ class GameOverScene(BaseMenuScene):
                 ),
                 OverlayActionBinding(
                     key="menu",
-                    text="Menu",
-                    rect=pygame.Rect(14, 182, 332, 58),
+                    text="X",
+                    rect=pygame.Rect(302, 12, 44, 44),
                     object_id="#overlay_close_button",
                     handler=self._menu,
                 ),

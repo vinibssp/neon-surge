@@ -41,8 +41,8 @@ class MenuOverlayScene(BaseMenuScene):
             action_bindings=(
                 OverlayActionBinding(
                     key="close",
-                    text="x",
-                    rect=pygame.Rect(14, 248, 530, 58),
+                    text="X",
+                    rect=pygame.Rect(502, 14, 44, 44),
                     object_id="#overlay_close_button",
                     handler=self._close,
                 ),
@@ -110,7 +110,7 @@ class HelpOverlayScene(BaseMenuScene):
         self.close_button: UIControl = create_button(
             manager=self.ui_manager,
             container=self.panel,
-            config=ButtonConfig(text="x", rect=pygame.Rect(16, 372, 728, 46), object_id="#overlay_close_button"),
+            config=ButtonConfig(text="X", rect=pygame.Rect(700, 12, 44, 44), object_id="#overlay_close_button"),
         )
 
         self._tab_content: dict[str, str] = {
