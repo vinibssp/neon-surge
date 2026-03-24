@@ -44,11 +44,10 @@ class Button:
 
     def draw(self, surface):
         is_active = self.is_selected or self.is_hovered
-        cor_base = self.cor if self.cor else (UI_COLORS["SELECTED"] if is_active else UI_COLORS["HIGHLIGHT"])
+        # Cor de base do botão (Neon accent)
+        cor_accent = self.cor if self.cor else (UI_COLORS["SELECTED"] if is_active else UI_COLORS["HIGHLIGHT"])
         
-        if is_active and not self.cor:
-            cor_base = UI_COLORS["SELECTED"]
-            
+        # Cores de texto
         cor_texto = UI_COLORS["TEXT_SELECTED"] if is_active else UI_COLORS["TEXT_NORMAL"]
         
         draw_rect = self.rect.copy()
@@ -58,34 +57,35 @@ class Button:
             draw_rect = pygame.Rect(0, 0, new_w, new_h)
             draw_rect.center = self.rect.center
 
-        # Desenho do botão
-        bg_alpha = 255 if is_active else 0
-        surf_btn = pygame.Surface((draw_rect.width, draw_rect.height), pygame.SRCALPHA)
-        
-        if is_active:
-            # Fundo preenchido suave
-            pygame.draw.rect(surf_btn, (*cor_base, bg_alpha), (0, 0, draw_rect.width, draw_rect.height), border_radius=6)
-            # Borda brilhante
-            pygame.draw.rect(surf_btn, BRANCO, (0, 0, draw_rect.width, draw_rect.height), 2, border_radius=6)
-            # Barra lateral de destaque
-            pygame.draw.rect(surf_btn, BRANCO, (4, 6, 4, draw_rect.height - 12), border_radius=2)
-            pygame.draw.rect(surf_btn, BRANCO, (draw_rect.width - 8, 6, 4, draw_rect.height - 12), border_radius=2)
-        else:
-            pygame.draw.rect(surf_btn, (*cor_base, 255), (0, 0, draw_rect.width, draw_rect.height), 1, border_radius=6)
-            pygame.draw.rect(surf_btn, (*cor_base, 30), (0, 0, draw_rect.width, draw_rect.height), border_radius=6)
-            
-        surface.blit(surf_btn, draw_rect.topleft)
+        # Efeito de Pulso para botão SELECIONADO (Navegação via teclado/gamepad)
+        if self.is_selected:
+            pulso = math.sin(time.time() * UI_ANIMATION["PULSE_SPEED"]) * 2
+            # Glow retangular sutil em vez de uma bola gigante
+            glow_rect = draw_rect.inflate(4 + pulso, 4 + pulso)
+            pygame.draw.rect(surface, (*cor_accent, 40), glow_rect, border_radius=10)
 
-        texto_render = self.texto # Removido > < para estilo mais limpo
-        img_texto = self.fonte.render(texto_render, True, cor_texto)
-        
-        # Ajuste de posição se houver ícone
-        if self.icone_func:
-            ix = self.rect.left + 30
-            self.icone_func(surface, ix, self.rect.centery, cor_texto)
-            rect_texto = img_texto.get_rect(midleft=(ix + 25, self.rect.centery))
+        if is_active:
+            # Fundo mais opaco para melhor contraste do texto escuro
+            pygame.draw.rect(surface, (*cor_accent, 245), draw_rect, border_radius=8)
+            # Borda dupla para destaque
+            pygame.draw.rect(surface, BRANCO, draw_rect, 2, border_radius=8)
+            # Destaques laterais futuristas
+            margin = 8
+            pygame.draw.rect(surface, BRANCO, (draw_rect.left + margin, draw_rect.top + margin, 4, draw_rect.height - margin*2), border_radius=2)
+            pygame.draw.rect(surface, BRANCO, (draw_rect.right - margin - 4, draw_rect.top + margin, 4, draw_rect.height - margin*2), border_radius=2)
         else:
-            rect_texto = img_texto.get_rect(center=self.rect.center)
+            # Estado inativo mais sóbrio, mas legível
+            pygame.draw.rect(surface, UI_COLORS["BTN_INACTIVE_BG"], draw_rect, border_radius=8)
+            pygame.draw.rect(surface, (*cor_accent, 120), draw_rect, 1, border_radius=8)
+
+        img_texto = self.fonte.render(self.texto, True, cor_texto)
+        
+        if self.icone_func:
+            ix = draw_rect.left + 35
+            self.icone_func(surface, ix, draw_rect.centery, cor_texto)
+            rect_texto = img_texto.get_rect(midleft=(ix + 30, draw_rect.centery))
+        else:
+            rect_texto = img_texto.get_rect(center=draw_rect.center)
             
         surface.blit(img_texto, rect_texto)
 
@@ -158,44 +158,21 @@ class TrainingMenuManager:
             self.sel_y_smooth += (target_y - self.sel_y_smooth) * 0.22
             
             s_rect = pygame.Rect(rect_p.left + 25, self.sel_y_smooth - self.row_h//2, self.list_w + 20, self.row_h)
-            desenhar_brilho_neon(surface, (*AMARELO_DADO, 30), s_rect.centerx, s_rect.centery, 15, 1)
-            pygame.draw.rect(surface, (25, 30, 20), s_rect, border_radius=10)
+            # Highlight retangular sutil em vez de bola gigante
+            pygame.draw.rect(surface, (30, 35, 25), s_rect, border_radius=10)
             pygame.draw.rect(surface, AMARELO_DADO, s_rect, 2, border_radius=10)
+            pygame.draw.rect(surface, (*AMARELO_DADO, 40), s_rect.inflate(4, 4), 1, border_radius=10)
             
             # Scan Line Animada
-            self.scan_line_y = (time.time() * 150) % self.row_h
+            self.scan_line_y = (time.time() * 180) % self.row_h
             scan_y = s_rect.top + self.scan_line_y
             if s_rect.top < scan_y < s_rect.bottom:
-                pygame.draw.line(surface, (*AMARELO_DADO, 80), (s_rect.left + 5, scan_y), (s_rect.right - 5, scan_y), 1)
+                pygame.draw.line(surface, (*AMARELO_DADO, 120), (s_rect.left + 5, scan_y), (s_rect.right - 5, scan_y), 1)
 
         for i, (tid, data) in enumerate(items):
             ry = start_y + i * self.row_h
             row_rect = pygame.Rect(rect_p.left + 35, ry - self.row_h//2 + 5, self.list_w, self.row_h - 10)
             
-            # Botões de ação (+/-) devem vir ANTES da linha para terem prioridade no clique
-            if is_t:
-                qtd = self.game.inimigos_treino_selecionados.get(tid, 0)
-                bx = row_rect.right - 160
-                
-                def dec(t=tid):
-                    self.game.inimigos_treino_selecionados[t] = max(0, self.game.inimigos_treino_selecionados.get(t, 0) - 1)
-                    self.game.sounds.play('menu_button')
-                def inc(t=tid):
-                    self.game.inimigos_treino_selecionados[t] = min(10, self.game.inimigos_treino_selecionados.get(t, 0) + 1)
-                    self.game.sounds.play('menu_button')
-
-                for d_x, txt, cb, cor in [(0, "-", dec, VERMELHO_SANGUE), (120, "+", inc, VERDE_NEON)]:
-                    btn_r = pygame.Rect(bx + d_x - self.btn_size//2, row_rect.centery - self.btn_size//2, self.btn_size, self.btn_size)
-                    
-                    # Criar objeto Button para gerenciar hover e clique corretamente
-                    btn_obj = Button(btn_r.centerx, btn_r.centery, self.btn_size, self.btn_size, txt, self.game.fonte_sub, callback=cb, id=f"act_{tid}_{txt}", cor=cor)
-                    btn_obj.update((mx, my))
-                    
-                    self.game.botoes_menu.append(btn_obj)
-                    btn_obj.draw(surface) # Chamada explícita para usar o novo draw
-
-                desenhar_seletor_quantidade(surface, bx + 60, row_rect.centery, qtd, (self.game.botao_selecionado == 4 + i), self.game.fonte_sub)
-
             # Botão da linha para permitir seleção via clique
             def selecionar_linha(val=4+i):
                 self.game.botao_selecionado = val
@@ -210,38 +187,60 @@ class TrainingMenuManager:
 
             is_sel = (self.game.botao_selecionado == 4 + i)
             
-            # Nome Principal (Centralizado na linha)
+            # Nome Principal
             txt_n = data["nome"].upper()
             cor_n = AMARELO_DADO if is_sel else BRANCO
-            # Ícone de caveira ao lado do nome se for boss
+            
             icon_offset = 0
             if data["categoria"] == "BOSSES":
                 desenhar_icone_caveira(surface, row_rect.left + 25, row_rect.centery, VERMELHO_SANGUE)
-                icon_offset = 30
+                icon_offset = 35
             
             desenhar_texto(surface, txt_n, self.game.fonte_sub, cor_n, row_rect.left + 20 + icon_offset, row_rect.centery, "esquerda")
 
+            # Botões de ação (+/-)
+            if is_t:
+                qtd = self.game.inimigos_treino_selecionados.get(tid, 0)
+                bx = row_rect.right - 160
+                
+                def dec(t=tid):
+                    self.game.inimigos_treino_selecionados[t] = max(0, self.game.inimigos_treino_selecionados.get(t, 0) - 1)
+                    self.game.sounds.play('menu_button')
+                def inc(t=tid):
+                    self.game.inimigos_treino_selecionados[t] = min(10, self.game.inimigos_treino_selecionados.get(t, 0) + 1)
+                    self.game.sounds.play('menu_button')
+
+                for d_x, txt, cb, cor in [(0, "-", dec, VERMELHO_SANGUE), (120, "+", inc, VERDE_NEON)]:
+                    btn_r = pygame.Rect(bx + d_x - self.btn_size//2, row_rect.centery - self.btn_size//2, self.btn_size, self.btn_size)
+                    btn_obj = Button(btn_r.centerx, btn_r.centery, self.btn_size, self.btn_size, txt, self.game.fonte_sub, callback=cb, id=f"act_{tid}_{txt}", cor=cor)
+                    btn_obj.update((mx, my))
+                    self.game.botoes_menu.append(btn_obj)
+                    btn_obj.draw(surface)
+
+                desenhar_seletor_quantidade(surface, bx + 60, row_rect.centery, qtd, is_sel, self.game.fonte_sub)
+
     def _render_tactical_data(self, surface, data, dx, dy):
         det_w = 380
-        # Painel Tático Simplificado
-        pygame.draw.rect(surface, (12, 15, 22, 240), (dx - 10, dy - 10, det_w, 360), border_radius=8)
-        pygame.draw.rect(surface, (*data["cor"], 60), (dx - 10, dy - 10, det_w, 360), 1, border_radius=8)
+        # Painel Tático com fundo mais sólido
+        pygame.draw.rect(surface, (15, 20, 30, 250), (dx - 10, dy - 10, det_w, 370), border_radius=10)
+        pygame.draw.rect(surface, (*data["cor"], 120), (dx - 10, dy - 10, det_w, 370), 2, border_radius=10)
         
         # Header
-        desenhar_texto(surface, data["nome"].upper(), self.game.fonte_sub, data["cor"], dx, dy + 10, "esquerda")
-        pygame.draw.line(surface, (*data["cor"], 100), (dx, dy + 35), (dx + det_w - 20, dy + 35), 1)
+        desenhar_texto(surface, "ANÁLISE TÁTICA", self.game.fonte_desc, (180, 180, 200), dx, dy, "esquerda")
+        desenhar_texto(surface, data["nome"].upper(), self.game.fonte_sub, data["cor"], dx, dy + 28, "esquerda")
+        pygame.draw.line(surface, (*data["cor"], 150), (dx, dy + 55), (dx + det_w - 20, dy + 55), 2)
         
         # Stats Visualization
         stats = data.get("stats", {})
-        sy = dy + 55
+        sy = dy + 85
         for label, key, cor in [("ATQ", "atq", VERMELHO_SANGUE), ("VEL", "vel", CIANO_NEON), ("RES", "res", VERDE_NEON)]:
             val = stats.get(key, 0)
             self._render_stat_bar(surface, dx, sy, label, val, cor)
-            sy += 35
+            sy += 42
 
-        # Descrição principal (com mais espaço agora)
-        desc_rect = pygame.Rect(dx, sy + 15, det_w - 20, 180)
-        self._desenhar_texto_quebrado(surface, data["desc"], self.game.fonte_texto, (200, 200, 220), desc_rect)
+        # Descrição principal
+        desc_rect = pygame.Rect(dx, sy + 20, det_w - 20, 180)
+        self._desenhar_texto_quebrado(surface, data["desc"], self.game.fonte_texto, BRANCO, desc_rect)
 
     def _render_stat_bar(self, surface, x, y, label, val, cor):
         # Label
@@ -484,7 +483,24 @@ def desenhar_icone_globo(surface, cx, cy, cor):
     pygame.draw.circle(surface, BRANCO, (int(sx), int(sy)), 2)
 
 
-def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):
+def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3, game=None):
+    if game is not None:
+        cache_key = (cor, int(raio), intensidade)
+        if cache_key not in game.glow_cache:
+            # Criar nova superfície de brilho para o cache
+            tamanho = int((raio + intensidade * 4) * 2)
+            s = pygame.Surface((tamanho, tamanho), pygame.SRCALPHA)
+            for i in range(intensidade, 0, -1):
+                c_rgb = cor[:3]
+                alpha = cor[3] if len(cor) > 3 else 15
+                cor_com_alpha = (*c_rgb, alpha)
+                pygame.draw.circle(s, cor_com_alpha, (tamanho // 2, tamanho // 2), int(raio + (i * 4)))
+            game.glow_cache[cache_key] = s
+        
+        glow_surf = game.glow_cache[cache_key]
+        surface.blit(glow_surf, (int(pos_x - glow_surf.get_width() // 2), int(pos_y - glow_surf.get_height() // 2)))
+        return
+
     for i in range(intensidade, 0, -1):
         c_rgb = cor[:3]
         alpha = cor[3] if len(cor) > 3 else 15
@@ -492,32 +508,37 @@ def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):
         pygame.draw.circle(surface, cor_com_alpha, (int(pos_x), int(pos_y)), int(raio + (i * 4)))
 
 
-def desenhar_seletor_quantidade(surface, x, y, qtd, selecionado, fonte):
+def desenhar_seletor_quantidade(surface, x, y, qtd, selecionado, fonte, game=None):
     cor = (20, 20, 30) if selecionado else (VERDE_NEON if qtd > 0 else CINZA_CLARO)
     if selecionado and qtd > 0:
         pulso = math.sin(time.time() * 15) * 4
-        desenhar_brilho_neon(surface, AMARELO_DADO, x, y, 12 + pulso, 2)
+        desenhar_brilho_neon(surface, AMARELO_DADO, x, y, 12 + pulso, 2, game=game)
     img = fonte.render(str(qtd), True, cor)
     rect = img.get_rect(center=(x, y))
     surface.blit(img, rect)
     return rect
 
 
-def desenhar_fundo_cyberpunk(surface, tempo):
+def desenhar_fundo_cyberpunk(surface, tempo, cache_base=None):
     horizonte_y = int(ALTURA_TELA * 0.6)
     centro_x = LARGURA_TELA // 2
-    for y in range(ALTURA_TELA):
-        t = y / ALTURA_TELA
-        if y <= horizonte_y:
-            r = int(12 + (46 * t))
-            g = int(8 + (10 * t))
-            b = int(34 + (90 * t))
-        else:
-            t2 = (y - horizonte_y) / max(1, (ALTURA_TELA - horizonte_y))
-            r = int(18 + (16 * t2))
-            g = int(4 + (14 * t2))
-            b = int(30 + (56 * t2))
-        pygame.draw.line(surface, (r, g, b), (0, y), (LARGURA_TELA, y))
+    
+    if cache_base:
+        surface.blit(cache_base, (0, 0))
+    else:
+        for y in range(ALTURA_TELA):
+            t = y / ALTURA_TELA
+            if y <= horizonte_y:
+                r = int(12 + (46 * t))
+                g = int(8 + (10 * t))
+                b = int(34 + (90 * t))
+            else:
+                t2 = (y - horizonte_y) / max(1, (ALTURA_TELA - horizonte_y))
+                r = int(18 + (16 * t2))
+                g = int(4 + (14 * t2))
+                b = int(30 + (56 * t2))
+            pygame.draw.line(surface, (r, g, b), (0, y), (LARGURA_TELA, y))
+            
     estrelas = 85
     for i in range(estrelas):
         x = int((i * 179 + (tempo * (4 + (i % 5)))) % LARGURA_TELA)
@@ -576,10 +597,13 @@ def desenhar_grade_jogo(surface):
         pygame.draw.line(surface, (15, 20, 25), (0, y), (LARGURA_TELA, y), 1)
 
 
-def criar_painel_transparente(largura, altura, cor=COR_PAINEL):
+def criar_painel_transparente(largura, altura, cor=None):
+    if cor is None:
+        cor = UI_COLORS["PANEL_BG"]
     surf = pygame.Surface((largura, altura), pygame.SRCALPHA)
     pygame.draw.rect(surf, cor, (0, 0, largura, altura), border_radius=15)
-    pygame.draw.rect(surf, CINZA_ESCURO, (0, 0, largura, altura), 3, border_radius=15)
+    # Borda mais visível
+    pygame.draw.rect(surf, UI_COLORS["BORDER_NORMAL"], (0, 0, largura, altura), 2, border_radius=15)
     return surf
 
 

@@ -59,10 +59,6 @@ class NeonSurge:
         self.sounds.set_sfx_volume(self.volume_musica)
         self.sounds.play_bgm("neon_surge/assets/sounds/trilha_menu.wav", self.volume_musica)
 
-        self.rect_vol_mute = pygame.Rect(0, 0, 45, 45)
-        self.rect_vol_config = pygame.Rect(0, 0, 45, 45)
-        self.rect_vol_menos = pygame.Rect(0, 0, 35, 35)
-        self.rect_vol_mais = pygame.Rect(0, 0, 35, 35)
         self.estado_anterior_config = "MENU_MODO"
 
         # Configurações de Vídeo
@@ -86,9 +82,20 @@ class NeonSurge:
         self.clock = pygame.time.Clock()
         self.dt = 0.0
 
+        # Caches de Renderização
+        self.cache_fundo_menu = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
+        from .hud.ui import desenhar_fundo_cyberpunk, desenhar_grade_jogo
+        desenhar_fundo_cyberpunk(self.cache_fundo_menu, 0)
+        
+        self.cache_grade_jogo = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
+        desenhar_grade_jogo(self.cache_grade_jogo)
+
         self.crt_overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
         for y in range(0, ALTURA_TELA, 3):
             pygame.draw.line(self.crt_overlay, (0, 0, 0, 40), (0, y), (LARGURA_TELA, y))
+
+        # Cache de Brilho (Neon Glow)
+        self.glow_cache = {} # {(cor, raio, intensidade): surface}
 
         font_name = "Consolas" if pygame.font.match_font("Consolas") else None
         self.fonte_titulo = pygame.font.SysFont("Impact", 75)

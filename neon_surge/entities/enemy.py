@@ -66,9 +66,10 @@ class InimigoBase:
         forca_repulsao = pygame.math.Vector2(0, 0)
         for vizinho in lista_inimigos:
             if vizinho != self:
-                distancia = self.pos.distance_to(vizinho.pos)
+                dist_sq = self.pos.distance_squared_to(vizinho.pos)
                 distancia_segura = self.raio + vizinho.raio + 5
-                if 0 < distancia < distancia_segura:
+                if 0 < dist_sq < distancia_segura**2:
+                    distancia = math.sqrt(dist_sq)
                     diferenca = self.pos - vizinho.pos
                     forca_repulsao += diferenca.normalize() * (distancia_segura - distancia) * 0.1
         return forca_repulsao
@@ -91,7 +92,7 @@ class InimigoBase:
             self.pos.y = ALTURA_TELA - self.raio
             self.handle_wall_collision('y')
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pass
 
 class InimigoQuique(InimigoBase):
@@ -113,8 +114,8 @@ class InimigoQuique(InimigoBase):
                     self.pos += normal * 3
         return pygame.math.Vector2(0, 0)
 
-    def draw(self, surface):
-        desenhar_brilho_neon(surface, ROSA_NEON, self.pos.x, self.pos.y, self.raio, intensidade=3)
+    def draw(self, surface, game=None):
+        desenhar_brilho_neon(surface, ROSA_NEON, self.pos.x, self.pos.y, self.raio, intensidade=3, game=game)
         pygame.draw.circle(surface, ROSA_NEON, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
 
@@ -122,8 +123,8 @@ class InimigoPerseguidor(InimigoBase):
     def __init__(self, x, y, velocidade):
         super().__init__(x, y, "perseguidor", velocidade, 12)
 
-    def draw(self, surface):
-        desenhar_brilho_neon(surface, VERMELHO_SANGUE, self.pos.x, self.pos.y, self.raio, intensidade=3)
+    def draw(self, surface, game=None):
+        desenhar_brilho_neon(surface, VERMELHO_SANGUE, self.pos.x, self.pos.y, self.raio, intensidade=3, game=game)
         pygame.draw.circle(surface, VERMELHO_SANGUE, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
 
@@ -142,7 +143,7 @@ class InimigoInvestida(InimigoBase):
             self.estado_investida = "ESPERANDO"
             self.timer_investida = 0.0
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         cor_base = LARANJA_NEON
         if self.estado_investida == "MIRANDO":
             cor_linha = VERMELHO_SANGUE if not self.travado else BRANCO
@@ -151,7 +152,7 @@ class InimigoInvestida(InimigoBase):
             if self.travado:
                 cor_base = BRANCO
         
-        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=3)
+        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=3, game=game)
         pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
 
@@ -161,13 +162,13 @@ class InimigoExplosivo(InimigoBase):
         self.timer_explosao = 0.0
         self.explodiu = False
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         cor_base = AMARELO_DADO
         if self.timer_explosao > 2.5:
             if int(self.timer_explosao * 15) % 2 == 0:
                 cor_base = BRANCO
         
-        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=4)
+        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio, intensidade=4, game=game)
         pygame.draw.circle(surface, cor_base, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), self.raio // 3)
         
@@ -196,10 +197,10 @@ class InimigoMetralhadora(InimigoBase):
         """Turrets stay still and ignore repulsion."""
         self.dir = pygame.math.Vector2(0, 0)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pulso = abs(math.sin(time.time() * 8))
         cor_nucleo = BRANCO if self.em_rajada else CIANO_NEON
-        desenhar_brilho_neon(surface, ROXO_NEON, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4)
+        desenhar_brilho_neon(surface, ROXO_NEON, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4, game=game)
         pygame.draw.circle(surface, ROXO_NEON, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, AZUL_ESCURO, (int(self.pos.x), int(self.pos.y)), self.raio - 5)
         pygame.draw.circle(surface, cor_nucleo, (int(self.pos.x), int(self.pos.y)), 5)
@@ -222,10 +223,10 @@ class MinibossEspiral(InimigoBase):
         """Turrets stay still and ignore repulsion."""
         self.dir = pygame.math.Vector2(0, 0)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pulso = abs(math.sin(time.time() * 6))
         cor_borda = ROXO_NEON
-        desenhar_brilho_neon(surface, cor_borda, self.pos.x, self.pos.y, self.raio + (pulso * 4), intensidade=5)
+        desenhar_brilho_neon(surface, cor_borda, self.pos.x, self.pos.y, self.raio + (pulso * 4), intensidade=5, game=game)
         pygame.draw.circle(surface, cor_borda, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 6)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), 6)
@@ -242,10 +243,10 @@ class MinibossCacador(InimigoBase):
         ang = random.uniform(0, math.pi * 2)
         self.dir = pygame.math.Vector2(math.cos(ang), math.sin(ang)) * (self.vel * 0.65)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pulso = abs(math.sin(time.time() * 7))
         cor_mini = VERMELHO_SANGUE
-        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + (pulso * 3), intensidade=4)
+        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + (pulso * 3), intensidade=4, game=game)
         pygame.draw.circle(surface, cor_mini, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 5)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), 6)
@@ -257,10 +258,10 @@ class MinibossEscudo(InimigoBase):
         self.timer_habilidade = 0.0
         self.orbita_angulo = random.uniform(0, math.pi * 2)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pulso = abs(math.sin(time.time() * 6))
         cor_mini = CIANO_NEON
-        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + (pulso * 4), intensidade=5)
+        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + (pulso * 4), intensidade=5, game=game)
         pygame.draw.circle(surface, cor_mini, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 6)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), 5)
@@ -277,9 +278,9 @@ class MinibossSniper(InimigoBase):
         """Turrets stay still and ignore repulsion."""
         self.dir = pygame.math.Vector2(0, 0)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         cor_mini = AMARELO_DADO
-        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + 3, intensidade=4)
+        desenhar_brilho_neon(surface, cor_mini, self.pos.x, self.pos.y, self.raio + 3, intensidade=4, game=game)
         pygame.draw.circle(surface, cor_mini, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 5)
         pygame.draw.circle(surface, BRANCO, (int(self.pos.x), int(self.pos.y)), 4)
@@ -293,7 +294,7 @@ class Boss(InimigoBase):
         self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         cor_boss = ROXO_NEON if self.variante % 3 == 1 else (CIANO_NEON if self.variante % 3 == 2 else ROSA_NEON)
         tempo = time.time()
 
@@ -305,7 +306,7 @@ class Boss(InimigoBase):
 
             pygame.draw.line(surface, cor_boss, self.pos, (x_orb, y_orb), 2)
             pygame.draw.circle(surface, VERMELHO_SANGUE, (int(x_orb), int(y_orb)), 8)
-            desenhar_brilho_neon(surface, VERMELHO_SANGUE, x_orb, y_orb, 8, 2)
+            desenhar_brilho_neon(surface, VERMELHO_SANGUE, x_orb, y_orb, 8, 2, game=game)
             pygame.draw.circle(surface, BRANCO, (int(x_orb), int(y_orb)), 3)
 
         if self.estado_boss == "DASH":
@@ -315,7 +316,7 @@ class Boss(InimigoBase):
         else:
             cor_atual = cor_boss
 
-        desenhar_brilho_neon(surface, cor_atual, self.pos.x, self.pos.y, self.raio, intensidade=5)
+        desenhar_brilho_neon(surface, cor_atual, self.pos.x, self.pos.y, self.raio, intensidade=5, game=game)
         pygame.draw.circle(surface, cor_atual, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 6)
 
@@ -329,10 +330,10 @@ class BossArtilharia(InimigoBase):
         self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         tempo = time.time()
         cor_boss = LARANJA_NEON
-        desenhar_brilho_neon(surface, cor_boss, self.pos.x, self.pos.y, self.raio + 6, intensidade=6)
+        desenhar_brilho_neon(surface, cor_boss, self.pos.x, self.pos.y, self.raio + 6, intensidade=6, game=game)
         pygame.draw.circle(surface, cor_boss, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 7)
         for i in range(4):
@@ -349,10 +350,10 @@ class BossCaotico(InimigoBase):
         self.timer_tiro = 0.0
         self.estado_boss = "PERSEGUINDO"
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         tempo = time.time()
         cor_boss = ROSA_NEON
-        desenhar_brilho_neon(surface, cor_boss, self.pos.x, self.pos.y, self.raio + 8, intensidade=6)
+        desenhar_brilho_neon(surface, cor_boss, self.pos.x, self.pos.y, self.raio + 8, intensidade=6, game=game)
         pygame.draw.circle(surface, cor_boss, (int(self.pos.x), int(self.pos.y)), self.raio)
         pygame.draw.circle(surface, PRETO_FUNDO, (int(self.pos.x), int(self.pos.y)), self.raio - 7)
         for i in range(6):
@@ -370,10 +371,10 @@ class InimigoMorteiro(InimigoBase):
         """Morteiro stays still."""
         self.dir = pygame.math.Vector2(0, 0)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         pulso = abs(math.sin(time.time() * 5))
         cor_base = LARANJA_NEON
-        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4)
+        desenhar_brilho_neon(surface, cor_base, self.pos.x, self.pos.y, self.raio + (pulso * 2), intensidade=4, game=game)
         
         # Desenho do corpo (hexágono/trapézio para parecer um morteiro)
         pontos = []

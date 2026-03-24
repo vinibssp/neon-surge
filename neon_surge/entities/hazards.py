@@ -73,9 +73,9 @@ class BlackHole:
 
         return False
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         # Brilho externo
-        desenhar_brilho_neon(surface, ROXO_NEON, self.pos.x, self.pos.y, 25, intensidade=4)
+        desenhar_brilho_neon(surface, ROXO_NEON, self.pos.x, self.pos.y, 25, intensidade=4, game=game)
         
         # Disco de acreção
         for p in self.particulas_disco:
@@ -98,12 +98,14 @@ class LavaManager:
         self.aviso_tempo = 0.0
         self.hitboxes = []
         self.tipo_lava = 0 # 1: Vertical, 2: Horizontal, 3: Cantos, 4: Centro
+        self.lava_surfaces = [] # Cache local para o evento atual
         
     def reset(self):
         self.ativa = False
         self.tempo_restante = 0.0
         self.aviso_tempo = 0.0
         self.hitboxes = []
+        self.lava_surfaces = []
 
     def disparar_evento(self, tipo=None):
         if self.ativa or self.aviso_tempo > 0:
@@ -112,6 +114,7 @@ class LavaManager:
         self.tipo_lava = tipo if tipo else random.randint(1, 4)
         self.aviso_tempo = 3.0
         self.hitboxes = []
+        self.lava_surfaces = []
         
         margem_ui = 80
         if self.tipo_lava == 1: # Laterais Verticais
@@ -131,6 +134,19 @@ class LavaManager:
         else: # Centro
             cw, ch = 400, 300
             self.hitboxes.append(pygame.Rect((LARGURA_TELA - cw)//2, (ALTURA_TELA - ch + margem_ui)//2, cw, ch))
+
+        # Pré-renderizar superfícies (uma para aviso, uma para ativa)
+        for r in self.hitboxes:
+            # Superfície de aviso (cor laranja)
+            s_aviso = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
+            pygame.draw.rect(s_aviso, AMARELO_DADO, (0, 0, r.width, r.height), 4)
+            
+            # Superfície ativa (cor vermelha)
+            s_ativa = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
+            s_ativa.fill((255, 60, 0, 160))
+            pygame.draw.rect(s_ativa, VERMELHO_SANGUE, (0, 0, r.width, r.height), 4)
+            
+            self.lava_surfaces.append({"aviso": s_aviso, "ativa": s_ativa})
 
     def update(self, player, dt, sounds):
         if self.aviso_tempo > 0:
@@ -156,19 +172,19 @@ class LavaManager:
 
     def draw(self, surface, fonte_titulo, fonte_sub):
         if self.aviso_tempo > 0:
-            for r in self.hitboxes:
-                s = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
-                al = int(100 + math.sin(pygame.time.get_ticks()*0.02)*50)
-                s.fill((255, 150, 0, al))
-                pygame.draw.rect(s, AMARELO_DADO, (0,0,r.width,r.height), 4)
-                surface.blit(s, (r.x, r.y))
+            al = int(100 + math.sin(pygame.time.get_ticks()*0.02)*50)
+            for i, r in enumerate(self.hitboxes):
+                s = self.lava_surfaces[i]["aviso"].copy()
+                s.fill((255, 150, 0, al), special_flags=pygame.BLEND_RGBA_MULT) # Não funciona bem com SRCALPHA, mas vamos tentar
+                # Melhor simplificar o brilho se possível, ou apenas mudar o alpha da superfície
+                s_final = self.lava_surfaces[i]["aviso"]
+                # Para transparência variável, é melhor usar set_alpha se for a mesma cor
+                s_final.set_alpha(al)
+                surface.blit(s_final, (r.x, r.y))
             desenhar_texto(surface, f"ALERTA DE LAVA: {int(self.aviso_tempo)+1}s!", fonte_titulo, VERMELHO_SANGUE, LARGURA_TELA//2, 160)
 
         if self.ativa:
             if (self.tempo_restante > 1.0) or (int(pygame.time.get_ticks()*0.008)%2 == 0):
-                for r in self.hitboxes:
-                    s = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
-                    s.fill((255, 60, 0, 160))
-                    pygame.draw.rect(s, VERMELHO_SANGUE, (0,0,r.width,r.height), 4)
-                    surface.blit(s, (r.x, r.y))
+                for i, r in enumerate(self.hitboxes):
+                    surface.blit(self.lava_surfaces[i]["ativa"], (r.x, r.y))
             desenhar_texto(surface, f"LAVA ATIVA: {self.tempo_restante:.1f}s", fonte_sub, LARANJA_NEON, LARGURA_TELA//2, 100)

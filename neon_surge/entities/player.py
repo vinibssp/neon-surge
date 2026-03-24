@@ -115,9 +115,10 @@ class Player:
 
         return triggered_shake
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.Surface, game=None) -> None:
         cor = BRANCO if self.invencivel else CIANO_NEON
-        draw_neon_glow(surface, cor, self.transform.pos.x, self.transform.pos.y, self.collider.radius, intensity=4)
+        from ..hud.ui import desenhar_brilho_neon
+        desenhar_brilho_neon(surface, cor, self.transform.pos.x, self.transform.pos.y, self.collider.radius, intensidade=4, game=game)
 
         rect = pygame.Rect(0, 0, self.collider.radius * 2, self.collider.radius * 2)
         rect.center = (int(self.transform.pos.x), int(self.transform.pos.y))

@@ -30,7 +30,7 @@ class Renderer:
         
         # Fundo base para menus
         if self.estado not in ["JOGANDO", "PAUSA"]:
-            desenhar_fundo_cyberpunk(self.tela, self.tempo_global)
+            desenhar_fundo_cyberpunk(self.tela, self.tempo_global, cache_base=self.cache_fundo_menu)
             for p in self.particulas_menu:
                 p.update()
                 p.draw(self.tela)
@@ -114,8 +114,11 @@ class Renderer:
 
         caixa = pygame.Rect(0, 0, 420, 70)
         caixa.center = (cx, cy + 40)
-        pygame.draw.rect(self.tela, AZUL_ESCURO, caixa, border_radius=12)
+        # Usando cores do tema para a caixa de input
+        pygame.draw.rect(self.tela, (10, 15, 25), caixa, border_radius=12)
         pygame.draw.rect(self.tela, VERDE_NEON, caixa, 2, border_radius=12)
+        # Highlight retangular sutil em vez de bola gigante
+        pygame.draw.rect(self.tela, (*VERDE_NEON, 30), caixa.inflate(4, 4), 1, border_radius=12)
 
         cursor = "_" if int(time.time() * 2) % 2 == 0 else ""
         desenhar_texto(self.tela, self.nome_jogador + cursor, self.fonte_sub, VERDE_NEON, cx, cy + 40)
@@ -424,7 +427,9 @@ class Renderer:
         rect_global = pygame.Rect(rect.centerx + 10, rect.top + 20, w_metade, ph - 40)
         
         def draw_rank_list(r_area, titulo, dados, is_global):
-            pygame.draw.rect(self.tela, (15, 25, 45), r_area, border_radius=12)
+            # Fundo da lista mais escuro para destaque
+            pygame.draw.rect(self.tela, (10, 15, 25), r_area, border_radius=12)
+            pygame.draw.rect(self.tela, (*VERDE_NEON, 40), r_area, 1, border_radius=12)
             
             # Título com ícone manual
             ty = r_area.top + 35
@@ -434,10 +439,10 @@ class Renderer:
             else:
                 desenhar_icone_disco(self.tela, r_area.centerx - self.fonte_sub.size(titulo)[0]//2 - 10, ty, VERDE_NEON)
 
-            pygame.draw.line(self.tela, VERDE_NEON, (r_area.left + 40, r_area.top + 60), (r_area.right - 40, r_area.top + 60), 2)
+            pygame.draw.line(self.tela, (*VERDE_NEON, 120), (r_area.left + 40, r_area.top + 60), (r_area.right - 40, r_area.top + 60), 2)
             
             if not dados and not (is_global and getattr(self, "carregando_ranking", False)):
-                desenhar_texto(self.tela, "NENHUM DADO ENCONTRADO", self.fonte_desc, CINZA_CLARO, r_area.centerx, r_area.centery)
+                desenhar_texto(self.tela, "NENHUM DADO ENCONTRADO", self.fonte_desc, (150, 150, 170), r_area.centerx, r_area.centery)
                 return
 
             if is_global and getattr(self, "carregando_ranking", False):
@@ -455,7 +460,17 @@ class Renderer:
                         if f"{float(score):.1f}" == f"{getattr(self, 'ultimo_tempo', -1.0):.1f}":
                             is_current = True
                 
-                cor = VERDE_NEON if is_current else (AMARELO_DADO if i == 0 else BRANCO)
+                # Cores diferenciadas para os primeiros lugares
+                if is_current: cor = VERDE_NEON
+                elif i == 0: cor = AMARELO_DADO
+                elif i == 1: cor = (220, 220, 230) # Prata
+                elif i == 2: cor = (205, 127, 50)  # Bronze
+                else: cor = BRANCO
+                
+                # Fundo sutil para cada linha para melhorar leitura
+                if i % 2 == 0:
+                    pygame.draw.rect(self.tela, (20, 25, 35, 100), (r_area.left + 10, y - 15, r_area.width - 20, 30), border_radius=5)
+
                 desenhar_texto(self.tela, f"{i+1}º", self.fonte_desc, cor, r_area.left + 35, y, "esquerda")
                 desenhar_texto(self.tela, str(nome).upper(), self.fonte_desc, cor, r_area.left + 85, y, "esquerda")
                 txt_score = f"{float(score):.1f}s"
@@ -508,10 +523,18 @@ class Renderer:
             foc = (self.botao_selecionado == idx)
             lx, bx = rect.left + 60, cx - 40
             bw, bh = 340, 32
-            desenhar_texto(self.tela, label, self.fonte_sub, BRANCO if foc else CINZA_CLARO, lx, y, "esquerda")
+            desenhar_texto(self.tela, label, self.fonte_sub, BRANCO if foc else (180, 180, 200), lx, y, "esquerda")
             rect_bg = pygame.Rect(bx, y - bh//2, bw, bh)
-            pygame.draw.rect(self.tela, (12, 22, 40), rect_bg, border_radius=10)
-            pygame.draw.rect(self.tela, cor if foc else CINZA_ESCURO, rect_bg, 2, border_radius=10)
+            
+            # Fundo da barra
+            pygame.draw.rect(self.tela, (10, 15, 25), rect_bg, border_radius=10)
+            
+            # Borda com brilho se focado
+            b_cor = cor if foc else CINZA_ESCURO
+            pygame.draw.rect(self.tela, b_cor, rect_bg, 2, border_radius=10)
+            if foc:
+                # Highlight retangular sutil em vez de bola gigante
+                pygame.draw.rect(self.tela, (*cor, 40), rect_bg.inflate(6, 6), 1, border_radius=10)
             
             num_seg, pad = 10, 6
             seg_w = (bw - (pad * 2)) // num_seg
@@ -520,8 +543,10 @@ class Renderer:
                 sr = pygame.Rect(bx + pad + i*seg_w + 2, y - bh//2 + 6, seg_w - 4, bh - 12)
                 if i < pre:
                     pygame.draw.rect(self.tela, cor, sr, border_radius=3)
-                    if foc: desenhar_brilho_neon(self.tela, cor, sr.centerx, sr.centery, 10, 1)
-                else: pygame.draw.rect(self.tela, (25, 35, 55), sr, border_radius=3)
+                    # Brilho individual nos segmentos ativos se focado
+                    if foc: desenhar_brilho_neon(self.tela, cor, sr.centerx, sr.centery, 8, 1)
+                else: 
+                    pygame.draw.rect(self.tela, (25, 30, 45), sr, border_radius=3)
 
             def m_vol(): self.alterar_volume_musica(-0.1) if idx==0 else self.alterar_volume_sfx(-0.1)
             def p_vol(): self.alterar_volume_musica(0.1) if idx==0 else self.alterar_volume_sfx(0.1)
@@ -570,7 +595,7 @@ class Renderer:
         if self.shake_frames > 0 and self.estado == "JOGANDO": self.shake_frames -= 1
         self.tela.fill(PRETO_FUNDO)
         surf = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
-        desenhar_grade_jogo(surf)
+        surf.blit(self.cache_grade_jogo, (0, 0))
         if self.modo_jogo == "LABIRINTO":
             for w in self.labirinto_paredes:
                 pygame.draw.rect(surf, (22, 34, 58), w)
@@ -578,15 +603,15 @@ class Renderer:
             Renderer._render_lab_ui(self, surf)
         Renderer._render_portais(self, surf)
         for d in self.coletaveis:
-            d.draw(surf)
+            d.draw(surf, game=self)
         if self.portal_aberto: Renderer._render_portal_saida(self, surf)
         for p in self.particulas: p.draw(surf)
-        for i in self.inimigos: i.draw(surf)
-        for b in self.buracos_negros: b.draw(surf)
+        for i in self.inimigos: i.draw(surf, game=self)
+        for b in self.buracos_negros: b.draw(surf, game=self)
         if self.modo_jogo in ["SOBREVIVENCIA", "HARDCORE"]:
             self.lava_manager.draw(surf, self.fonte_titulo, self.fonte_sub)
         Renderer._render_projeteis(self, surf)
-        self.player.draw(surf)
+        self.player.draw(surf, game=self)
         self.tela.blit(surf, (off_x, off_y))
         Renderer._render_hud_gameplay(self)
         if self.estado == "PAUSA": Renderer._render_pausa(self, mx, my)
@@ -620,11 +645,11 @@ class Renderer:
         for a in self.labirinto_armadilhas:
             p = abs(math.sin((time.time()*8) + a.get("fase",0)))
             r = a["raio"] + p*2.5
-            desenhar_brilho_neon(surf, VERMELHO_SANGUE, a["pos"].x, a["pos"].y, r+4, 2)
+            desenhar_brilho_neon(surf, VERMELHO_SANGUE, a["pos"].x, a["pos"].y, r+4, 2, game=self)
             pygame.draw.circle(surf, VERMELHO_SANGUE, (int(a["pos"].x), int(a["pos"].y)), int(r))
             pygame.draw.circle(surf, BRANCO, (int(a["pos"].x), int(a["pos"].y)), max(1, int(r//3)))
         for g in self.labirinto_fantasmas:
-            Renderer._draw_fancy_circle(surf, g["pos"], g.get("raio",10), g.get("cor", ROSA_NEON))
+            Renderer._draw_fancy_circle(surf, g["pos"], g.get("raio",10), g.get("cor", ROSA_NEON), game=self)
 
     @staticmethod
     def _render_portais(self, surf):
@@ -634,7 +659,7 @@ class Renderer:
             pulso = abs(math.sin(time.time()*6)) * 3
             r = r_base + pulso
             c = (int(p["pos"].x), int(p["pos"].y))
-            desenhar_brilho_neon(surf, cor, c[0], c[1], r+2, 3)
+            desenhar_brilho_neon(surf, cor, c[0], c[1], r+2, 3, game=self)
             pygame.draw.circle(surf, (*cor, 120), c, int(r+3))
             pygame.draw.circle(surf, PRETO_FUNDO, c, int(r-4))
             pygame.draw.circle(surf, cor, c, int(r), 3)
@@ -653,10 +678,10 @@ class Renderer:
                 pygame.draw.circle(aviso, (*cor, alpha), (re, re), re)
                 pygame.draw.circle(aviso, (*cor, 255), (re, re), re, 2)
                 surf.blit(aviso, (alvo.x - re, alvo.y - re))
-                Renderer._draw_fancy_circle(surf, pygame.math.Vector2(pos[0], pos[1]), 10, cor)
+                Renderer._draw_fancy_circle(surf, pygame.math.Vector2(pos[0], pos[1]), 10, cor, game=self)
             else:
                 r = int(pr.get("raio", 4))
-                Renderer._draw_fancy_circle(surf, pygame.math.Vector2(pos[0], pos[1]), r, cor)
+                Renderer._draw_fancy_circle(surf, pygame.math.Vector2(pos[0], pos[1]), r, cor, game=self)
 
     @staticmethod
     def _render_hud_gameplay(self):
@@ -681,7 +706,7 @@ class Renderer:
     def _render_portal_saida(self, surf):
         c = (int(self.portal_pos.x), int(self.portal_pos.y))
         r = 22 + abs(math.sin(time.time()*5)) * 4
-        desenhar_brilho_neon(surf, VERDE_NEON, c[0], c[1], r+2, 4)
+        desenhar_brilho_neon(surf, VERDE_NEON, c[0], c[1], r+2, 4, game=self)
         pygame.draw.circle(surf, (*VERDE_NEON, 180), c, int(r+3))
         pygame.draw.circle(surf, PRETO_FUNDO, c, int(r-5))
         pygame.draw.circle(surf, VERDE_NEON, c, int(r), 3)
@@ -689,8 +714,8 @@ class Renderer:
         pygame.draw.arc(surf, BRANCO, pygame.Rect(c[0]-r, c[1]-r, r*2, r*2), ang, ang+math.pi*1.25, 4)
 
     @staticmethod
-    def _draw_fancy_circle(surf, pos, r, cor):
-        desenhar_brilho_neon(surf, cor, pos.x, pos.y, r+2, 2)
+    def _draw_fancy_circle(surf, pos, r, cor, game=None):
+        desenhar_brilho_neon(surf, cor, pos.x, pos.y, r+2, 2, game=game)
         pygame.draw.circle(surf, cor, (int(pos.x), int(pos.y)), int(r))
         pygame.draw.circle(surf, BRANCO, (int(pos.x), int(pos.y)), max(1, int(r//2.5)))
 

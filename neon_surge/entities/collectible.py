@@ -31,13 +31,13 @@ class Collectible:
         self.pulso_glow = (math.sin(self.angulo_oscilacao * 1.5) + 1) / 2
         self.escala = 0.9 + (self.pulso_glow * 0.2)
 
-    def draw(self, surface):
+    def draw(self, surface, game=None):
         x, y = int(self.pos.x), int(self.pos.y)
         
         # 1. Brilho Neon Pulsante
         cor_glow = CIANO_NEON
         raio_glow = 10 + (self.pulso_glow * 10)
-        desenhar_brilho_neon(surface, cor_glow, x, y, raio_glow, 3)
+        desenhar_brilho_neon(surface, cor_glow, x, y, raio_glow, 3, game=game)
         
         # 2. Desenho Geométrico (Losango Rotacionado)
         tamanho = 12 * self.escala
