@@ -771,38 +771,39 @@ def atualizar_jogo(self):
         self.tempo_sobrevivencia += self.dt
         
         # Spawn progressivo de inimigos comuns
-        max_ini = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else MAX_INIMIGOS_HARDCORE
-        progressao = min(1.0, self.tempo_sobrevivencia / 300.0)
-        alvo_atual = 3 + int(progressao * (max_ini - 3))
+        max_ini = MAX_INIMIGOS_SOBREVIVENCIA if self.modo_jogo == "SOBREVIVENCIA" else (MAX_INIMIGOS_HARDCORE * 2) # Dobro de inimigos no Hardcore
+        progressao = min(1.0, self.tempo_sobrevivencia / 200.0) # Progressão mais rápida no Hardcore
+        alvo_atual = (3 if self.modo_jogo != "HARDCORE" else 10) + int(progressao * (max_ini - 3))
         
         total_ativo = len(self.inimigos) + len(self.portais_inimigos)
         if total_ativo < alvo_atual:
             self.temporizador_spawn -= self.dt
             if self.temporizador_spawn <= 0:
-                vel = 4.0 + (progressao * 3.5)
-                self._spawn_inimigos(1, vel)
-                self.temporizador_spawn = max(0.5, 2.0 - (progressao * 1.5))
+                vel_base = 4.0 if self.modo_jogo != "HARDCORE" else 8.0 # Inimigos muito mais rápidos
+                vel = vel_base + (progressao * 5.0)
+                self._spawn_inimigos(1 if self.modo_jogo != "HARDCORE" else 2, vel) # Spawn em dobro no Hardcore
+                self.temporizador_spawn = max(0.2, 1.5 - (progressao * 1.3)) if self.modo_jogo == "HARDCORE" else max(0.5, 2.0 - (progressao * 1.5))
 
         # --- Lógica de Bosses e Minibosses por Tempo ---
         tempo = int(self.tempo_sobrevivencia)
         is_hardcore = (self.modo_jogo == "HARDCORE")
         
-        # Miniboss a cada 45s (30s no Hardcore)
-        intervalo_mini = 30 if is_hardcore else 45
+        # Miniboss a cada 45s (15s no Hardcore)
+        intervalo_mini = 15 if is_hardcore else 45
         if tempo > 0 and tempo % intervalo_mini == 0 and not getattr(self, "_last_mini_spawn", -1) == tempo:
             self._last_mini_spawn = tempo
-            self._spawn_unitario(random.choice(MINIBOSS_TIPOS), 5.5 + (progressao * 2))
+            self._spawn_unitario(random.choice(MINIBOSS_TIPOS), 6.5 + (progressao * 3))
             
-        # Boss a cada 90s (75s no Hardcore)
-        intervalo_boss = 75 if is_hardcore else 90
+        # Boss a cada 90s (45s no Hardcore)
+        intervalo_boss = 45 if is_hardcore else 90
         if tempo > 0 and tempo % intervalo_boss == 0 and not getattr(self, "_last_boss_spawn", -1) == tempo:
             self._last_boss_spawn = tempo
             tipo_boss = random.choice(BOSS_TIPOS)
-            self._spawn_unitario(tipo_boss, 4.5 + (progressao * 1.5))
+            self._spawn_unitario(tipo_boss, 5.5 + (progressao * 2))
 
         # Gerenciamento de Lava
-        if self.tempo_sobrevivencia > 20:
-            intervalo_lava = 15 if self.modo_jogo == "HARDCORE" else 25
+        if self.tempo_sobrevivencia > 10: # Começa mais cedo no Hardcore
+            intervalo_lava = 8 if self.modo_jogo == "HARDCORE" else 25 # Lava a cada 8 segundos no Hardcore
             if int(self.tempo_sobrevivencia) % intervalo_lava == 0 and not self.lava_manager.ativa and self.lava_manager.aviso_tempo <= 0:
                 self.lava_manager.disparar_evento()
 

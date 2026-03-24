@@ -64,7 +64,8 @@ class Player:
     def tamanho(self) -> float:
         return self.collider.radius * 2
 
-    def update(self, teclas: pygame.key.ScancodeWrapper, lista_particulas: list, sound_manager) -> bool:
+    def update(self, teclas: pygame.key.ScancodeWrapper, lista_particulas: list, sound_manager, game=None) -> bool:
+        is_hardcore = getattr(game, "modo_jogo", "") == "HARDCORE"
         # 1. Determine movement direction from input
         dir_x, dir_y = 0, 0
         if teclas[pygame.K_w] or teclas[pygame.K_UP]:    dir_y = -1
@@ -80,6 +81,11 @@ class Player:
         # 2. Handle Dash logic
         triggered_shake = False
         if (teclas[pygame.K_SPACE] or teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]) and self.dash.ready:
+            # No Hardcore o dash é mais curto e arriscado
+            if is_hardcore:
+                self.dash.duration = 6
+                self.dash.cooldown_max = 60
+            
             # Determine dash direction: input -> velocity -> memory
             if move_vec.length_squared() > 0:
                 direcao_dash = move_vec
@@ -103,6 +109,11 @@ class Player:
             self.emitter.burst(self.transform.pos.x, self.transform.pos.y, lista_particulas, count=3)
         else:
             # Normal movement using physics component
+            # No Hardcore a aceleração é maior mas a fricção é menor (mais difícil de parar)
+            if is_hardcore:
+                self.physics.accel = 2.4
+                self.physics.friction = 0.90
+            
             self.physics.apply(
                 self.transform,
                 move_vec,
@@ -112,6 +123,10 @@ class Player:
 
         # 4. Update component timers
         self.dash.update()
+        
+        # Nerf na invulnerabilidade extra após o dash no Hardcore
+        if is_hardcore and self.dash._extra_invuln_timer > 4:
+            self.dash._extra_invuln_timer = 4
 
         return triggered_shake
 
