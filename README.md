@@ -82,7 +82,8 @@ Eventos de domínio substituem flags de estado:
 
 Criação de entidades centralizada nas factories (`game/factories`):
 
-- `EnemyFactory` com **registry de tipos** e pesos de spawn
+- `EnemyFactory` com registries distintos para `enemy`, `miniboss` e `boss`
+- factory cria por tipo/categoria e não define política de spawn global
 - `create_by_kind()` elimina condicionais hardcoded por tipo
 - factories montam componentes, tags, behavior e render strategy
 
@@ -117,6 +118,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - `LevelProgressionStrategy` por modo (`RaceLevelProgressionStrategy` / `SurvivalLevelProgressionStrategy`)
 - `SpawnDirector` desacoplado de cena em `game/systems/spawn_director.py`
 - `SpawnStrategy` em `game/modes/spawn_strategy.py` opera por `GameWorld` + `elapsed_time`
+- cada modo controla a política de spawn por categoria (`enemy`, `miniboss`, `boss`)
 - escala de spawn por modo:
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo

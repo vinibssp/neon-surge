@@ -26,6 +26,10 @@ class RaceConfig:
     spawn_interval_min: float = RACE_SPAWN_INTERVAL_MIN
     spawn_interval_level_step: float = RACE_SPAWN_INTERVAL_LEVEL_STEP
     initial_spawn_cap: float = MODE_INITIAL_SPAWN_CAP
+    miniboss_start_level: int = 4
+    boss_start_level: int = 8
+    miniboss_spawn_chance: float = 0.20
+    boss_spawn_chance: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -37,6 +41,10 @@ class SurvivalConfig:
     spawn_interval_level_step: float = SURVIVAL_SPAWN_INTERVAL_LEVEL_STEP
     enemy_lifetime: float = SURVIVAL_ENEMY_LIFETIME
     initial_spawn_cap: float = MODE_INITIAL_SPAWN_CAP
+    miniboss_start_time: float = 45.0
+    boss_start_time: float = 120.0
+    miniboss_spawn_chance: float = 0.24
+    boss_spawn_chance: float = 0.10
 
 
 @dataclass(frozen=True)

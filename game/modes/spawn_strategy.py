@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import random
 
 from game.components.data_components import LifetimeComponent
 from game.core.world import GameWorld
@@ -46,8 +47,27 @@ class RaceSpawnStrategy(SpawnStrategy):
         )
 
     def choose_enemy_kind(self, world: GameWorld, elapsed_time: float) -> str:
-        del world, elapsed_time
+        del elapsed_time
+        category = self._choose_spawn_category(world.level)
+        if category == "boss":
+            return EnemyFactory.choose_random_boss_kind()
+        if category == "miniboss":
+            return EnemyFactory.choose_random_miniboss_kind()
         return EnemyFactory.choose_random_enemy_kind()
+
+    def _choose_spawn_category(self, level: int) -> str:
+        if level < self.config.miniboss_start_level:
+            return "enemy"
+
+        if level < self.config.boss_start_level:
+            return "miniboss" if random.random() < self.config.miniboss_spawn_chance else "enemy"
+
+        roll = random.random()
+        if roll < self.config.boss_spawn_chance:
+            return "boss"
+        if roll < self.config.boss_spawn_chance + self.config.miniboss_spawn_chance:
+            return "miniboss"
+        return "enemy"
 
     def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
         del elapsed_time
@@ -73,8 +93,27 @@ class SurvivalSpawnStrategy(SpawnStrategy):
         )
 
     def choose_enemy_kind(self, world: GameWorld, elapsed_time: float) -> str:
-        del world, elapsed_time
+        del world
+        category = self._choose_spawn_category(elapsed_time)
+        if category == "boss":
+            return EnemyFactory.choose_random_boss_kind()
+        if category == "miniboss":
+            return EnemyFactory.choose_random_miniboss_kind()
         return EnemyFactory.choose_random_enemy_kind()
+
+    def _choose_spawn_category(self, elapsed_time: float) -> str:
+        if elapsed_time < self.config.miniboss_start_time:
+            return "enemy"
+
+        if elapsed_time < self.config.boss_start_time:
+            return "miniboss" if random.random() < self.config.miniboss_spawn_chance else "enemy"
+
+        roll = random.random()
+        if roll < self.config.boss_spawn_chance:
+            return "boss"
+        if roll < self.config.boss_spawn_chance + self.config.miniboss_spawn_chance:
+            return "miniboss"
+        return "enemy"
 
     def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
         del world
@@ -96,7 +135,7 @@ class OneVsOneSpawnStrategy(SpawnStrategy):
 
     def choose_enemy_kind(self, world: GameWorld, elapsed_time: float) -> str:
         del world, elapsed_time
-        return EnemyFactory.registered_enemy_kinds()[0]
+        return EnemyFactory.registered_all_kinds()[0]
 
     def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
         del world, elapsed_time

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 class OneVsOneMode(GameModeStrategy):
     def __init__(self, enemy_kinds: list[str] | None = None) -> None:
-        registered_kinds = EnemyFactory.registered_enemy_kinds()
+        registered_kinds = EnemyFactory.registered_all_kinds()
         self.enemy_kinds = registered_kinds if enemy_kinds is None else enemy_kinds
         self._progression: OneVsOneLevelProgressionStrategy | None = None
 

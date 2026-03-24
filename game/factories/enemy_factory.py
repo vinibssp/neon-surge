@@ -72,17 +72,40 @@ from game.rendering.strategies import (
 
 
 class EnemyFactory:
-    _registry: dict[str, Callable[[Vector2], Entity]] = {}
-    _spawn_weights: dict[str, float] = {}
+    _enemy_registry: dict[str, Callable[[Vector2], Entity]] = {}
+    _enemy_spawn_weights: dict[str, float] = {}
+    _miniboss_registry: dict[str, Callable[[Vector2], Entity]] = {}
+    _miniboss_spawn_weights: dict[str, float] = {}
+    _boss_registry: dict[str, Callable[[Vector2], Entity]] = {}
+    _boss_spawn_weights: dict[str, float] = {}
+
+    @classmethod
+    def _register_kind(
+        cls,
+        registry: dict[str, Callable[[Vector2], Entity]],
+        spawn_weights: dict[str, float],
+        kind: str,
+        creator: Callable[[Vector2], Entity],
+        weight: float,
+    ) -> None:
+        registry[kind] = creator
+        spawn_weights[kind] = max(0.0, weight)
 
     @classmethod
     def register_enemy(cls, kind: str, creator: Callable[[Vector2], Entity], weight: float) -> None:
-        cls._registry[kind] = creator
-        cls._spawn_weights[kind] = max(0.0, weight)
+        cls._register_kind(cls._enemy_registry, cls._enemy_spawn_weights, kind, creator, weight)
+
+    @classmethod
+    def register_miniboss(cls, kind: str, creator: Callable[[Vector2], Entity], weight: float) -> None:
+        cls._register_kind(cls._miniboss_registry, cls._miniboss_spawn_weights, kind, creator, weight)
+
+    @classmethod
+    def register_boss(cls, kind: str, creator: Callable[[Vector2], Entity], weight: float) -> None:
+        cls._register_kind(cls._boss_registry, cls._boss_spawn_weights, kind, creator, weight)
 
     @classmethod
     def _ensure_registry(cls) -> None:
-        if cls._registry:
+        if cls._enemy_registry or cls._miniboss_registry or cls._boss_registry:
             return
         cls.register_enemy("follower", cls.create_follower, weight=0.22)
         cls.register_enemy("shooter", cls.create_shooter, weight=0.12)
@@ -91,23 +114,53 @@ class EnemyFactory:
         cls.register_enemy("explosivo", cls.create_explosive, weight=0.08)
         cls.register_enemy("metralhadora", cls.create_turret, weight=0.06)
         cls.register_enemy("morteiro", cls.create_mortar, weight=0.05)
-        cls.register_enemy("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
-        cls.register_enemy("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
-        cls.register_enemy("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
-        cls.register_enemy("miniboss_sniper", cls.create_miniboss_sniper, weight=0.02)
-        cls.register_enemy("boss", cls.create_boss, weight=0.01)
-        cls.register_enemy("boss_artilharia", cls.create_boss_artillery, weight=0.005)
-        cls.register_enemy("boss_caotico", cls.create_boss_chaotic, weight=0.005)
+        cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
+        cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
+        cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
+        cls.register_miniboss("miniboss_sniper", cls.create_miniboss_sniper, weight=0.02)
+        cls.register_boss("boss", cls.create_boss, weight=0.01)
+        cls.register_boss("boss_artilharia", cls.create_boss_artillery, weight=0.005)
+        cls.register_boss("boss_caotico", cls.create_boss_chaotic, weight=0.005)
 
     @classmethod
-    def choose_random_enemy_kind(cls) -> str:
-        cls._ensure_registry()
-        kinds = list(cls._registry.keys())
-        weights = [cls._spawn_weights.get(kind, 0.0) for kind in kinds]
+    def _choose_random_kind_from(
+        cls,
+        registry: dict[str, Callable[[Vector2], Entity]],
+        spawn_weights: dict[str, float],
+    ) -> str:
+        kinds = list(registry.keys())
+        if not kinds:
+            raise ValueError("No enemy kinds registered for requested category")
+        weights = [spawn_weights.get(kind, 0.0) for kind in kinds]
         total = sum(weights)
         if total <= 0:
             return kinds[0]
         return random.choices(kinds, weights=weights, k=1)[0]
+
+    @classmethod
+    def _find_creator(cls, kind: str) -> Callable[[Vector2], Entity] | None:
+        creator = cls._enemy_registry.get(kind)
+        if creator is not None:
+            return creator
+        creator = cls._miniboss_registry.get(kind)
+        if creator is not None:
+            return creator
+        return cls._boss_registry.get(kind)
+
+    @classmethod
+    def choose_random_enemy_kind(cls) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(cls._enemy_registry, cls._enemy_spawn_weights)
+
+    @classmethod
+    def choose_random_miniboss_kind(cls) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(cls._miniboss_registry, cls._miniboss_spawn_weights)
+
+    @classmethod
+    def choose_random_boss_kind(cls) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(cls._boss_registry, cls._boss_spawn_weights)
 
     @classmethod
     def create_random_enemy(cls, position: Vector2) -> Entity:
@@ -117,7 +170,7 @@ class EnemyFactory:
     @classmethod
     def create_by_kind(cls, kind: str, position: Vector2) -> Entity:
         cls._ensure_registry()
-        creator = cls._registry.get(kind)
+        creator = cls._find_creator(kind)
         if creator is None:
             raise ValueError(f"Unknown enemy kind: {kind}")
         return creator(position)
@@ -125,7 +178,26 @@ class EnemyFactory:
     @classmethod
     def registered_enemy_kinds(cls) -> list[str]:
         cls._ensure_registry()
-        return list(cls._registry.keys())
+        return list(cls._enemy_registry.keys())
+
+    @classmethod
+    def registered_miniboss_kinds(cls) -> list[str]:
+        cls._ensure_registry()
+        return list(cls._miniboss_registry.keys())
+
+    @classmethod
+    def registered_boss_kinds(cls) -> list[str]:
+        cls._ensure_registry()
+        return list(cls._boss_registry.keys())
+
+    @classmethod
+    def registered_all_kinds(cls) -> list[str]:
+        cls._ensure_registry()
+        return [
+            *cls.registered_enemy_kinds(),
+            *cls.registered_miniboss_kinds(),
+            *cls.registered_boss_kinds(),
+        ]
 
     @staticmethod
     def create_follower(position: Vector2) -> Entity:
