@@ -231,9 +231,37 @@ class TrainingMenuManager:
         desenhar_texto(surface, data["nome"].upper(), self.game.fonte_sub, data["cor"], dx, dy + 10, "esquerda")
         pygame.draw.line(surface, (*data["cor"], 100), (dx, dy + 35), (dx + det_w - 20, dy + 35), 1)
         
+        # Stats Visualization
+        stats = data.get("stats", {})
+        sy = dy + 55
+        for label, key, cor in [("ATQ", "atq", VERMELHO_SANGUE), ("VEL", "vel", CIANO_NEON), ("RES", "res", VERDE_NEON)]:
+            val = stats.get(key, 0)
+            self._render_stat_bar(surface, dx, sy, label, val, cor)
+            sy += 35
+
         # Descrição principal (com mais espaço agora)
-        desc_rect = pygame.Rect(dx, dy + 60, det_w - 20, 280)
+        desc_rect = pygame.Rect(dx, sy + 15, det_w - 20, 180)
         self._desenhar_texto_quebrado(surface, data["desc"], self.game.fonte_texto, (200, 200, 220), desc_rect)
+
+    def _render_stat_bar(self, surface, x, y, label, val, cor):
+        # Label
+        desenhar_texto(surface, label, self.game.fonte_desc, BRANCO, x, y, "esquerda")
+        
+        # Bar background
+        bar_w = 200
+        bar_h = 12
+        bx = x + 50
+        pygame.draw.rect(surface, (30, 35, 45), (bx, y - 6, bar_w, bar_h), border_radius=3)
+        
+        # Fill
+        fill_w = int((val / 10) * bar_w)
+        if fill_w > 0:
+            pygame.draw.rect(surface, cor, (bx, y - 6, fill_w, bar_h), border_radius=3)
+            # Gloss/Shine
+            pygame.draw.rect(surface, (255, 255, 255, 60), (bx, y - 6, fill_w, bar_h // 2), border_radius=3)
+        
+        # Value text
+        desenhar_texto(surface, str(val), self.game.fonte_desc, cor, bx + bar_w + 15, y, "esquerda")
 
     def _render_main_button(self, surface, x, y, is_t, mx, my):
         txt_f = "INICIAR PROTOCOLO" if is_t else "VOLTAR"

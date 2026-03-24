@@ -218,74 +218,97 @@ class Renderer:
             self.guia_aba = "HOTKEYS"
             self.botao_selecionado = 1
 
-        b1 = Button(cx - 160, 130, 280, 45, "GUIA DE SISTEMA", self.fonte_texto, callback=set_aba_modos, id=0, cor=AMARELO_DADO)
-        b2 = Button(cx + 160, 130, 280, 45, "MAPEAMENTO DE TECLAS", self.fonte_texto, callback=set_aba_keys, id=1, cor=VERDE_NEON)
+        # Abas de navegação superiores
+        b1 = Button(cx - 180, 100, 320, 50, "GUIA DE SISTEMA", self.fonte_texto, callback=set_aba_modos, id=0, cor=AMARELO_DADO)
+        b2 = Button(cx + 180, 100, 320, 50, "MAPEAMENTO DE TECLAS", self.fonte_texto, callback=set_aba_keys, id=1, cor=VERDE_NEON)
         
         for b in [b1, b2]:
             b.update((mx, my), self.botao_selecionado)
             b.draw(self.tela)
             self.botoes_menu.append(b)
 
-        pw, ph = LARGURA_TELA - 100, 420
-        rect = pygame.Rect(50, 175, pw, ph)
-        self.tela.blit(criar_painel_transparente(pw, ph), rect.topleft)
-        desenhar_moldura(self.tela, rect, AMARELO_DADO if aba=="MODOS" else VERDE_NEON)
+        # Frame Principal
+        pw, ph = LARGURA_TELA - 120, 460
+        rect = pygame.Rect(cx - pw//2, 150, pw, ph)
+        self.tela.blit(criar_painel_transparente(pw, ph, (15, 20, 30, 245)), rect.topleft)
+        cor_f = AMARELO_DADO if aba=="MODOS" else VERDE_NEON
+        desenhar_moldura(self.tela, rect, cor_f)
 
         if aba == "HOTKEYS":
-            # Configuração de teclas e descrições
+            # Cabeçalhos das colunas
+            desenhar_texto(self.tela, "COMANDOS DE ENTRADA", self.fonte_desc, cor_f, rect.left + 190, rect.top + 35)
+            desenhar_texto(self.tela, "SISTEMA / FUNÇÃO", self.fonte_desc, cor_f, rect.left + 400, rect.top + 35, "esquerda")
+            pygame.draw.line(self.tela, (*cor_f, 100), (rect.left + 40, rect.top + 55), (rect.right - 40, rect.top + 55), 1)
+
             hotkey_data = [
-                (["W", "A", "S", "D"], "Movimentação da Nave"),
-                (["SPACE", "SHIFT"], "DASH: Impulso e Invencibilidade"),
-                (["ESC"], "Menu de Pausa / Retornar"),
-                (["F11"], "Alternar Visualização de Tela"),
-                (["+", "-"], "Ajuste Dinâmico de Volume")
+                (["W", "A", "S", "D"], "MOVIMENTAÇÃO: Controle vetorial de propulsão."),
+                (["ESPAÇO", "SHIFT"], "DASH: Impulso cinético com invulnerabilidade temporária."),
+                (["ESC"], "PAUSA / VOLTAR: Acessa o menu de interrupção ou retorna."),
+                (["F11"], "TELA CHEIA: Alterna entre modo janela e imersivo."),
+                (["+", "-"], "VOLUME: Ajuste em tempo real da saída de áudio."),
+                (["ENTER"], "CONFIRMAR: Seleção de opções e ativação de módulos.")
             ]
             
-            start_y = rect.top + 60
+            start_y = rect.top + 100
             for i, (keys, desc) in enumerate(hotkey_data):
-                y_pos = start_y + i * 65
+                y_pos = start_y + i * 58
                 
-                # Renderizar teclas (direita alinhada ao centro)
-                current_x = cx - 40
-                total_w = 0
+                # Renderizar teclas centralizadas na primeira coluna (largura 380)
+                key_area_center = rect.left + 190
+                gap = 12
                 
-                # Calcular largura total para alinhar à direita
-                key_width = 34
-                total_w = len(keys) * key_width + (len(keys)-1) * 10
-                start_x_keys = current_x - total_w
-                
+                # Calcular largura total do grupo de teclas
+                group_w = 0
                 for k in keys:
-                    # Teclas largas (SPACE, SHIFT, ETC) precisam de mais espaço
-                    w_key = 28
-                    if len(k) > 1 and k not in ["F11"]: w_key = 60
-                    
-                    # Adaptação básica para desenhar_tecla que espera w=28 fixo,
-                    # mas vamos desenhar centralizado na posição calculada
-                    if len(k) > 1 and k not in ["F11", "ESC"]:
-                        # Hack visual para teclas largas: desenha texto com moldura manual se desenhar_tecla não suportar largura variável
-                        # Mas vamos usar desenhar_texto com fundo por enquanto ou simplificar para desenhar_tecla
-                        # Para manter consistência, usamos desenhar_tecla mas aceitamos que vai ficar pequeno ou ajustamos
-                        # Vamos ajustar desenhar_tecla para aceitar largura? Não, vamos usar simplificação:
-                        desenhar_tecla(self.tela, start_x_keys + w_key//2, y_pos, k[:3], self.fonte_desc) # Abrevia se longo
-                        start_x_keys += w_key + 6
-                    else:
-                        desenhar_tecla(self.tela, start_x_keys + 14, y_pos, k, self.fonte_desc)
-                        start_x_keys += 34
+                    tw = self.fonte_desc.size(k)[0]
+                    group_w += max(28, tw + 12) + gap
+                group_w -= gap
                 
-                # Descrição
-                desenhar_texto(self.tela, desc, self.fonte_texto, BRANCO, cx + 40, y_pos, "esquerda")
+                kx = key_area_center - group_w // 2
+                for k in keys:
+                    kw = self.fonte_desc.size(k)[0]
+                    w = max(28, kw + 12)
+                    desenhar_tecla(self.tela, kx + w // 2, y_pos, k, self.fonte_desc)
+                    kx += w + gap
+                
+                # Divisor vertical sutil entre colunas
+                if i == 0:
+                    pygame.draw.line(self.tela, (*cor_f, 40), (rect.left + 380, rect.top + 70), (rect.left + 380, rect.bottom - 40), 1)
+                
+                # Descrição na segunda coluna
+                desenhar_texto(self.tela, desc, self.fonte_texto, BRANCO, rect.left + 400, y_pos, "esquerda")
                 
         else:
-            regras = [("OBJETIVOS", "Avance eliminando ameaças e coletando núcleos de energia."), ("AMEAÇAS", "Analise os padrões de ataque no banco de dados antes de iniciar."), ("PONTUAÇÃO", "Tempo de sobrevivência e precisão definem sua posição no ranking."), ("MODO TREINO", "Customize o ambiente para dominar as mecânicas de combate.")]
-            for i, (t, d) in enumerate(regras):
-                y = rect.top + 50 + i * 90
-                desenhar_texto(self.tela, t + ":", self.fonte_sub, AMARELO_DADO, rect.left + 60, y, "esquerda")
-                desenhar_texto(self.tela, d, self.fonte_texto, BRANCO, rect.left + 60, y + 35, "esquerda")
+            # Informações detalhadas dos modos de jogo
+            modos_info = [
+                ("SURVIVAL", "O teste definitivo. Inimigos escalam em poder e a LAVA NEON reduz sua área de manobra a cada setor limpo.", ROSA_NEON),
+                ("LABIRINTO", "Exploração tática. Encontre a saída em um complexo gerado proceduralmente enquanto evita fantasmas imortais.", VERDE_NEON),
+                ("CORRIDA", "Eficiência absoluta. Complete uma sequência de 10 zonas de combate no menor tempo possível para o ranking.", CIANO_NEON),
+                ("HARDCORE", "Sem margem para erro. Mesmas regras da sobrevivência, mas com densidade de ameaças duplicada desde o início.", LARANJA_NEON),
+                ("TREINO", "Laboratório de combate. Imortalidade ativa para teste de padrões de bosses e otimização de movimento.", AMARELO_DADO)
+            ]
+            
+            for i, (tit, desc, cor) in enumerate(modos_info):
+                y = rect.top + 50 + i * 82
+                # Marcador Lateral
+                pygame.draw.rect(self.tela, cor, (rect.left + 40, y - 20, 4, 60), border_radius=2)
+                desenhar_texto(self.tela, tit, self.fonte_sub, cor, rect.left + 60, y - 5, "esquerda")
+                
+                # Texto quebrado para a descrição
+                palavras = desc.split()
+                l1, l2 = "", ""
+                for p in palavras:
+                    if len(l1 + p) < 70: l1 += p + " "
+                    else: l2 += p + " "
+                
+                desenhar_texto(self.tela, l1.strip(), self.fonte_texto, BRANCO, rect.left + 60, y + 22, "esquerda")
+                if l2: desenhar_texto(self.tela, l2.strip(), self.fonte_texto, CINZA_CLARO, rect.left + 60, y + 44, "esquerda")
 
         def voltar():
             self.botao_selecionado = 2
             self.acionar_botao()
-        btn_v = Button(cx, cy + 300, 400, 55, "RETORNAR AO MENU", self.fonte_sub, callback=voltar, id=2, cor=CIANO_NEON)
+            
+        btn_v = Button(cx, cy + 300, 450, 60, "RETORNAR AO PROTOCOLO CENTRAL", self.fonte_sub, callback=voltar, id=2, cor=CIANO_NEON)
         btn_v.update((mx, my), self.botao_selecionado)
         btn_v.draw(self.tela)
         self.botoes_menu.append(btn_v)
@@ -332,21 +355,34 @@ class Renderer:
     @staticmethod
     def _render_guia_treino(self, rect):
         cx = rect.centerx
-        desenhar_texto(self.tela, "PROTOCOLOS DE TREINAMENTO", self.fonte_sub, VERDE_NEON, cx, rect.top + 50)
+        desenhar_texto(self.tela, "PROTOCOLOS DE SEGURANÇA E TREINAMENTO", self.fonte_sub, VERDE_NEON, cx, rect.top + 40)
+        pygame.draw.line(self.tela, (*VERDE_NEON, 100), (rect.left + 100, rect.top + 70), (rect.right - 100, rect.top + 70), 1)
         
         instrucoes = [
-            ("PERSONALIZAÇÃO", "Selecione a quantidade de cada inimigo usando os botões [+] e [-]."),
-            ("COMBATE REALISTA", "Inimigos manterão seus comportamentos e danos originais."),
-            ("IMORTALIDADE", "Neste modo, sua nave não é destruída. Use para aprender padrões."),
-            ("CONTROLES", "Use as setas para navegar e clique ou use ENTER para ajustar."),
-            ("EXPERIMENTAL", "Você pode spawnar até 10 unidades de cada tipo simultaneamente.")
+            ("PERSONALIZAÇÃO", "Ajuste a densidade de ameaças usando os seletores de quantum [+ / -].", desenhar_icone_engrenagem),
+            ("SIMULAÇÃO REAL", "Os padrões de ataque e física replicam condições reais de combate.", desenhar_icone_globo),
+            ("NÚCLEO ETERNO", "Protocolo de imortalidade ativo: falhas estruturais são auto-reparadas.", desenhar_brilho_neon),
+            ("MAPEAMENTO", "Navegação via D-Pad ou Teclado. Confirme ajustes com o gatilho principal.", desenhar_tecla),
+            ("LIMITES", "O simulador suporta até 10 instâncias simultâneas de cada entidade.", desenhar_icone_disco)
         ]
         
-        for i, (tit, desc) in enumerate(instrucoes):
-            y = rect.top + 110 + i * 65
-            pygame.draw.rect(self.tela, VERDE_NEON, (rect.left + 40, y - 5, 10, 10), border_radius=2)
-            desenhar_texto(self.tela, f"{tit}:", self.fonte_texto, VERDE_NEON, rect.left + 60, y, "esquerda")
-            desenhar_texto(self.tela, desc, self.fonte_desc, BRANCO, rect.left + 60, y + 25, "esquerda")
+        for i, (tit, desc, icon_func) in enumerate(instrucoes):
+            y = rect.top + 115 + i * 72
+            # Fundo de cada item
+            item_rect = pygame.Rect(rect.left + 40, y - 30, rect.width - 80, 60)
+            pygame.draw.rect(self.tela, (20, 30, 40, 150), item_rect, border_radius=8)
+            
+            # Ícone
+            ix = rect.left + 75
+            if icon_func == desenhar_brilho_neon:
+                icon_func(self.tela, VERDE_NEON, ix, y, 8, 2)
+            elif icon_func == desenhar_tecla:
+                icon_func(self.tela, ix, y, "CMD", self.fonte_desc)
+            else:
+                icon_func(self.tela, ix, y, VERDE_NEON)
+            
+            desenhar_texto(self.tela, tit, self.fonte_texto, VERDE_NEON, rect.left + 120, y - 10, "esquerda")
+            desenhar_texto(self.tela, desc, self.fonte_desc, BRANCO, rect.left + 120, y + 12, "esquerda")
 
 
     @staticmethod
