@@ -20,13 +20,14 @@ from ..data import UI_COLORS, UI_ANIMATION, INIMIGOS_DATA
 
 
 class Button:
-    def __init__(self, x, y, largura, altura, texto, fonte, callback=None, id=None, cor=None):
+    def __init__(self, x, y, largura, altura, texto, fonte, callback=None, id=None, cor=None, icone_func=None):
         self.rect = pygame.Rect(x - largura // 2, y - altura // 2, largura, altura)
         self.texto = texto
         self.fonte = fonte
         self.callback = callback
         self.id = id
         self.cor = cor # Cor customizada para o botão
+        self.icone_func = icone_func
         
         self.is_hovered = False
         self.is_selected = False  # Para navegação via teclado
@@ -72,7 +73,15 @@ class Button:
 
         texto_render = f"> {self.texto} <" if is_active else self.texto
         img_texto = self.fonte.render(texto_render, True, cor_texto)
-        rect_texto = img_texto.get_rect(center=self.rect.center)
+        
+        # Ajuste de posição se houver ícone
+        if self.icone_func:
+            ix = self.rect.left + 30
+            self.icone_func(surface, ix, self.rect.centery, cor_texto)
+            rect_texto = img_texto.get_rect(midleft=(ix + 25, self.rect.centery))
+        else:
+            rect_texto = img_texto.get_rect(center=self.rect.center)
+            
         surface.blit(img_texto, rect_texto)
 
     def handle_event(self, event):
@@ -289,32 +298,100 @@ def desenhar_botao_dinamico(surface, texto, fonte, cor_base, cx, cy, is_hovered,
 
 
 def desenhar_icone_som(surface, cx, cy, mutado, cor):
-    pontos_falante = [
-        (cx - 12, cy - 6),
-        (cx - 4, cy - 6),
-        (cx + 6, cy - 14),
-        (cx + 6, cy + 14),
-        (cx - 4, cy + 6),
-        (cx - 12, cy + 6),
+    # Corpo do alto-falante
+    pts = [
+        (cx - 10, cy - 5), (cx - 4, cy - 5), (cx + 5, cy - 12),
+        (cx + 5, cy + 12), (cx - 4, cy + 5), (cx - 10, cy + 5),
     ]
-    pygame.draw.polygon(surface, cor, pontos_falante)
+    pygame.draw.polygon(surface, cor, pts)
+    pygame.draw.polygon(surface, BRANCO, pts, 1) # Borda fina branca
+    
     if mutado:
-        pygame.draw.line(surface, VERMELHO_SANGUE, (cx + 12, cy - 8), (cx + 24, cy + 8), 3)
-        pygame.draw.line(surface, VERMELHO_SANGUE, (cx + 24, cy - 8), (cx + 12, cy + 8), 3)
+        # X de mudo com brilho
+        desenhar_brilho_neon(surface, VERMELHO_SANGUE, cx + 15, cy, 8, 1)
+        pygame.draw.line(surface, VERMELHO_SANGUE, (cx + 10, cy - 8), (cx + 20, cy + 8), 3)
+        pygame.draw.line(surface, VERMELHO_SANGUE, (cx + 20, cy - 8), (cx + 10, cy + 8), 3)
     else:
-        pygame.draw.arc(surface, cor, (cx - 4, cy - 8, 16, 16), -math.pi / 3, math.pi / 3, 2)
-        pygame.draw.arc(surface, cor, (cx - 4, cy - 14, 28, 28), -math.pi / 4, math.pi / 4, 2)
+        # Ondas de som com gradiente de tamanho
+        for i, r in enumerate([12, 22]):
+            rect = pygame.Rect(cx - r//2, cy - r//2, r, r)
+            pygame.draw.arc(surface, cor, rect, -math.pi/3, math.pi/3, 2 + i)
 
 
 def desenhar_icone_engrenagem(surface, cx, cy, cor):
-    pygame.draw.circle(surface, cor, (cx, cy), 10, 3)
+    # Núcleo
+    pygame.draw.circle(surface, cor, (cx, cy), 11)
+    pygame.draw.circle(surface, PRETO_FUNDO, (cx, cy), 5)
+    
+    # Dentes da engrenagem (mais estilizados)
     for i in range(8):
-        ang = i * (math.pi / 4)
-        px1 = cx + math.cos(ang) * 10
-        py1 = cy + math.sin(ang) * 10
-        px2 = cx + math.cos(ang) * 14
-        py2 = cy + math.sin(ang) * 14
-        pygame.draw.line(surface, cor, (px1, py1), (px2, py2), 3)
+        ang = i * (math.pi / 4) + (time.time() * 0.5) # Rotação lenta
+        # Trapézio para o dente
+        p1 = (cx + math.cos(ang - 0.2) * 10, cy + math.sin(ang - 0.2) * 10)
+        p2 = (cx + math.cos(ang + 0.2) * 10, cy + math.sin(ang + 0.2) * 10)
+        p3 = (cx + math.cos(ang + 0.15) * 15, cy + math.sin(ang + 0.15) * 15)
+        p4 = (cx + math.cos(ang - 0.15) * 15, cy + math.sin(ang - 0.15) * 15)
+        pygame.draw.polygon(surface, cor, [p1, p2, p3, p4])
+        pygame.draw.polygon(surface, BRANCO, [p1, p2, p3, p4], 1)
+
+
+def desenhar_icone_trofeu(surface, cx, cy, cor):
+    # Base
+    pygame.draw.rect(surface, cor, (cx - 12, cy + 10, 24, 4), border_radius=2)
+    pygame.draw.rect(surface, cor, (cx - 6, cy + 6, 12, 6))
+    # Copa
+    pts_copa = [(cx - 10, cy - 12), (cx + 10, cy - 12), (cx + 8, cy + 6), (cx - 8, cy + 6)]
+    pygame.draw.polygon(surface, cor, pts_copa)
+    pygame.draw.polygon(surface, BRANCO, pts_copa, 1)
+    # Alças
+    pygame.draw.arc(surface, cor, (cx - 16, cy - 10, 12, 12), math.pi/2, 3*math.pi/2, 2)
+    pygame.draw.arc(surface, cor, (cx + 4, cy - 10, 12, 12), -math.pi/2, math.pi/2, 2)
+
+
+def desenhar_icone_porta(surface, cx, cy, cor):
+    # Moldura da porta
+    pygame.draw.rect(surface, cor, (cx - 12, cy - 14, 24, 28), 2, border_radius=2)
+    # Porta entreaberta
+    pts_porta = [(cx - 10, cy - 12), (cx + 4, cy - 16), (cx + 4, cy + 16), (cx - 10, cy + 12)]
+    pygame.draw.polygon(surface, (20, 30, 50), pts_porta)
+    pygame.draw.polygon(surface, cor, pts_porta, 2)
+    # Seta de saída
+    pygame.draw.line(surface, BRANCO, (cx + 2, cy), (cx + 16, cy), 2)
+    pygame.draw.line(surface, BRANCO, (cx + 16, cy), (cx + 10, cy - 6), 2)
+    pygame.draw.line(surface, BRANCO, (cx + 16, cy), (cx + 10, cy + 6), 2)
+
+
+def desenhar_icone_caveira(surface, cx, cy, cor):
+    # Parte superior do crânio
+    pygame.draw.circle(surface, cor, (cx, cy - 4), 12)
+    # Mandíbula
+    pygame.draw.rect(surface, cor, (cx - 7, cy + 4, 14, 8), border_radius=2)
+    # Olhos (buracos)
+    pygame.draw.circle(surface, PRETO_FUNDO, (cx - 5, cy - 4), 4)
+    pygame.draw.circle(surface, PRETO_FUNDO, (cx + 5, cy - 4), 4)
+    # Detalhes dentes
+    for i in range(-1, 2):
+        pygame.draw.line(surface, PRETO_FUNDO, (cx + i*4, cy + 6), (cx + i*4, cy + 10), 1)
+
+
+def desenhar_icone_disco(surface, cx, cy, cor):
+    # Corpo do disquete
+    rect = pygame.Rect(cx - 13, cy - 13, 26, 26)
+    pygame.draw.rect(surface, cor, rect, border_radius=2)
+    # Etiqueta
+    pygame.draw.rect(surface, BRANCO, (cx - 9, cy - 11, 18, 10), border_radius=1)
+    # Parte deslizante metálica
+    pygame.draw.rect(surface, (150, 150, 160), (cx - 8, cy + 4, 16, 8), border_radius=1)
+
+
+def desenhar_icone_globo(surface, cx, cy, cor):
+    # Círculo externo
+    pygame.draw.circle(surface, cor, (cx, cy), 13, 2)
+    # Meridianos/Paralelos
+    pygame.draw.ellipse(surface, cor, (cx - 5, cy - 13, 10, 26), 1)
+    pygame.draw.line(surface, cor, (cx - 13, cy), (cx + 13, cy), 1)
+    pygame.draw.arc(surface, cor, (cx - 11, cy - 11, 22, 22), 0, math.pi, 1)
+    pygame.draw.arc(surface, cor, (cx - 11, cy - 11, 22, 22), math.pi, 0, 1)
 
 
 def desenhar_brilho_neon(surface, cor, pos_x, pos_y, raio, intensidade=3):

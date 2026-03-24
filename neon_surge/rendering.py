@@ -12,7 +12,9 @@ from .entities import Particula
 from .hud.ui import (
     criar_painel_transparente, desenhar_botao_dinamico, desenhar_brilho_neon,
     desenhar_fundo_cyberpunk, desenhar_grade_jogo, desenhar_icone_som, 
-    desenhar_icone_engrenagem, desenhar_texto, desenhar_moldura, Button
+    desenhar_icone_engrenagem, desenhar_icone_trofeu, desenhar_icone_porta,
+    desenhar_icone_caveira, desenhar_icone_disco, desenhar_icone_globo,
+    desenhar_texto, desenhar_moldura, Button
 )
 from .data import INIMIGOS_DATA
 
@@ -94,13 +96,15 @@ class Renderer:
         x = 170 if self.estado in ["TELA_INFO_MODOS", "TELA_INIMIGOS", "PERGUNTA_MODO", "CONFIGURACOES"] else 20
         y = 16
         
-        txt_m = f"💀 {int(getattr(self, 'mortes_total_jogador', 0))}"
+        # Substitui 💀 por ícone desenhado
+        desenhar_icone_caveira(self.tela, x + 12, y + 12, VERMELHO_SANGUE)
+        txt_m = f"{int(getattr(self, 'mortes_total_jogador', 0))}"
         surf_m = self.fonte_sub.render(txt_m, True, VERMELHO_SANGUE)
-        self.tela.blit(surf_m, (x, y))
+        self.tela.blit(surf_m, (x + 35, y))
 
         if self.modo_jogo == "CORRIDA":
             txt_f = f"FASE: {int(self.fase_atual)}/10"
-            desenhar_texto(self.tela, txt_f, self.fonte_sub, BRANCO, x + surf_m.get_width() + 40, y + 12, "esquerda")
+            desenhar_texto(self.tela, txt_f, self.fonte_sub, BRANCO, x + surf_m.get_width() + 70, y + 12, "esquerda")
 
     @staticmethod
     def _render_input_nome(self, mx, my):
@@ -152,7 +156,7 @@ class Renderer:
             self.botao_selecionado = "IR_RANKING"
             self.acionar_botao()
         
-        btn_rank = Button(LARGURA_TELA - 110, 42, 180, 45, "🏆 RANKING", self.fonte_sub, callback=ir_rank, id="IR_RANKING", cor=AMARELO_DADO)
+        btn_rank = Button(LARGURA_TELA - 110, 42, 180, 45, "RANKING", self.fonte_sub, callback=ir_rank, id="IR_RANKING", cor=AMARELO_DADO, icone_func=desenhar_icone_trofeu)
         btn_rank.update((mx, my), self.botao_selecionado)
         btn_rank.draw(self.tela)
         self.botoes_menu.append(btn_rank)
@@ -162,7 +166,7 @@ class Renderer:
             self.botao_selecionado = "SAIR_JOGO"
             self.acionar_botao()
             
-        btn_sair = Button(110, ALTURA_TELA - 42, 180, 45, "🚪 SAIR", self.fonte_sub, callback=sair, id="SAIR_JOGO", cor=VERMELHO_SANGUE)
+        btn_sair = Button(110, ALTURA_TELA - 42, 180, 45, "SAIR", self.fonte_sub, callback=sair, id="SAIR_JOGO", cor=VERMELHO_SANGUE, icone_func=desenhar_icone_porta)
         btn_sair.update((mx, my), self.botao_selecionado)
         btn_sair.draw(self.tela)
         self.botoes_menu.append(btn_sair)
@@ -302,7 +306,8 @@ class Renderer:
         
         for i, (tit, desc) in enumerate(instrucoes):
             y = rect.top + 110 + i * 65
-            desenhar_texto(self.tela, f"• {tit}:", self.fonte_texto, VERDE_NEON, rect.left + 60, y, "esquerda")
+            pygame.draw.rect(self.tela, VERDE_NEON, (rect.left + 40, y - 5, 10, 10), border_radius=2)
+            desenhar_texto(self.tela, f"{tit}:", self.fonte_texto, VERDE_NEON, rect.left + 60, y, "esquerda")
             desenhar_texto(self.tela, desc, self.fonte_desc, BRANCO, rect.left + 60, y + 25, "esquerda")
 
 
@@ -346,7 +351,15 @@ class Renderer:
         
         def draw_rank_list(r_area, titulo, dados, is_global):
             pygame.draw.rect(self.tela, (15, 25, 45), r_area, border_radius=12)
-            desenhar_texto(self.tela, titulo, self.fonte_sub, VERDE_NEON, r_area.centerx, r_area.top + 35)
+            
+            # Título com ícone manual
+            ty = r_area.top + 35
+            desenhar_texto(self.tela, titulo, self.fonte_sub, VERDE_NEON, r_area.centerx + 15, ty)
+            if is_global:
+                desenhar_icone_globo(self.tela, r_area.centerx - self.fonte_sub.size(titulo)[0]//2 - 10, ty, VERDE_NEON)
+            else:
+                desenhar_icone_disco(self.tela, r_area.centerx - self.fonte_sub.size(titulo)[0]//2 - 10, ty, VERDE_NEON)
+
             pygame.draw.line(self.tela, VERDE_NEON, (r_area.left + 40, r_area.top + 60), (r_area.right - 40, r_area.top + 60), 2)
             
             if not dados and not (is_global and getattr(self, "carregando_ranking", False)):
@@ -380,8 +393,8 @@ class Renderer:
         elif aba_atual == "CORRIDA_INFINITA": chave_local = "Corrida_Infinita"
         dados_locais = self.ranking.get(chave_local, [])
         
-        draw_rank_list(rect_local, "💾 RECORDS LOCAIS", dados_locais, False)
-        draw_rank_list(rect_global, "🌐 TOP 10 GLOBAL", getattr(self, "ranking_global", []), True)
+        draw_rank_list(rect_local, "RECORDS LOCAIS", dados_locais, False)
+        draw_rank_list(rect_global, "TOP 10 GLOBAL", getattr(self, "ranking_global", []), True)
 
         by = rect.bottom + 65
         def ir_menu():
@@ -396,14 +409,14 @@ class Renderer:
 
         if veio_de_fim:
             b1 = Button(cx - 280, by, 250, 45, "TENTAR NOVAMENTE", self.fonte_sub, callback=tentar, id=0, cor=VERDE_NEON)
-            b2 = Button(cx, by, 250, 45, "MENU PRINCIPAL", self.fonte_sub, callback=ir_menu, id=1, cor=CIANO_NEON)
+            b2 = Button(cx, by, 250, 45, "MENU PRINCIPAL", self.fonte_sub, callback=ir_menu, id=1, cor=CIANO_NEON, icone_func=desenhar_icone_porta)
             b3 = Button(cx + 280, by, 250, 45, "NOVO JOGADOR", self.fonte_sub, callback=novo, id=2, cor=ROSA_NEON)
             for b in [b1, b2, b3]:
                 b.update((mx, my), self.botao_selecionado)
                 b.draw(self.tela)
                 self.botoes_menu.append(b)
         else:
-            btn = Button(cx, by, 350, 50, "VOLTAR AO MENU", self.fonte_sub, callback=ir_menu, id=0, cor=CIANO_NEON)
+            btn = Button(cx, by, 350, 50, "VOLTAR AO MENU", self.fonte_sub, callback=ir_menu, id=0, cor=CIANO_NEON, icone_func=desenhar_icone_porta)
             btn.update((mx, my), self.botao_selecionado)
             btn.draw(self.tela)
             self.botoes_menu.append(btn)
