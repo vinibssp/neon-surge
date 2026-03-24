@@ -9,6 +9,7 @@ from pygame import Vector2
 from game.components.data_components import TransformComponent
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import (
+    AudioContextChanged,
     BulletExpired,
     CollectibleCollected,
     DashStarted,
@@ -57,6 +58,7 @@ class GameScene(Scene):
         self.session_stats = self.stats_collector.stats
 
     def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="game_scene_entered"))
         self._register_event_handlers()
         self.mode.on_enter(self)
 

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.events import AudioContextChanged
 from game.modes.mode_config import OneVsOneConfig, RaceConfig, SurvivalConfig
 from game.modes.one_vs_one_mode import OneVsOneMode
 from game.modes.race_mode import RaceMode
@@ -128,6 +129,9 @@ class MainMenuScene(BaseMenuScene):
             ),
         ]
         self._sync_mode_card()
+
+    def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioContextChanged(context="menu", reason="main_menu_entered"))
 
     def on_menu_update(self, dt: float) -> None:
         self.elapsed_time += dt

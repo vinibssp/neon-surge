@@ -11,7 +11,14 @@ from game.components.data_components import (
     PortalSpawnComponent,
     TransformComponent,
 )
-from game.core.events import CollectibleCollected, PlayerDied, PortalEntered, SpawnPortalDestroyed
+from game.core.events import (
+    CollectibleCollected,
+    ExplosionTriggered,
+    PlayerDamaged,
+    PlayerDied,
+    PortalEntered,
+    SpawnPortalDestroyed,
+)
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.systems.world_queries import COLLIDABLE_QUERY, MORTAR_SHELL_QUERY
@@ -86,6 +93,7 @@ class CollisionSystem:
 
             if entity.has_tag("enemy") or entity.has_tag("bullet"):
                 if not is_player_invulnerable:
+                    self.world.event_bus.publish(PlayerDamaged())
                     self.world.event_bus.publish(PlayerDied())
                     return
 
@@ -119,9 +127,11 @@ class CollisionSystem:
                 continue
 
             self.world.remove_entity(shell_entity)
+            self.world.event_bus.publish(ExplosionTriggered(position=shell.target_position))
             if is_player_invulnerable:
                 continue
             if self._collides(player_position, player_radius, shell.target_position, shell.explosion_radius):
+                self.world.event_bus.publish(PlayerDamaged())
                 self.world.event_bus.publish(PlayerDied())
                 return True
         return False

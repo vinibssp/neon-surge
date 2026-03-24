@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pygame import Vector2
 
 from game.components.data_components import CollisionComponent, TransformComponent
-from game.core.events import EventBus
+from game.core.events import EnemyShotFired, EventBus
 from game.ecs.entity import Entity
 from game.ecs.query import WorldQuery
 
@@ -51,11 +51,13 @@ class GameWorld:
         speed: float,
         radius: float,
         color: tuple[int, int, int] | None = None,
+        enemy_type: str = "enemy",
     ) -> None:
         from game.factories.bullet_factory import BulletFactory
 
         bullet = BulletFactory.create_enemy_bullet(origin, direction, speed, radius, color=color)
         self.add_entity(bullet)
+        self.event_bus.publish(EnemyShotFired(enemy_type=enemy_type))
 
     def clamp_to_bounds(self, position: Vector2, radius: float) -> Vector2:
         clamped_x = min(max(radius, position.x), self.width - radius)

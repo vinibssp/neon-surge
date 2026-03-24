@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from game.core.events import PortalActivated
 from game.factories.portal_factory import PortalFactory
 from game.factories.enemy_factory import EnemyFactory
 from game.modes.mode_config import RaceConfig, SurvivalConfig
@@ -29,6 +30,7 @@ class RaceLevelProgressionStrategy(LevelProgressionStrategy):
         del dt
         if scene.world.count_by_tag("collectible") == 0 and not scene.level_portal_spawned:
             scene.world.add_entity(PortalFactory.create_level_portal(scene.random_play_area_position()))
+            scene.world.event_bus.publish(PortalActivated(portal_kind="level"))
             scene.level_portal_spawned = True
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:
@@ -81,6 +83,7 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
         if self.awaiting_portal:
             if not scene.level_portal_spawned:
                 scene.world.add_entity(PortalFactory.create_level_portal(scene.random_play_area_position()))
+                scene.world.event_bus.publish(PortalActivated(portal_kind="level"))
                 scene.level_portal_spawned = True
             return
 
@@ -91,6 +94,7 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
         self.awaiting_portal = True
         if not scene.level_portal_spawned:
             scene.world.add_entity(PortalFactory.create_level_portal(scene.random_play_area_position()))
+            scene.world.event_bus.publish(PortalActivated(portal_kind="level"))
             scene.level_portal_spawned = True
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:

@@ -5,6 +5,7 @@ from typing import Callable
 import pygame
 
 from game.config import PAUSE_OVERLAY_COLOR, SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.events import AudioDuckRequested, AudioUnduckRequested
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.base_menu_scene import BaseMenuScene
 from game.scenes.overlay_scene_factory import OverlayActionBinding, OverlaySceneFactory
@@ -58,6 +59,12 @@ class PauseScene(BaseMenuScene):
             actions=overlay.navigation_actions,
             on_cancel=overlay.cancel_action,
         )
+
+    def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioDuckRequested(reason="pause_scene_entered"))
+
+    def on_exit(self) -> None:
+        self.stack.event_bus.publish(AudioUnduckRequested(reason="pause_scene_exited"))
 
     def render_menu_background(self, screen: pygame.Surface) -> None:
         draw_overlay_backdrop(screen, screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT), color=PAUSE_OVERLAY_COLOR)

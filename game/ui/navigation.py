@@ -8,6 +8,7 @@ import pygame
 import pygame_gui
 from pygame import Vector2
 
+from game.core.events import EventBus, UICancelled, UIConfirmed, UINavigated
 from game.ui.types import UIControl
 
 
@@ -76,32 +77,43 @@ class UINavigator:
         buttons: list[UIControl],
         actions: list[Callable[[], None]] | None = None,
         on_cancel: Callable[[], None] | None = None,
+        event_bus: EventBus | None = None,
     ) -> None:
         self.buttons = buttons
         self.actions = actions or []
         self.on_cancel = on_cancel
+        self.event_bus = event_bus
         self.selected_index = 0 if buttons else -1
         self.sync_hover_state()
 
     def move(self, delta: int) -> None:
         if not self.buttons or delta == 0:
             return
+        previous_index = self.selected_index
         next_index = (self.selected_index + delta) % len(self.buttons)
         self.selected_index = next_index
         self.sync_hover_state()
+        if self.selected_index != previous_index:
+            self._publish_navigated()
 
     def select_by_position(self, position: Vector2) -> None:
+        previous_index = self.selected_index
         for index, button in enumerate(self.buttons):
             if self._button_rect(button).collidepoint(position.x, position.y):
                 self.selected_index = index
                 self.sync_hover_state()
+                if self.selected_index != previous_index:
+                    self._publish_navigated()
                 return
 
     def select_by_element(self, element: UIControl) -> bool:
+        previous_index = self.selected_index
         for index, button in enumerate(self.buttons):
             if button is element:
                 self.selected_index = index
                 self.sync_hover_state()
+                if self.selected_index != previous_index:
+                    self._publish_navigated()
                 return True
         return False
 
@@ -112,12 +124,23 @@ class UINavigator:
     def confirm(self) -> None:
         if self.selected_index < 0 or self.selected_index >= len(self.buttons):
             return
+        if self.event_bus is not None:
+            self.event_bus.publish(UIConfirmed(index=self.selected_index))
         if self.selected_index < len(self.actions):
             self.actions[self.selected_index]()
 
     def cancel(self) -> None:
+        if self.event_bus is not None:
+            self.event_bus.publish(UICancelled())
         if self.on_cancel is not None:
             self.on_cancel()
+
+    def _publish_navigated(self) -> None:
+        if self.event_bus is None:
+            return
+        if self.selected_index < 0:
+            return
+        self.event_bus.publish(UINavigated(index=self.selected_index))
 
     def sync_hover_state(self) -> None:
         for index, button in enumerate(self.buttons):

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
-from typing import Callable, TypeVar, cast
+from typing import Callable, Literal, TypeVar, cast
+
+from pygame import Vector2
 
 
 class DomainEvent:
@@ -57,6 +59,57 @@ class LifetimeExpired(DomainEvent):
 
 
 @dataclass(frozen=True)
+class UINavigated(DomainEvent):
+    index: int
+
+
+@dataclass(frozen=True)
+class UIConfirmed(DomainEvent):
+    index: int
+
+
+@dataclass(frozen=True)
+class UICancelled(DomainEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class EnemyShotFired(DomainEvent):
+    enemy_type: str
+
+
+@dataclass(frozen=True)
+class PlayerDamaged(DomainEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class PortalActivated(DomainEvent):
+    portal_kind: Literal["enemy_spawn", "level"]
+
+
+@dataclass(frozen=True)
+class ExplosionTriggered(DomainEvent):
+    position: Vector2
+
+
+@dataclass(frozen=True)
+class AudioContextChanged(DomainEvent):
+    context: Literal["menu", "gameplay", "pause", "game_over"]
+    reason: str
+
+
+@dataclass(frozen=True)
+class AudioDuckRequested(DomainEvent):
+    reason: str
+
+
+@dataclass(frozen=True)
+class AudioUnduckRequested(DomainEvent):
+    reason: str
+
+
+@dataclass(frozen=True)
 class SubscriptionToken:
     event_type: type[DomainEvent]
     handler_id: int
@@ -64,7 +117,6 @@ class SubscriptionToken:
 
 class EventBus:
     def __init__(self) -> None:
-        self._queue: list[DomainEvent] = []
         self._handlers: dict[type[DomainEvent], list[tuple[int, EventHandler]]] = {}
         self._next_handler_id = 1
 
@@ -92,13 +144,10 @@ class EventBus:
         return True
 
     def publish(self, event: DomainEvent) -> None:
-        self._queue.append(event)
         self._dispatch_to_subscribers(event)
 
     def drain(self) -> list[DomainEvent]:
-        events = self._queue.copy()
-        self._queue.clear()
-        return events
+        return []
 
     def _dispatch_to_subscribers(self, event: DomainEvent) -> None:
         for event_type in self._matching_types(type(event)):

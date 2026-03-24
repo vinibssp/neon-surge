@@ -190,6 +190,34 @@ Menus não dependem mais do player para navegação:
 - `PORTAL_SPAWN_QUERY` em `game/systems/world_queries.py` substitui loop ad-hoc remanescente
 - `SpawnDirector` usa `world.query(PORTAL_SPAWN_QUERY)`
 
+### 11) Sistema de Áudio (Arquitetura)
+
+O áudio segue contrato em camadas, orientado a EventBus único:
+
+- `EventBus` -> `AudioDirector` -> (`AudioRouter` + `MixerBackend`)
+- `AudioRouter` decide ações de áudio de forma pura (sem dependência de `pygame`)
+- `AudioDirector` orquestra runtime, mantém estado e consome eventos de domínio
+- `MixerBackend` é o único ponto de contato com `pygame.mixer`
+- `AudioCatalog` e `AudioSettings` centralizam mapeamento declarativo e política de volumes/limites
+
+Contratos principais:
+
+- `AudioAction` é a fronteira entre decisão (`AudioRouter`) e execução (`AudioDirector`)
+- `AudioState` é a fonte única de verdade para contexto, trilha atual e duck
+- cenas publicam eventos; cenas não manipulam `pygame.mixer` diretamente
+- `UINavigator` publica eventos de UI (`UINavigated`, `UIConfirmed`, `UICancelled`) como fonte única de navegação
+
+Política de contexto musical:
+
+- `menu`: trilha de menu
+- `gameplay`: trilha de gameplay
+- `pause`: duck de música (sem troca de trilha)
+- `game_over`: unduck + transição para trilha de game over
+
+Decisão arquitetural importante:
+
+- `pygame.mixer.music` é single-track; transições são sequenciais (fade out -> fade in), sem crossfade real entre duas trilhas simultâneas.
+
 
 ## Estrutura de Pastas
 

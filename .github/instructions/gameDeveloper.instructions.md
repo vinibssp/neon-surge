@@ -76,6 +76,32 @@ Seu objetivo é evoluir o projeto preservando uma arquitetura modular, desacopla
 - Contratos distintos para gameplay e UI são desejáveis
 - Entrada de dispositivo deve ser traduzida, não acoplada ao fluxo da cena
 
+### Sistema de Áudio (Arquitetura)
+
+- O áudio deve seguir contrato em camadas: `EventBus` -> `AudioDirector` -> (`AudioRouter` + `MixerBackend`)
+- `AudioRouter` deve ser componente puro de decisão (sem dependência de `pygame`)
+- `AudioDirector` é o orquestrador de runtime e único consumidor transversal de áudio no `EventBus`
+- `MixerBackend` é o único ponto autorizado a usar `pygame.mixer`
+- `AudioCatalog` e `AudioSettings` devem permanecer declarativos (mapeamento e política)
+
+Contratos obrigatórios:
+
+- `AudioAction` como fronteira entre decisão e execução
+- `AudioState` como fonte única de verdade para contexto, trilha atual e duck
+- Cenas/systems nunca tocam áudio diretamente; apenas publicam eventos de domínio
+- `UINavigator` é a fonte oficial de eventos de UI para feedback sonoro
+
+Política de contexto:
+
+- mudança de contexto musical via `AudioContextChanged`
+- contexto `pause` não troca trilha; aplica duck/unduck
+- transições de música devem ser centralizadas no `AudioDirector`
+
+Resiliência operacional:
+
+- falhas de áudio não podem quebrar loop de jogo
+- métodos do backend devem isolar exceções e degradar para modo silencioso quando necessário
+
 ---
 
 ## UI, Menus e Cenas de Menu (Design e Arquitetura)

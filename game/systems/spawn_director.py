@@ -6,7 +6,7 @@ from pygame import Vector2
 
 from game.components.data_components import PortalSpawnComponent, TransformComponent
 from game.config import PORTAL_SPAWN_TIME
-from game.core.events import EnemySpawned
+from game.core.events import EnemySpawned, PortalActivated
 from game.core.world import GameWorld
 from game.factories.enemy_factory import EnemyFactory
 from game.factories.portal_factory import PortalFactory
@@ -47,6 +47,7 @@ class SpawnDirector:
                 delay=PORTAL_SPAWN_TIME,
             )
             self.world.add_entity(portal)
+            self.world.event_bus.publish(PortalActivated(portal_kind="enemy_spawn"))
 
         self._spawn_timer = self.strategy.next_interval(self.world, elapsed_time)
 
