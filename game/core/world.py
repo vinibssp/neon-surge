@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from pygame import Vector2
+
+from game.components.data_components import CollisionComponent, TransformComponent
+from game.core.events import EventBus
+from game.ecs.entity import Entity
+from game.ecs.query import WorldQuery
+
+
+@dataclass
+class GameWorld:
+    width: int
+    height: int
+    entities: list[Entity] = field(default_factory=list)
+    pending_add: list[Entity] = field(default_factory=list)
+    pending_remove: list[Entity] = field(default_factory=list)
+    player: Entity | None = None
+    event_bus: EventBus = field(default_factory=EventBus)
+    level: int = 1
+
+    def add_entity(self, entity: Entity) -> None:
+        self.pending_add.append(entity)
+
+    def remove_entity(self, entity: Entity) -> None:
+        if entity not in self.pending_remove:
+            self.pending_remove.append(entity)
+
+    def apply_pending(self) -> None:
+        if self.pending_remove:
+            remove_ids = {entity.id for entity in self.pending_remove}
+            self.entities = [entity for entity in self.entities if entity.id not in remove_ids]
+            self.pending_remove.clear()
+
+        if self.pending_add:
+            self.entities.extend(self.pending_add)
+            self.pending_add.clear()
+
+    def query(self, world_query: WorldQuery) -> list[Entity]:
+        return world_query.filter(self.entities)
+
+    def count_by_tag(self, tag: str) -> int:
+        return sum(1 for entity in self.entities if entity.active and entity.has_tag(tag))
+
+    def spawn_enemy_bullet(
+        self,
+        origin: Vector2,
+        direction: Vector2,
+        speed: float,
+        radius: float,
+        color: tuple[int, int, int] | None = None,
+    ) -> None:
+        from game.factories.bullet_factory import BulletFactory
+
+        bullet = BulletFactory.create_enemy_bullet(origin, direction, speed, radius, color=color)
+        self.add_entity(bullet)
+
+    def clamp_to_bounds(self, position: Vector2, radius: float) -> Vector2:
+        clamped_x = min(max(radius, position.x), self.width - radius)
+        clamped_y = min(max(radius, position.y), self.height - radius)
+        return Vector2(clamped_x, clamped_y)
+
+    def clear_non_player_entities(self) -> None:
+        self.entities = [entity for entity in self.entities if entity is self.player]
+        self.pending_add.clear()
+        self.pending_remove.clear()
+
+    def get_collision_radius(self, entity: Entity) -> float:
+        collision = entity.get_component(CollisionComponent)
+        return 0.0 if collision is None else collision.radius
+
+    def get_position(self, entity: Entity) -> Vector2 | None:
+        transform = entity.get_component(TransformComponent)
+        return None if transform is None else transform.position

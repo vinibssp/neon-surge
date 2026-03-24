@@ -1,98 +1,194 @@
-# Backlog de Atualizações - Novas Features
+# Neon Surge 2
 
+Jogo 2D em Python + Pygame com arquitetura modular e desacoplada, seguindo ECS, Scene Stack, Factory/Strategy/Command Patterns, Event Bus de domínio e Query API para sistemas.
 
-## Interface, Experiência do Usuário (UX) e Mecânicas
-*Novas habilidades e funcionalidades de interface/experiência do usuário (UX).*
+## Requisitos
 
-- [ ] **Mecânica de Parry:** Adicionar sistema para refletir/aparar ataques no tempo exato.
-- [x] **Aba de Ranking:** Criar leaderboard no menu principal para mostrar pontuações.
-- [X] **Causa da Morte:** Exibir na tela de Game Over qual foi o mob, boss ou hazard que matou o jogador.
-- [ ] **Atualizar Guia do Player:** Inserir as novas mecânicas, explicações dos novos modos e arquivo de ameaças.
-- [X] **Atualizar Arquivo de Ameaças:** Cadastrar todos os novos inimigos e obstáculos no bestiário/arquivo do jogo.
+- Python 3.11+
+- Dependências em `requirements.txt`
 
+## Instalação
 
-## Novos Inimigos (Mobs)
-*Novas ameaças para o jogador lidar nas fases.*
-
-- [ ] **Atirador de Laser:** Inimigo focado em atirar lasers normais contra o jogador.
-- [ ] **Kamehameha:** Inimigo que carrega energia e atira um laser contínuo.
-- [ ] **Lança-chamas:** Atira fogo em um raio de cone na direção para onde está apontando.
-- [ ] **Fantasma:** Segue o jogador invulnerável/transparente sem dar dano; ao ficar visível, ele para e pode causar dano (estilo Boo do Mario).
-- [ ] **Buffer:** Mago que buffa a velocidade de movimento e ataque dos outros mobs. Só toma dano/morre se o jogador der um dash por cima dele.
-- [ ] **Sapo:** Vomita uma poça de ácido que fica no mapa causando dano por um tempo.
-
-
-## Eventos de Ambiente (Hazards)
-*Modificadores de mapa que alteram a física ou zona de perigo.*
-
-- [ ] **Região de Neve (Drift):** Cria uma área escorregadia no mapa (com *drag*), deixando curvas mais lentas e liberando a mecânica de drift.
-- [ ] **Região de Água:** Transforma uma parte do mapa em água e spawna navios piratas com canhões.
-- [ ] **Nuvem de Balas:** Uma área onde chove bala constantemente, mas o jogador consegue atravessar ileso usando o dash.
-
-
-## Novos Modos de Jogo
-*Novas formas de jogar, sozinhas ou multiplayer.*
-
-- [ ] **Modo Pontuação (Arcade):** Fases contínuas onde a dificuldade aumenta com o tempo. Pontuação é medida por segundo vivo e quantidade de mobs na tela (abate de mobs através de drops pontua mais).
-- [ ] **Modo Rogue-like:** Corrida com coleta de buffs pelo tempo. Buffs leves na fase 5 (miniboss) e buffs fortes em boss normal.
-- [ ] **Modo Fuga:** Auto-scroller para a direita enquanto a parede esquerda fecha e mobs spawnam na frente (Foco em Multiplayer).
-- [ ] **Modo Party (Construtor):** Estilo *Ultimate Chicken Horse*. Jogadores adicionam paredes e mobs para montar a fase com o objetivo de conseguir moedas.
-
-
-## Drops e Power-Ups
-*Itens temporários no meio da partida.*
-
-- [ ] **Drop Nuke:** Item momentâneo que elimina todos os inimigos da tela (Pode spawnar após um inimigo despawnar ou condição similar de balanceamento).
-
----
-
-
-## 🏗️ Nova Estrutura de Pastas e Arquivos
-
-**`main.py`** — Ponto de entrada do projeto
-
-**`neon_surge/`** — Pacote principal do jogo
-> **`game.py`** — Orquestrador principal
-> **`runtime.py`** — Gerenciamento do loop principal e eventos
-> **`rendering.py`** — Funções de desenho de telas
-> **`constants.py`** — Centralização de todas as constantes e configurações
-> **`utils.py`** — Funções utilitárias (ex: brilho neon)
->
-> **`ai/`** — Lógicas de IA extraídas para o padrão Strategy
-> `bosses.py` · `shooter.py` · `chaser.py` · `charge.py` · `bounce.py` · `explosive.py`
->
-> **`components/`** — Lógica reutilizável via composição
-> `transform.py` · `physics.py` · `collider.py` · `dash.py` · `emitter.py`
->
-> **`entities/`** — Objetos do mundo de jogo
-> `player.py` · `enemy.py` · `particle.py` · `collectible.py` · `hazards.py`
->
-> **`hud/`** — Interface de usuário
-> **`services/`** — Serviços externos e I/O (`audio.py` · `ranking.py`)
-> **`systems/`** — Processamento de lógica de jogo (`gameplay.py`)
-
----
-
-## 🛠️ Principais Melhorias Realizadas
-
-**1. Composição em vez de Herança**
-O `Player` agora é composto por componentes específicos (`PhysicsComponent`, `TransformComponent`, `DashAbility`), mantendo os valores originais (`accel=1.8`, `friction=0.82`, `max_speed=10`).
-O `Enemy` adota o padrão **Strategy** para IA — em vez de um bloco gigante de `if/else`, um componente `self.ai` dita o comportamento por tipo, facilitando a adição de novos inimigos.
-
-**2. Organização de Imports**
-Todos os arquivos usam caminhos relativos e absolutos consistentes com a nova hierarquia.
-
-**3. Limpeza de Redundâncias**
-- Pasta duplicada `NeonSurge/` removida
-- Arquivos temporários e caches deletados (`__pycache__`, `.venv`, `.pyc`)
-- `ranking_completo.json` consolidado dentro de `data/`
-
-**4. Desacoplamento**
-Lógicas de áudio, ranking e UI isoladas em serviços e módulos próprios, removendo dependências de arquivos monolíticos.
-
----
-
-O projeto está limpo, modular e pronto para escalabilidade, mantendo **100% da experiência de jogo original**.
-```python
-python main.py
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+## Execução
+
+```bash
+python -m game.main
+```
+
+## Controles
+
+### Gameplay
+
+- `WASD`: movimentação do player
+- `Espaço`: dash
+- `Esc`: abrir pausa
+
+### Menus (UI Navigation unificado)
+
+- `↑/↓` ou `W/S`: navegar entre botões
+- `Enter` / `Espaço`: confirmar
+- `Esc`: cancelar/voltar
+- Mouse: hover + clique esquerdo
+- Gamepad: D-Pad/analógico vertical para navegação, `A` confirmar, `B` cancelar
+
+## Arquitetura e Design
+
+### 1) Game Loop com Fixed Timestep
+
+O loop principal usa atualização fixa desacoplada do render:
+
+- `update()` em passo fixo (`FIXED_DT`)
+- acumulador de tempo para estabilidade de simulação
+- `render()` desacoplado da frequência de update
+
+### 2) Scene Stack (State Stack)
+
+As cenas são empilhadas via `SceneStack`:
+
+- cena do topo recebe `handle_input()` e `update()`
+- suporte a overlays transparentes (`PauseScene`)
+- cenas principais: `MainMenuScene`, `GameScene`, `PauseScene`, `GameOverScene`
+
+### 3) ECS + Query API
+
+O núcleo ECS fica em `game/ecs` e a consulta foi centralizada via `WorldQuery`:
+
+- `Entity` com componentes e tags
+- componentes de dados (sem lógica pesada)
+- lógica concentrada em systems
+- `GameWorld.query(WorldQuery)` para filtros reutilizáveis
+- catálogo de queries em `game/systems/world_queries.py` para evitar loops duplicados
+
+### 4) Domain Event Bus + Dispatcher
+
+Eventos de domínio substituem flags de estado:
+
+- `EventBus` em `game/core/events.py`
+- eventos principais: `PlayerDied`, `PortalEntered`, `EnemySpawned`
+- eventos adicionais de telemetria/domínio: `CollectibleCollected`, `SpawnPortalDestroyed`, `DashStarted`, `BulletExpired`, `LifetimeExpired`
+- systems publicam eventos em `EventBus`
+- `GameScene` drena a fila e distribui via `DomainEventDispatcher.on(...)`
+- handlers tipados removem `if isinstance(...)` espalhado na cena
+
+### 5) Factory Pattern + Registry
+
+Criação de entidades centralizada nas factories (`game/factories`):
+
+- `EnemyFactory` com **registry de tipos** e pesos de spawn
+- `create_by_kind()` elimina condicionais hardcoded por tipo
+- factories montam componentes, tags, behavior e render strategy
+
+### 6) Strategy Pattern (modos, progressão, spawn, render, IA)
+
+#### Modos de jogo
+
+`GameScene` recebe um `GameModeStrategy` e delega comportamento ao modo:
+
+- `RaceMode`
+- `SurvivalMode`
+
+Cada modo define:
+
+- pipeline de systems (`build_systems`)
+- estratégia de spawn (`build_spawn_strategy`)
+- estratégia de progressão (`build_level_progression_strategy`)
+- HUD (`build_hud_lines`)
+- retry (`create_retry_strategy`)
+
+#### Presets por modo
+
+Configuração por preset em `game/modes/mode_config.py`:
+
+- `RaceConfig`
+- `SurvivalConfig`
+
+Isso remove blocos hardcoded e concentra tuning por modo.
+
+#### Progressão e Spawn plugáveis
+
+- `LevelProgressionStrategy` por modo (`RaceLevelProgressionStrategy` / `SurvivalLevelProgressionStrategy`)
+- `SpawnDirector` desacoplado de cena em `game/systems/spawn_director.py`
+- `SpawnStrategy` em `game/modes/spawn_strategy.py` opera por `GameWorld` + `elapsed_time`
+- escala de spawn por modo:
+  - corrida: mais portais por ciclo conforme avanço
+  - sobrevivência: mais portais por ciclo conforme tempo
+
+#### Render desacoplado
+
+- `RenderComponent` guarda `render_strategy`
+- estratégias em `game/rendering/strategies.py`
+- estilos distintos para player, follower, shooter, portais e coletáveis
+
+### 7) Orquestração da `GameScene`
+
+Para reduzir acoplamento e responsabilidades:
+
+- `BackgroundRenderer`
+- `HudRenderer`
+- `SpawnDirector` (systems layer)
+- `SystemPipeline` com fases e prioridade explícita
+
+`SystemPipeline` executa por etapa:
+
+- `pre_update`
+- `simulation`
+- `post_update`
+
+Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplamento por ordem implícita de lista.
+
+### 8) Command Pattern no Input
+
+#### Gameplay
+
+- `MoveCommand` e `DashCommand` desacoplam input do estado interno da entidade
+
+#### UI desacoplada de player cursor
+
+Menus não dependem mais do player para navegação:
+
+- `UINavigator` separado
+- `UINavigationInputHandler` gera comandos de UI (`UINavigateCommand`, `UIConfirmCommand`, `UICancelCommand`, comandos de mouse)
+- funciona com teclado, mouse e gamepad sem alterar `Button`
+- API de UI limpa: `update(dt)` sem assinatura legada de `player_position/player_radius`
+
+### 9) Query API completa
+
+- Consulta de mundo centralizada em `WorldQuery`
+- `PORTAL_SPAWN_QUERY` em `game/systems/world_queries.py` substitui loop ad-hoc remanescente
+- `SpawnDirector` usa `world.query(PORTAL_SPAWN_QUERY)`
+
+
+## Estrutura de Pastas
+
+```text
+game/
+├── core/          # loop, scene stack, input gameplay, event bus, world
+├── ecs/           # entity/component/system/query
+├── components/    # data components
+├── systems/       # systems + world_queries + pipeline + spawn_director
+├── factories/     # criação de entidades
+├── behaviors/     # IA dos inimigos
+├── modes/         # strategies de modo, progressão e presets
+├── rendering/     # render strategies e utilitários visuais
+├── ui/            # elementos UI e navegação desacoplada
+└── scenes/        # menu, gameplay, pausa e game over
+```
+
+## Fluxo de Alto Nível
+
+1. `main` inicia `Game` e `SceneStack`
+2. `MainMenuScene` escolhe `RaceMode` ou `SurvivalMode`
+3. `GameScene` monta `LevelProgressionStrategy`, `SystemPipeline` e `SpawnDirector` desacoplado (world + strategy)
+4. systems atualizam estado via ECS, queries reutilizáveis e fases do pipeline
+5. systems publicam eventos; `GameScene` despacha handlers por tipo e decide transições
+
+## Observações
+
+- Renderização do jogo usa apenas formas (`pygame.draw.circle`, `pygame.draw.rect`, `pygame.draw.line`).
+- Textos de UI usam `pygame.font` para legibilidade.
