@@ -119,6 +119,7 @@ Política de contexto:
 
 - mudança de contexto musical via `AudioContextChanged`
 - contexto `pause` não troca trilha; aplica duck/unduck
+- contexto `game_over` deve tocar uma vez e transicionar automaticamente para contexto `menu`
 - transições de música devem ser centralizadas no `AudioDirector`
 
 Resiliência operacional:

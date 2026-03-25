@@ -63,6 +63,6 @@ class AudioRouter:
             cue=cue,
             group="music",
             priority=self.settings.resolve_priority_for_cue(cue),
-            loop=True,
+            loop=event.context != "game_over",
             fade_ms=self.settings.music_transition_fade_ms,
         )

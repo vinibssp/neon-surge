@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from game.core.events import EventBus
+from game.audio.mixer_backend import MUSIC_ENDED_EVENT
+from game.core.events import AudioContextChanged, EventBus
 
 if TYPE_CHECKING:
     from game.audio.audio_settings_manager import AudioSettingsManager
@@ -64,6 +65,10 @@ class SceneStack:
         return len(self._stack) == 0
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
+        for event in events:
+            if event.type == MUSIC_ENDED_EVENT:
+                self.event_bus.publish(AudioContextChanged(context="menu", reason="game_over_music_finished"))
+
         scene = self.top()
         if scene is not None:
             scene.handle_input(events)

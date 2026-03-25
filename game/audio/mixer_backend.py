@@ -10,6 +10,7 @@ from game.audio.audio_action import AudioAction, AudioGroup
 from game.audio.audio_settings import AudioSettings
 
 _logger = logging.getLogger(__name__)
+MUSIC_ENDED_EVENT = pygame.USEREVENT + 7
 
 
 class MixerBackend:
@@ -75,6 +76,7 @@ class MixerBackend:
                 volume = max(0.0, min(1.0, volume_override))
             pygame.mixer.music.set_volume(volume)
             loops = -1 if loop else 0
+            pygame.mixer.music.set_endevent(0 if loop else MUSIC_ENDED_EVENT)
             pygame.mixer.music.play(loops=loops, fade_ms=max(0, fade_ms))
         except Exception:
             _logger.exception("Failed to play music file=%s", file_name)

@@ -252,7 +252,7 @@ Política de contexto musical:
 - `menu`: trilha de menu
 - `gameplay`: trilha de gameplay
 - `pause`: duck de música (sem troca de trilha)
-- `game_over`: unduck + transição para trilha de game over
+- `game_over`: unduck + trilha de game over em one-shot; ao terminar, transição automática para trilha de menu
 
 Decisão arquitetural importante:
 
