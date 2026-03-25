@@ -914,6 +914,15 @@ class BossRenderStrategy:
         if boss.boss_kind == "boss_caotico":
             self._render_chaotic(screen, transform, boss)
             return
+        if boss.boss_kind == "boss_colosso_laser":
+            self._render_laser_colossus(screen, transform, boss)
+            return
+        if boss.boss_kind == "boss_druida_toxico":
+            self._render_toxic_druid(screen, transform, boss)
+            return
+        if boss.boss_kind == "boss_soberano_espectral":
+            self._render_spectral_overlord(screen, transform, boss)
+            return
         self._render_standard(screen, transform, boss)
 
     def _render_standard(self, screen: pygame.Surface, transform, boss: BossComponent) -> None:
@@ -977,6 +986,41 @@ class BossRenderStrategy:
             )
             pygame.draw.line(screen, (245, 245, 245), center, tip, 2)
         _draw_pixel_eyes(screen, center, (245, 245, 245), spacing=max(6, int(self.radius * 0.24)))
+
+    def _render_laser_colossus(self, screen: pygame.Surface, transform, boss: BossComponent) -> None:
+        del boss
+        color = (255, 66, 96)
+        center = (int(transform.position.x), int(transform.position.y))
+        draw_neon_glow(screen, color, center[0], center[1], int(self.radius + 7), 5)
+        _draw_rotmg_shell(screen, center, self.radius + 2, color, sides=8)
+        for offset in (-12, -4, 4, 12):
+            pygame.draw.line(screen, (255, 225, 235), (center[0] + offset, center[1] - 26), (center[0] + offset, center[1] + 26), 1)
+        _draw_pixel_eyes(screen, center, (255, 240, 245), spacing=max(7, int(self.radius * 0.24)))
+
+    def _render_toxic_druid(self, screen: pygame.Surface, transform, boss: BossComponent) -> None:
+        del boss
+        color = (96, 224, 102)
+        center = (int(transform.position.x), int(transform.position.y))
+        now = time.time()
+        draw_neon_glow(screen, color, center[0], center[1], int(self.radius + 6), 5)
+        _draw_rotmg_shell(screen, center, self.radius + 1, color, sides=9, rotation=math.pi / 18)
+        for index in range(5):
+            angle = now * 2.0 + index * (math.pi * 2 / 5)
+            px = int(center[0] + math.cos(angle) * (self.radius + 10))
+            py = int(center[1] + math.sin(angle) * (self.radius + 10))
+            pygame.draw.circle(screen, (210, 255, 214), (px, py), 3)
+        _draw_pixel_eyes(screen, center, (235, 255, 236), spacing=max(7, int(self.radius * 0.23)))
+
+    def _render_spectral_overlord(self, screen: pygame.Surface, transform, boss: BossComponent) -> None:
+        del boss
+        color = (194, 216, 255)
+        center = (int(transform.position.x), int(transform.position.y))
+        draw_neon_glow(screen, color, center[0], center[1], int(self.radius + 7), 5)
+        _draw_rotmg_shell(screen, center, self.radius + 2, color, sides=10, rotation=math.pi / 20)
+        pygame.draw.circle(screen, (16, 18, 28), center, max(2, int(self.radius * 0.4)))
+        for offset in (-14, -7, 0, 7, 14):
+            pygame.draw.line(screen, (240, 245, 255), (center[0] + offset, center[1] - 18), (center[0] + offset, center[1] + 18), 1)
+        _draw_pixel_eyes(screen, center, (245, 250, 255), spacing=max(7, int(self.radius * 0.24)))
 
 
 class MortarRenderStrategy:

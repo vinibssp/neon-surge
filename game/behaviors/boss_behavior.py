@@ -10,7 +10,10 @@ from game.components.data_components import BossComponent, MovementComponent, Tr
 from game.config import (
     ENEMY_BOSS_ARTILLERY_BULLET_COLOR,
     ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
+    ENEMY_BOSS_LASER_BULLET_COLOR,
+    ENEMY_BOSS_SPECTRAL_BULLET_COLOR,
     ENEMY_BOSS_STANDARD_BULLET_COLOR,
+    ENEMY_BOSS_TOXIC_BULLET_COLOR,
 )
 from game.ecs.entity import Entity
 from game.factories.portal_factory import PortalFactory
@@ -35,6 +38,18 @@ class BossBehavior(Behavior):
 
         if boss.boss_kind == "boss_artilharia":
             self._update_artillery_boss(world, dt, boss, transform, movement, player_transform)
+            return
+
+        if boss.boss_kind == "boss_colosso_laser":
+            self._update_laser_colossus(world, dt, boss, transform, movement, player_transform)
+            return
+
+        if boss.boss_kind == "boss_druida_toxico":
+            self._update_toxic_druid(world, dt, boss, transform, movement, player_transform)
+            return
+
+        if boss.boss_kind == "boss_soberano_espectral":
+            self._update_spectral_overlord(world, dt, boss, transform, movement, player_transform)
             return
 
         self._update_chaotic_boss(world, dt, boss, transform, movement, player_transform)
@@ -209,6 +224,112 @@ class BossBehavior(Behavior):
             movement.velocity = normalized(to_player) * max(320.0, movement.max_speed * 4.6)
             movement.input_direction = normalized(movement.velocity)
             movement.max_speed = max(1.0, movement.velocity.length())
+
+    def _update_laser_colossus(
+        self,
+        world: "GameWorld",
+        dt: float,
+        boss: BossComponent,
+        transform: TransformComponent,
+        movement: MovementComponent,
+        player_transform: TransformComponent,
+    ) -> None:
+        boss.ability_timer += dt
+        boss.shot_timer += dt
+        to_player = player_transform.position - transform.position
+        tangent = normalized(to_player).rotate(90.0)
+        movement.velocity = movement.velocity.lerp(tangent * (movement.max_speed * 0.9), 0.08)
+        movement.input_direction = normalized(movement.velocity)
+        movement.max_speed = max(1.0, movement.velocity.length())
+
+        if boss.shot_timer >= 0.2:
+            boss.shot_timer = 0.0
+            forward = normalized(to_player)
+            side = Vector2(-forward.y, forward.x)
+            for offset in (-26.0, -13.0, 0.0, 13.0, 26.0):
+                origin = transform.position + side * offset
+                world.spawn_enemy_bullet(origin, forward, speed=430.0, radius=6.0, color=ENEMY_BOSS_LASER_BULLET_COLOR)
+
+        if boss.ability_timer < 4.8:
+            return
+        boss.ability_timer = 0.0
+        world.add_entity(
+            PortalFactory.create_enemy_spawn_portal(Vector2(transform.position), "miniboss_laser_matrix", delay=0.9)
+        )
+
+    def _update_toxic_druid(
+        self,
+        world: "GameWorld",
+        dt: float,
+        boss: BossComponent,
+        transform: TransformComponent,
+        movement: MovementComponent,
+        player_transform: TransformComponent,
+    ) -> None:
+        boss.ability_timer += dt
+        boss.shot_timer += dt
+        to_player = player_transform.position - transform.position
+        desired = normalized(to_player).rotate(45.0 if boss.variant % 2 else -45.0) * (movement.max_speed * 0.88)
+        movement.velocity = movement.velocity.lerp(desired, 0.07)
+        movement.input_direction = normalized(movement.velocity)
+        movement.max_speed = max(1.0, movement.velocity.length())
+
+        if boss.shot_timer >= 1.05:
+            boss.shot_timer = 0.0
+            for angle in range(0, 360, 30):
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    Vector2(1, 0).rotate(float(angle + boss.ability_timer * 30.0)),
+                    speed=245.0,
+                    radius=6.0,
+                    color=ENEMY_BOSS_TOXIC_BULLET_COLOR,
+                )
+
+        if boss.ability_timer < 4.2:
+            return
+        boss.ability_timer = 0.0
+        for kind in ("sapo", "miniboss_alquimista"):
+            world.add_entity(PortalFactory.create_enemy_spawn_portal(Vector2(transform.position), kind, delay=0.85))
+
+    def _update_spectral_overlord(
+        self,
+        world: "GameWorld",
+        dt: float,
+        boss: BossComponent,
+        transform: TransformComponent,
+        movement: MovementComponent,
+        player_transform: TransformComponent,
+    ) -> None:
+        boss.ability_timer += dt
+        boss.shot_timer += dt
+        to_player = player_transform.position - transform.position
+        desired = normalized(to_player) * (movement.max_speed * (1.18 if int(boss.ability_timer // 2.0) % 2 else 0.7))
+        movement.velocity = movement.velocity.lerp(desired, 0.09)
+        movement.input_direction = normalized(movement.velocity)
+        movement.max_speed = max(1.0, movement.velocity.length())
+
+        if boss.shot_timer >= 0.48:
+            boss.shot_timer = 0.0
+            base = normalized(to_player)
+            for spread in (-18.0, -9.0, 0.0, 9.0, 18.0):
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    base.rotate(spread),
+                    speed=320.0,
+                    radius=7.0,
+                    color=ENEMY_BOSS_SPECTRAL_BULLET_COLOR,
+                )
+
+        if boss.ability_timer < 5.0:
+            return
+        boss.ability_timer = 0.0
+        world.add_entity(
+            PortalFactory.create_enemy_spawn_portal(
+                Vector2(transform.position),
+                random.choice(("fantasma", "miniboss_fantasma_senhor")),
+                delay=0.8,
+            )
+        )
 
     def _spawn_boss_portals(self, world: "GameWorld", position: Vector2, variant: int) -> None:
         if variant % 3 == 1:

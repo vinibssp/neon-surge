@@ -7,6 +7,7 @@ from typing import Callable
 from pygame import Vector2
 
 from game.behaviors.boss_behavior import BossBehavior
+from game.behaviors.alchemist_miniboss_behavior import AlchemistMinibossBehavior
 from game.behaviors.bouncer_behavior import BouncerBehavior
 from game.behaviors.buffer_mage_behavior import BufferMageBehavior
 from game.behaviors.charge_behavior import ChargeBehavior
@@ -19,10 +20,12 @@ from game.behaviors.hex_orbiter_behavior import HexOrbiterBehavior
 from game.behaviors.hunter_miniboss_behavior import HunterMinibossBehavior
 from game.behaviors.kamehameha_behavior import KamehamehaBehavior
 from game.behaviors.laser_shooter_behavior import LaserShooterBehavior
+from game.behaviors.laser_matrix_miniboss_behavior import LaserMatrixMinibossBehavior
 from game.behaviors.mortar_behavior import MortarBehavior
 from game.behaviors.arcane_strafer_behavior import ArcaneStraferBehavior
 from game.behaviors.runic_bombardier_behavior import RunicBombardierBehavior
 from game.behaviors.shadow_pouncer_behavior import ShadowPouncerBehavior
+from game.behaviors.phantom_overlord_miniboss_behavior import PhantomOverlordMinibossBehavior
 from game.behaviors.shield_miniboss_behavior import ShieldMinibossBehavior
 from game.behaviors.shoot_behavior import ShootBehavior
 from game.behaviors.shotgun_ambusher_behavior import ShotgunAmbusherBehavior
@@ -54,6 +57,9 @@ from game.config import (
     ENEMY_ARCANE_STRAFER_INNER_COLOR,
     ENEMY_BOUNCER_COLOR,
     ENEMY_BOUNCER_CORE_COLOR,
+    ENEMY_BOSS_LASER_COLOR,
+    ENEMY_BOSS_SPECTRAL_COLOR,
+    ENEMY_BOSS_TOXIC_COLOR,
     ENEMY_CHARGE_COLOR,
     ENEMY_EXPLOSIVE_COLOR,
     ENEMY_EXPLOSIVE_WARNING_COLOR,
@@ -67,11 +73,16 @@ from game.config import (
     ENEMY_LASER_SHOOTER_INNER_COLOR,
     ENEMY_MINIBOSS_HUNTER_COLOR,
     ENEMY_MINIBOSS_HUNTER_CORE_COLOR,
+    ENEMY_MINIBOSS_KAME_ORACLE_COLOR,
+    ENEMY_MINIBOSS_LASER_MATRIX_COLOR,
+    ENEMY_MINIBOSS_ALCHEMIST_COLOR,
+    ENEMY_MINIBOSS_PHANTOM_COLOR,
+    ENEMY_MINIBOSS_PYRO_COLOR,
     ENEMY_MINIBOSS_SHIELD_COLOR,
     ENEMY_MINIBOSS_SNIPER_COLOR,
     ENEMY_MORTAR_COLOR,
-        ENEMY_BUFFER_COLOR,
-        ENEMY_BUFFER_CORE_COLOR,
+    ENEMY_BUFFER_COLOR,
+    ENEMY_BUFFER_CORE_COLOR,
     ENEMY_HEX_ORBITER_COLOR,
     ENEMY_HEX_ORBITER_MIDDLE_COLOR,
     ENEMY_RUNIC_BOMBARDIER_COLOR,
@@ -160,9 +171,17 @@ class EnemyFactory:
         cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
         cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
         cls.register_miniboss("miniboss_sniper", cls.create_miniboss_sniper, weight=0.02)
+        cls.register_miniboss("miniboss_laser_matrix", cls.create_miniboss_laser_matrix, weight=0.03)
+        cls.register_miniboss("miniboss_oraculo_kame", cls.create_miniboss_kame_oracle, weight=0.03)
+        cls.register_miniboss("miniboss_piro_hidra", cls.create_miniboss_pyro_hydra, weight=0.03)
+        cls.register_miniboss("miniboss_fantasma_senhor", cls.create_miniboss_phantom_overlord, weight=0.02)
+        cls.register_miniboss("miniboss_alquimista", cls.create_miniboss_alchemist, weight=0.02)
         cls.register_boss("boss", cls.create_boss, weight=0.01)
         cls.register_boss("boss_artilharia", cls.create_boss_artillery, weight=0.005)
         cls.register_boss("boss_caotico", cls.create_boss_chaotic, weight=0.005)
+        cls.register_boss("boss_colosso_laser", cls.create_boss_laser_colossus, weight=0.004)
+        cls.register_boss("boss_druida_toxico", cls.create_boss_toxic_druid, weight=0.004)
+        cls.register_boss("boss_soberano_espectral", cls.create_boss_spectral_overlord, weight=0.004)
 
     @classmethod
     def _choose_random_kind_from(
@@ -459,6 +478,138 @@ class EnemyFactory:
         return enemy
 
     @staticmethod
+    def create_miniboss_laser_matrix(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=0.0))
+        enemy.add_component(TurretComponent(spiral_angle=random.uniform(0, 360)))
+        enemy.add_component(BehaviorComponent(behavior=LaserMatrixMinibossBehavior()))
+        enemy.add_component(CollisionComponent(radius=24.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=ENEMY_MINIBOSS_LASER_MATRIX_COLOR,
+                    middle_color=(44, 14, 30),
+                    active_color=(245, 245, 255),
+                    idle_color=ENEMY_MINIBOSS_LASER_MATRIX_COLOR,
+                    radius=24.0,
+                    pulse_speed=7.0,
+                    pulse_gain=3.2,
+                    glow_layers=5,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_miniboss_kame_oracle(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=95.0))
+        enemy.add_component(
+            KamehamehaComponent(
+                beam_color=ENEMY_MINIBOSS_KAME_ORACLE_COLOR,
+                charge_duration=1.0,
+                fire_duration=1.5,
+                cooldown_duration=1.0,
+                fire_tick=0.06,
+            )
+        )
+        enemy.add_component(BehaviorComponent(behavior=KamehamehaBehavior()))
+        enemy.add_component(CollisionComponent(radius=24.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=ENEMY_MINIBOSS_KAME_ORACLE_COLOR,
+                    middle_color=(12, 36, 70),
+                    active_color=(245, 245, 255),
+                    idle_color=ENEMY_MINIBOSS_KAME_ORACLE_COLOR,
+                    radius=24.0,
+                    pulse_speed=6.4,
+                    pulse_gain=3.4,
+                    glow_layers=5,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_miniboss_pyro_hydra(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=170.0))
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=FlamethrowerBehavior()))
+        enemy.add_component(CollisionComponent(radius=23.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=ENEMY_MINIBOSS_PYRO_COLOR,
+                    radius=23.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_miniboss_phantom_overlord(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=170.0))
+        enemy.add_component(
+            GhostComponent(
+                hidden_duration=0.95,
+                visible_duration=1.3,
+                reveal_distance=150.0,
+                hidden_speed=190.0,
+            )
+        )
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=PhantomOverlordMinibossBehavior()))
+        enemy.add_component(CollisionComponent(radius=22.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=GhostRenderStrategy(
+                    base_color=ENEMY_MINIBOSS_PHANTOM_COLOR,
+                    radius=22.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_miniboss_alchemist(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=150.0))
+        enemy.add_component(
+            ShootComponent(
+                cooldown=1.1,
+                aim_time=0.0,
+                bullet_speed=315.0,
+                bullet_radius=6.0,
+                bullet_color=ENEMY_MINIBOSS_ALCHEMIST_COLOR,
+            )
+        )
+        enemy.add_component(BehaviorComponent(behavior=AlchemistMinibossBehavior()))
+        enemy.add_component(CollisionComponent(radius=22.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=ENEMY_MINIBOSS_ALCHEMIST_COLOR,
+                    core_color=(245, 230, 255),
+                    radius=22.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
     def create_boss(position: Vector2) -> Entity:
         enemy = Entity()
         enemy.add_tag("enemy")
@@ -492,6 +643,42 @@ class EnemyFactory:
         enemy.add_component(BehaviorComponent(behavior=BossBehavior()))
         enemy.add_component(CollisionComponent(radius=40.0, layer="enemy"))
         enemy.add_component(RenderComponent(render_strategy=BossRenderStrategy(radius=40.0)))
+        return enemy
+
+    @staticmethod
+    def create_boss_laser_colossus(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=100.0))
+        enemy.add_component(BossComponent(boss_kind="boss_colosso_laser", variant=random.randint(1, 3)))
+        enemy.add_component(BehaviorComponent(behavior=BossBehavior()))
+        enemy.add_component(CollisionComponent(radius=42.0, layer="enemy"))
+        enemy.add_component(RenderComponent(render_strategy=BossRenderStrategy(radius=42.0)))
+        return enemy
+
+    @staticmethod
+    def create_boss_toxic_druid(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=92.0))
+        enemy.add_component(BossComponent(boss_kind="boss_druida_toxico", variant=random.randint(1, 3)))
+        enemy.add_component(BehaviorComponent(behavior=BossBehavior()))
+        enemy.add_component(CollisionComponent(radius=42.0, layer="enemy"))
+        enemy.add_component(RenderComponent(render_strategy=BossRenderStrategy(radius=42.0)))
+        return enemy
+
+    @staticmethod
+    def create_boss_spectral_overlord(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=108.0))
+        enemy.add_component(BossComponent(boss_kind="boss_soberano_espectral", variant=random.randint(1, 3)))
+        enemy.add_component(BehaviorComponent(behavior=BossBehavior()))
+        enemy.add_component(CollisionComponent(radius=42.0, layer="enemy"))
+        enemy.add_component(RenderComponent(render_strategy=BossRenderStrategy(radius=42.0)))
         return enemy
 
     @staticmethod

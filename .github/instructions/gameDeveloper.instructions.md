@@ -64,6 +64,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - `EnemyFactory` mantém registries distintos para `enemy`, `miniboss` e `boss`
 - Factory expõe criação por tipo/categoria; não decide política de spawn por modo
 - Evolução de roster de inimigos base deve ocorrer por novos tipos registrados (arquétipos), sem ramificações condicionais em systems de spawn
+- Evolução de roster de `miniboss` e `boss` deve seguir o mesmo princípio (registro por tipo no factory), preservando contratos públicos de seleção por categoria
 
 ### Strategy Pattern
 
