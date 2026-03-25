@@ -25,7 +25,7 @@ class ChannelLayout:
     ambient_pool: tuple[int, int] = (6, 7)
 
 
-@dataclass(frozen=True)
+@dataclass
 class AudioSettings:
     master_volume: float = 1.0
     music_volume: float = 0.70

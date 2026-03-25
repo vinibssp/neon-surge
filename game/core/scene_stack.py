@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
 import pygame
 
 from game.core.events import EventBus
+
+if TYPE_CHECKING:
+    from game.audio.audio_settings_manager import AudioSettingsManager
 
 
 class Scene(ABC):
@@ -36,6 +40,7 @@ class SceneStack:
     def __init__(self) -> None:
         self._stack: list[Scene] = []
         self.event_bus = EventBus()
+        self.audio_settings_manager: AudioSettingsManager | None = None
 
     def push(self, scene: Scene) -> None:
         self._stack.append(scene)

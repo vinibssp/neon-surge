@@ -113,6 +113,8 @@ Resiliência operacional:
 
 - falhas de áudio não podem quebrar loop de jogo
 - métodos do backend devem isolar exceções e degradar para modo silencioso quando necessário
+- ajustes de volume em runtime devem passar por gerenciador global (`AudioSettingsManager`)
+- persistência de `music_volume` e `sfx_volume` deve ficar fora da camada de UI
 
 ---
 
@@ -140,6 +142,10 @@ Resiliência operacional:
 - Ordem de foco deve refletir ordem de ações registradas
 - Cancelamento (`Esc`/`B`) explícito e consistente por cena
 - Overlays com contrato compartilhado via composição/factory (ex.: `OverlaySceneFactory`)
+- `PauseScene` deve ser overlay transparente e congelar gameplay por regra do `SceneStack` (apenas topo atualiza)
+- `Esc` em gameplay abre pausa; `Esc` na pausa/submenu fecha o overlay atual
+- Menu de pausa padrão: retomar, configurações, abandonar partida
+- Configurações de pausa devem aceitar mouse + teclado/gamepad no mesmo contrato de navegação
 
 ### Evolução de Menus
 

@@ -157,6 +157,23 @@ class MixerBackend:
         except Exception:
             _logger.exception("Failed to unduck music")
 
+    def apply_runtime_settings(self, is_ducked: bool = False) -> None:
+        if not self._mixer_available:
+            return
+
+        try:
+            music_volume = self.settings.resolve_group_volume("music")
+            if is_ducked:
+                music_volume *= self.settings.duck_factor
+            pygame.mixer.music.set_volume(music_volume)
+
+            for group in ("ui", "player", "enemy", "ambient"):
+                group_volume = self.settings.resolve_group_volume(group)
+                for channel_id in self._channels_for_group(group):
+                    pygame.mixer.Channel(channel_id).set_volume(group_volume)
+        except Exception:
+            _logger.exception("Failed to apply runtime audio settings")
+
     def _load_sound(self, file_name: str) -> pygame.mixer.Sound | None:
         cached = self._sound_cache.get(file_name)
         if cached is not None:

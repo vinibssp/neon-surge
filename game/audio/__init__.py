@@ -3,6 +3,7 @@ from game.audio.audio_catalog import AudioCatalog, AudioCue, build_default_audio
 from game.audio.audio_director import AudioDirector
 from game.audio.audio_router import AudioRouter
 from game.audio.audio_settings import AudioSettings, ChannelLayout, build_default_audio_settings
+from game.audio.audio_settings_manager import AudioSettingsManager
 from game.audio.mixer_backend import MixerBackend
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     "AudioDirector",
     "AudioRouter",
     "AudioSettings",
+    "AudioSettingsManager",
     "ChannelLayout",
     "MixerBackend",
     "build_default_audio_catalog",

@@ -5,6 +5,7 @@ import pygame
 from game.audio import (
     AudioDirector,
     AudioRouter,
+    AudioSettingsManager,
     MixerBackend,
     build_default_audio_catalog,
     build_default_audio_settings,
@@ -33,7 +34,14 @@ def main() -> None:
         catalog=audio_catalog,
         settings=audio_settings,
     )
+    audio_settings_manager = AudioSettingsManager(
+        settings=audio_settings,
+        backend=audio_backend,
+        is_ducked_provider=lambda: audio_director.state.is_ducked,
+    )
+    stack.audio_settings_manager = audio_settings_manager
     audio_director.initialize()
+    audio_backend.apply_runtime_settings(is_ducked=False)
 
     stack.push(MainMenuScene(stack))
 

@@ -29,7 +29,7 @@ python -m game.main
 
 - `WASD`: movimentação do player
 - `Espaço`: dash
-- `Esc`: abrir pausa
+- `Esc`: alternar pausa (abrir/fechar)
 
 ### Menus (UI Navigation unificado)
 
@@ -218,6 +218,7 @@ O áudio segue contrato em camadas, orientado a EventBus único:
 - `AudioDirector` orquestra runtime, mantém estado e consome eventos de domínio
 - `MixerBackend` é o único ponto de contato com `pygame.mixer`
 - `AudioCatalog` e `AudioSettings` centralizam mapeamento declarativo e política de volumes/limites
+- `AudioSettingsManager` aplica ajustes globais de volume (Música/SFX) e persistência local
 
 Contratos principais:
 
@@ -225,6 +226,7 @@ Contratos principais:
 - `AudioState` é a fonte única de verdade para contexto, trilha atual e duck
 - cenas publicam eventos; cenas não manipulam `pygame.mixer` diretamente
 - `UINavigator` publica eventos de UI (`UINavigated`, `UIConfirmed`, `UICancelled`) como fonte única de navegação
+- UI de configuração altera volume via `AudioSettingsManager` (não via backend direto)
 
 Política de contexto musical:
 
@@ -236,6 +238,14 @@ Política de contexto musical:
 Decisão arquitetural importante:
 
 - `pygame.mixer.music` é single-track; transições são sequenciais (fade out -> fade in), sem crossfade real entre duas trilhas simultâneas.
+- volumes de Música/SFX são persistidos em `game/assets/audio_settings.json`.
+
+### 12) Pause Menu (Overlay)
+
+- `PauseScene` é overlay transparente e pausa gameplay por contrato do `SceneStack` (somente topo atualiza)
+- menu principal da pausa: `Voltar pro Jogo`, `Configuracoes`, `Abandonar Partida`
+- submenu de áudio usa ajuste incremental para `Música` e `SFX` com suporte a mouse e navegação por teclado/gamepad
+- fundo da pausa usa overlay semi-transparente com alpha suave para manter legibilidade
 
 
 ## Estrutura de Pastas

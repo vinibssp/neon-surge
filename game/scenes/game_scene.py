@@ -68,7 +68,7 @@ class GameScene(Scene):
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.stack.push(PauseScene(self.stack, retry_strategy_factory=self.mode.create_retry_strategy))
+                self.stack.push(PauseScene(self.stack))
                 return
 
         if self.world.player is None:
