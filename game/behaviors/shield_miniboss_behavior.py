@@ -26,6 +26,7 @@ class ShieldMinibossBehavior(Behavior):
     DASH_DURATION = 0.42
     DASH_COOLDOWN = 2.1
     DASH_TRIGGER_DISTANCE = 250.0
+    RING_BURST_INTERVAL = 3.4
 
     def __init__(self) -> None:
         self._dash_time_left = 0.0
@@ -102,6 +103,17 @@ class ShieldMinibossBehavior(Behavior):
 
         shot_interval = 1.35 if distance_to_player > 165.0 else 0.95
         if turret.shot_timer < shot_interval:
+            if turret.burst_timer < self.RING_BURST_INTERVAL:
+                return
+            turret.burst_timer = 0.0
+            for angle in range(0, 360, 60):
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    Vector2(1, 0).rotate(float(angle)),
+                    speed=250.0,
+                    radius=6.0,
+                    color=ENEMY_SHIELD_BULLET_COLOR,
+                )
             return
         turret.shot_timer = 0.0
 

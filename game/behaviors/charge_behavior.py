@@ -16,6 +16,7 @@ class ChargeBehavior(Behavior):
     MIN_DASH_TRIGGER_DISTANCE = 70.0
     MAX_DASH_TRIGGER_DISTANCE = 440.0
     MAX_AIM_OVERHOLD = 0.45
+    TELEGRAPH_SHOT_ANGLE = 12.0
 
     @staticmethod
     def _apply_steering(movement: MovementComponent, direction: Vector2, target_speed: float, blend: float) -> None:
@@ -84,6 +85,14 @@ class ChargeBehavior(Behavior):
             aim_expired = charge.timer >= self.AIM_DURATION
             force_dash = charge.timer >= self.AIM_DURATION + self.MAX_AIM_OVERHOLD
             if (aim_expired and can_dash_now) or force_dash:
+                for offset in (-self.TELEGRAPH_SHOT_ANGLE, self.TELEGRAPH_SHOT_ANGLE):
+                    world.spawn_enemy_bullet(
+                        transform.position,
+                        aim_direction.rotate(offset),
+                        speed=255.0,
+                        radius=5.0,
+                        color=(255, 168, 82),
+                    )
                 dash_velocity = aim_direction * charge.dash_speed
                 movement.velocity = dash_velocity
                 movement.input_direction = aim_direction

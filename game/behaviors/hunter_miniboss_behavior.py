@@ -8,6 +8,9 @@ from game.ecs.entity import Entity
 
 
 class HunterMinibossBehavior(Behavior):
+    def __init__(self) -> None:
+        self._burst_toggle: dict[int, bool] = {}
+
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
         player = world.player
         if player is None:
@@ -32,13 +35,18 @@ class HunterMinibossBehavior(Behavior):
             return
         turret.shot_timer = 0.0
 
-        world.spawn_enemy_bullet(
-            transform.position,
-            normalized(to_player),
-            speed=305.0,
-            radius=8.0,
-            color=ENEMY_HUNTER_BULLET_COLOR,
-        )
+        aim = normalized(to_player)
+        is_burst = self._burst_toggle.get(entity.id, False)
+        self._burst_toggle[entity.id] = not is_burst
+        spreads = (-8.0, 0.0, 8.0) if is_burst else (0.0,)
+        for spread in spreads:
+            world.spawn_enemy_bullet(
+                transform.position,
+                aim.rotate(spread),
+                speed=305.0,
+                radius=8.0,
+                color=ENEMY_HUNTER_BULLET_COLOR,
+            )
 
 
 from game.core.world import GameWorld

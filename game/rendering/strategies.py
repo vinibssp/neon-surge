@@ -638,13 +638,7 @@ class ChargeEnemyRenderStrategy:
             neon_color = self.base_color
         else:
             neon_color = (245, 245, 245) if charge.is_target_locked else self.base_color
-            if charge.state == "aiming":
-                line_color = (245, 245, 245) if charge.is_target_locked else (230, 60, 60)
-                line_width = 4 if charge.is_target_locked else 2
-                pygame.draw.line(screen, line_color, transform.position, charge.locked_target, line_width)
-                aim_ring = int(self.radius + 6 + pulse * 2)
-                pygame.draw.circle(screen, line_color, center, aim_ring, 1)
-            elif charge.state == "attacking":
+            if charge.state == "attacking":
                 pygame.draw.circle(screen, (230, 60, 60), center, int(self.radius + 8), 2)
 
         draw_neon_glow(
@@ -877,23 +871,7 @@ class SniperMinibossRenderStrategy:
         pygame.draw.circle(screen, (245, 245, 245), center, 4)
         scope_radius = int(self.radius + 6 + abs(math.sin(now * 5.6)) * 1.5)
         pygame.draw.circle(screen, (245, 245, 245), center, scope_radius, 1)
-        if sniper is not None and sniper.state == "aiming":
-            pygame.draw.line(screen, (245, 245, 245), center, sniper.aim_target, 2)
-            pygame.draw.circle(screen, self.base_color, sniper.aim_target, 8, 1)
-            pygame.draw.line(
-                screen,
-                (245, 245, 245),
-                (sniper.aim_target.x - 6, sniper.aim_target.y),
-                (sniper.aim_target.x + 6, sniper.aim_target.y),
-                1,
-            )
-            pygame.draw.line(
-                screen,
-                (245, 245, 245),
-                (sniper.aim_target.x, sniper.aim_target.y - 6),
-                (sniper.aim_target.x, sniper.aim_target.y + 6),
-                1,
-            )
+        del sniper
 
 
 class BossRenderStrategy:

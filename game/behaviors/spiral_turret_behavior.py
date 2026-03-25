@@ -20,11 +20,14 @@ class SpiralTurretBehavior(Behavior):
         movement.input_direction = Vector2()
         movement.max_speed = 0.0
 
+        turret.burst_timer += dt
         turret.shot_timer += dt
-        interval = 0.13
+        fast_phase = int(turret.burst_timer // 2.2) % 2 == 1
+        interval = 0.10 if fast_phase else 0.14
+        angle_step = 22.0 if fast_phase else 16.0
         while turret.shot_timer >= interval:
             turret.shot_timer -= interval
-            turret.spiral_angle = (turret.spiral_angle + 17.0) % 360.0
+            turret.spiral_angle = (turret.spiral_angle + angle_step) % 360.0
             angle_a = turret.spiral_angle
             angle_b = turret.spiral_angle + 180.0
             direction_a = Vector2(1, 0).rotate(angle_a)

@@ -15,6 +15,7 @@ class FollowBehavior(Behavior):
         self.orbit_radius = orbit_radius
         self.turn_responsiveness = turn_responsiveness
         self._orbit_clockwise = random.choice((True, False))
+        self._shot_timer: dict[int, float] = {}
 
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
         player = world.player
@@ -49,6 +50,20 @@ class FollowBehavior(Behavior):
         current_direction = normalized(movement.input_direction, desired_direction)
         movement.input_direction = normalized(current_direction.lerp(desired_direction, blend), desired_direction)
         movement.max_speed = follow.speed
+
+        shot_timer = self._shot_timer.get(entity.id, 0.0) + dt
+        self._shot_timer[entity.id] = shot_timer
+        if shot_timer < 1.7:
+            return
+
+        self._shot_timer[entity.id] = 0.0
+        world.spawn_enemy_bullet(
+            transform.position,
+            chase_direction,
+            speed=250.0,
+            radius=4.0,
+            color=(238, 84, 84),
+        )
 
 
 from game.core.world import GameWorld

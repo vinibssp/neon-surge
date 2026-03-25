@@ -9,6 +9,9 @@ from game.ecs.entity import Entity
 
 
 class SniperMinibossBehavior(Behavior):
+    def __init__(self) -> None:
+        self._double_shot_toggle: dict[int, bool] = {}
+
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
         player = world.player
         if player is None:
@@ -35,13 +38,18 @@ class SniperMinibossBehavior(Behavior):
 
         sniper.aim_target = Vector2(player_transform.position)
         direction = sniper.aim_target - transform.position
-        world.spawn_enemy_bullet(
-            transform.position,
-            direction,
-            speed=430.0,
-            radius=9.0,
-            color=ENEMY_SNIPER_BULLET_COLOR,
-        )
+        base_direction = direction.normalize() if direction.length_squared() > 0 else Vector2(1, 0)
+        double_shot = self._double_shot_toggle.get(entity.id, False)
+        self._double_shot_toggle[entity.id] = not double_shot
+        spreads = (-4.0, 4.0) if double_shot else (0.0,)
+        for spread in spreads:
+            world.spawn_enemy_bullet(
+                transform.position,
+                base_direction.rotate(spread),
+                speed=430.0,
+                radius=9.0,
+                color=ENEMY_SNIPER_BULLET_COLOR,
+            )
         sniper.state = "aiming"
         sniper.shot_timer = 0.0
 

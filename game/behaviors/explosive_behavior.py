@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pygame import Vector2
+
 from game.behaviors.advanced_helpers import normalized, smoothing_factor
 from game.behaviors.behavior import Behavior
 from game.components.data_components import (
@@ -71,6 +73,14 @@ class ExplosiveBehavior(Behavior):
             collision.radius = min(self.BLAST_MAX_RADIUS, self.BASE_RADIUS + growth_time * self.BLAST_GROWTH_RATE)
 
         if explosive.timer >= explosive.detonate_time:
+            for angle in range(0, 360, 45):
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    Vector2(1, 0).rotate(float(angle)),
+                    speed=240.0,
+                    radius=5.0,
+                    color=(250, 228, 96),
+                )
             explosive.exploded = True
             world.remove_entity(entity)
 

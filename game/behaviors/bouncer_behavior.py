@@ -13,8 +13,10 @@ from game.systems.world_queries import ENEMY_TRANSFORM_QUERY
 
 
 class BouncerBehavior(Behavior):
+    def __init__(self) -> None:
+        self._shot_timer: dict[int, float] = {}
+
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
-        del dt
         transform = entity.get_component(TransformComponent)
         movement = entity.get_component(MovementComponent)
         collision = entity.get_component(CollisionComponent)
@@ -61,6 +63,21 @@ class BouncerBehavior(Behavior):
 
         movement.input_direction = normalized(movement.velocity)
         movement.max_speed = max(1.0, movement.velocity.length())
+
+        entity_id = entity.id
+        shot_timer = self._shot_timer.get(entity_id, 0.45) + dt
+        self._shot_timer[entity_id] = shot_timer
+        if shot_timer < 1.15:
+            return
+
+        self._shot_timer[entity_id] = 0.0
+        world.spawn_enemy_bullet(
+            transform.position,
+            movement.input_direction,
+            speed=275.0,
+            radius=5.0,
+            color=(255, 132, 190),
+        )
 
 
 from game.core.world import GameWorld

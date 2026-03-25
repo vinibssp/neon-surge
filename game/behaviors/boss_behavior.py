@@ -71,6 +71,14 @@ class BossBehavior(Behavior):
                     8.0,
                     color=ENEMY_BOSS_STANDARD_BULLET_COLOR,
                 )
+                for spread in (-10.0, 10.0):
+                    world.spawn_enemy_bullet(
+                        transform.position,
+                        normalized(to_player).rotate(spread),
+                        speed=speed - 30.0,
+                        radius=6.0,
+                        color=ENEMY_BOSS_STANDARD_BULLET_COLOR,
+                    )
 
             if boss.ability_timer > 3.0:
                 boss.state = "invoking"
@@ -136,6 +144,15 @@ class BossBehavior(Behavior):
                     radius=8.0,
                     color=ENEMY_BOSS_ARTILLERY_BULLET_COLOR,
                 )
+            forward = normalized(to_player)
+            for spread in (-14.0, 0.0, 14.0):
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    forward.rotate(spread),
+                    speed=340.0,
+                    radius=7.0,
+                    color=ENEMY_BOSS_ARTILLERY_BULLET_COLOR,
+                )
 
         if boss.ability_timer >= 4.3:
             boss.ability_timer = 0.0
@@ -169,6 +186,21 @@ class BossBehavior(Behavior):
                 normalized(to_player),
                 speed=speed,
                 radius=7.0,
+                color=ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
+            )
+            side = normalized(to_player).rotate(90.0)
+            world.spawn_enemy_bullet(
+                transform.position,
+                side,
+                speed=speed - 65.0,
+                radius=6.0,
+                color=ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
+            )
+            world.spawn_enemy_bullet(
+                transform.position,
+                -side,
+                speed=speed - 65.0,
+                radius=6.0,
                 color=ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
             )
 
