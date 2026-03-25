@@ -156,49 +156,70 @@ class PlayerRenderStrategy:
         self.thickness = thickness
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
+        now = time.time()
         invulnerability = entity.get_component(InvulnerabilityComponent)
         outer_color = self.outer_color
         if invulnerability is not None and invulnerability.time_left > 0:
             outer_color = PLAYER_CORE_COLOR
 
+        pulse = 0.5 + 0.5 * math.sin(now * 9.0)
+        center = (int(transform.position.x), int(transform.position.y))
+        halo_radius = max(1, int(self.radius + 2 + pulse * 2.0))
+
         draw_neon_glow(
             surface=screen,
             color=outer_color,
-            center_x=int(transform.position.x),
-            center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
-            layers=3,
+            center_x=center[0],
+            center_y=center[1],
+            radius=halo_radius,
+            layers=4,
         )
 
-        pygame.draw.circle(
-            screen,
-            outer_color,
-            transform.position,
-            self.radius,
-            self.thickness,
-        )
+        shell_color = _brighten(outer_color, gain=1.04, bias=10)
+        _draw_rotmg_shell(screen, center, self.radius + pulse * 0.6, shell_color, sides=9, rotation=math.pi / 10)
+
+        pygame.draw.circle(screen, _darken(outer_color, 30), center, max(2, int(self.radius * 0.74)))
 
         inner_color = self.inner_color
         inner_radius = max(2, int(self.radius - 6))
-        pygame.draw.circle(screen, inner_color, transform.position, inner_radius)
+        pygame.draw.circle(screen, inner_color, center, inner_radius)
+        pygame.draw.circle(screen, (255, 255, 255), center, max(2, int(inner_radius * 0.5)))
+        _draw_pixel_eyes(screen, center, (245, 255, 255), spacing=max(3, int(self.radius * 0.3)))
 
         dash = entity.get_component(DashComponent)
         if dash is None:
             return
 
-        ring_radius = 16
+        ring_radius = int(self.radius + 6 + pulse * 1.0)
         ring_rect = pygame.Rect(0, 0, ring_radius * 2, ring_radius * 2)
-        ring_rect.center = (int(transform.position.x), int(transform.position.y))
-        ring_thickness = 5
+        ring_rect.center = center
+        ring_thickness = 2
+
+        if dash.active_time_left > 0.0:
+            dash_glow = _brighten(outer_color, gain=1.3, bias=35)
+            draw_neon_glow(screen, dash_glow, center[0], center[1], max(1, ring_radius), 2)
+            pygame.draw.circle(screen, dash_glow, center, ring_radius, 2)
 
         if dash.cooldown_left > 0:
             ratio = 1.0 if dash.cooldown <= 0 else 1.0 - (dash.cooldown_left / dash.cooldown)
             ratio = max(0.0, min(1.0, ratio))
             start_angle = -math.pi / 2
             end_angle = start_angle + (math.pi * 2 * ratio)
-            pygame.draw.arc(screen, inner_color, ring_rect, start_angle, end_angle, ring_thickness)
+            track_surface = pygame.Surface((ring_rect.width + 8, ring_rect.height + 8), pygame.SRCALPHA)
+            track_rect = track_surface.get_rect(center=ring_rect.center)
+            local_rect = track_surface.get_rect().inflate(-8, -8)
+            cooldown_color = (*_brighten(self.outer_color, gain=1.08, bias=8), 155)
+            track_color = (*_darken(self.outer_color, 70), 70)
+            pygame.draw.arc(track_surface, track_color, local_rect, 0.0, math.pi * 2, ring_thickness)
+            pygame.draw.arc(track_surface, cooldown_color, local_rect, start_angle, end_angle, ring_thickness)
+            screen.blit(track_surface, track_rect)
         else:
-            pygame.draw.circle(screen, inner_color, ring_rect.center, ring_radius, ring_thickness)
+            ready_surface = pygame.Surface((ring_rect.width + 8, ring_rect.height + 8), pygame.SRCALPHA)
+            ready_rect = ready_surface.get_rect(center=ring_rect.center)
+            local_rect = ready_surface.get_rect().inflate(-8, -8)
+            ready_color = (*_brighten(self.outer_color, gain=1.12, bias=14), 120)
+            pygame.draw.ellipse(ready_surface, ready_color, local_rect, 1)
+            screen.blit(ready_surface, ready_rect)
 
 
 class FollowerRenderStrategy:
