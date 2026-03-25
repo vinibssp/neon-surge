@@ -14,7 +14,9 @@ from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
 from game.systems.lifetime_system import LifetimeSystem
 from game.systems.movement_system import MovementSystem
+from game.systems.parry_system import ParrySystem
 from game.systems.shoot_system import ShootSystem
+from game.systems.stagger_system import StaggerSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
@@ -86,6 +88,7 @@ class SurvivalMode(GameModeStrategy):
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         return [
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
+            SystemSpec(system=ParrySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=15),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),
             SystemSpec(
                 system=EnvironmentEventSystem(
@@ -111,6 +114,7 @@ class SurvivalMode(GameModeStrategy):
             SystemSpec(system=FollowSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=30),
             SystemSpec(system=ShootSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=40),
             SystemSpec(system=LifetimeSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=50),
+            SystemSpec(system=StaggerSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=55),
             SystemSpec(system=MovementSystem(world), phase=PipelinePhase.SIMULATION, priority=10),
             SystemSpec(system=CollisionSystem(world), phase=PipelinePhase.POST_UPDATE, priority=10),
         ]

@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from game.components.data_components import (
     CollectibleComponent,
+    BulletComponent,
     CollisionComponent,
     DashOnlyDefeatComponent,
     DashComponent,
     GhostComponent,
     InvulnerabilityComponent,
+    ParryComponent,
     MovementComponent,
     MortarShellComponent,
     PortalComponent,
     PortalSpawnComponent,
+    StaggeredComponent,
     TransformComponent,
 )
 from game.core.events import (
@@ -46,6 +49,8 @@ class CollisionSystem:
         )
         player_dash = player.get_component(DashComponent)
         is_player_dashing = player_dash is not None and player_dash.active_time_left > 0
+        player_parry = player.get_component(ParryComponent)
+        is_player_parrying = player_parry is not None and player_parry.active_time_left > 0
 
         if self._update_mortar_shells(
             dt=dt,
@@ -94,6 +99,24 @@ class CollisionSystem:
                 continue
 
             if entity.has_tag("enemy") or entity.has_tag("bullet"):
+                if entity.has_tag("enemy") and is_player_parrying:
+                    stagger_duration = 0.9 if player_parry is None else player_parry.stagger_duration
+                    self._apply_stagger(entity, stagger_duration)
+                    continue
+
+                if entity.has_tag("bullet") and is_player_parrying:
+                    bullet = entity.get_component(BulletComponent)
+                    if bullet is not None and bullet.owner_tag == "enemy":
+                        stagger_duration = 0.9 if player_parry is None else player_parry.stagger_duration
+                        self.world.remove_entity(entity)
+                        owner = self._find_entity_by_id(bullet.owner_entity_id)
+                        if owner is not None and owner.has_tag("enemy"):
+                            self._apply_stagger(owner, stagger_duration)
+                        else:
+                            parry_radius = 70.0 if player_parry is None else player_parry.radius
+                            self._apply_area_stagger(player_transform.position, parry_radius, stagger_duration)
+                        continue
+
                 dash_only = entity.get_component(DashOnlyDefeatComponent)
                 if dash_only is not None and dash_only.enabled and is_player_dashing:
                     self.world.remove_entity(entity)
@@ -152,3 +175,33 @@ class CollisionSystem:
         distance_sq = (a_pos - b_pos).length_squared()
         radius_sum = a_radius + b_radius
         return distance_sq <= radius_sum * radius_sum
+
+    def _apply_stagger(self, enemy: Entity, duration: float) -> None:
+        stagger = enemy.get_component(StaggeredComponent)
+        if stagger is None:
+            enemy.add_component(StaggeredComponent(time_left=duration, pulse_time=0.0))
+            return
+        stagger.time_left = max(stagger.time_left, duration)
+
+    def _apply_area_stagger(self, center, radius: float, duration: float) -> None:
+        radius_sq = radius * radius
+        for enemy in self.world.entities:
+            if not enemy.has_tag("enemy"):
+                continue
+            transform = enemy.get_component(TransformComponent)
+            if transform is None:
+                continue
+            if (transform.position - center).length_squared() > radius_sq:
+                continue
+            self._apply_stagger(enemy, duration)
+
+    def _find_entity_by_id(self, entity_id: int | None) -> Entity | None:
+        if entity_id is None:
+            return None
+        for entity in self.world.entities:
+            if entity.id == entity_id:
+                return entity
+        for entity in self.world.pending_add:
+            if entity.id == entity_id:
+                return entity
+        return None

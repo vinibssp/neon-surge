@@ -53,10 +53,24 @@ class GameWorld:
         radius: float,
         color: tuple[int, int, int] | None = None,
         enemy_type: str = "enemy",
+        source_entity_id: int | None = None,
     ) -> None:
         from game.factories.bullet_factory import BulletFactory
 
-        bullet = BulletFactory.create_enemy_bullet(origin, direction, speed, radius, color=color)
+        owner_entity_id = source_entity_id
+        if owner_entity_id is None:
+            context_owner = self.runtime_state.get("current_enemy_shooter_id")
+            if isinstance(context_owner, int):
+                owner_entity_id = context_owner
+
+        bullet = BulletFactory.create_enemy_bullet(
+            origin,
+            direction,
+            speed,
+            radius,
+            color=color,
+            owner_entity_id=owner_entity_id,
+        )
         self.add_entity(bullet)
         self.event_bus.publish(EnemyShotFired(enemy_type=enemy_type))
 

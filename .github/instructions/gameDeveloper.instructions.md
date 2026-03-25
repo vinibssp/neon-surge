@@ -92,6 +92,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Input -> Command -> alvo (entidade/system/navegador)
 - Contratos distintos para gameplay e UI são desejáveis
 - Entrada de dispositivo deve ser traduzida, não acoplada ao fluxo da cena
+- Gameplay deve suportar ação de parry por comando dedicado, desacoplada do input físico
 
 ### Sistema de Áudio (Arquitetura)
 

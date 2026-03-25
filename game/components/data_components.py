@@ -34,6 +34,23 @@ class DashComponent(Component):
 
 
 @dataclass
+class ParryComponent(Component):
+    duration: float
+    cooldown: float
+    radius: float
+    stagger_duration: float
+    active_time_left: float = 0.0
+    cooldown_left: float = 0.0
+    requested: bool = False
+
+
+@dataclass
+class StaggeredComponent(Component):
+    time_left: float = 0.0
+    pulse_time: float = 0.0
+
+
+@dataclass
 class CollisionComponent(Component):
     radius: float
     layer: str
@@ -87,6 +104,7 @@ class CollectibleComponent(Component):
 class BulletComponent(Component):
     owner_tag: str
     lifetime: float
+    owner_entity_id: int | None = None
 
 
 @dataclass

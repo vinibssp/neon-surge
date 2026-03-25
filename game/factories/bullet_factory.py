@@ -24,6 +24,7 @@ class BulletFactory:
         speed: float,
         radius: float,
         color: tuple[int, int, int] | None = None,
+        owner_entity_id: int | None = None,
     ) -> Entity:
         bullet = Entity()
         bullet.add_tag("bullet")
@@ -36,7 +37,13 @@ class BulletFactory:
                 max_speed=speed,
             )
         )
-        bullet.add_component(BulletComponent(owner_tag="enemy", lifetime=BULLET_LIFETIME))
+        bullet.add_component(
+            BulletComponent(
+                owner_tag="enemy",
+                lifetime=BULLET_LIFETIME,
+                owner_entity_id=owner_entity_id,
+            )
+        )
         bullet.add_component(CollisionComponent(radius=radius, layer="bullet"))
         bullet.add_component(
             RenderComponent(

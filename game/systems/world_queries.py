@@ -9,6 +9,7 @@ from game.components.data_components import (
     InvulnerabilityComponent,
     LifetimeComponent,
     MovementComponent,
+    ParryComponent,
     MortarShellComponent,
     PortalSpawnComponent,
     RenderComponent,
@@ -23,6 +24,11 @@ COLLIDABLE_QUERY = WorldQuery(component_types=(CollisionComponent, TransformComp
 
 PLAYER_DASH_QUERY = WorldQuery(
     component_types=(DashComponent, MovementComponent, InvulnerabilityComponent),
+    tags=("player",),
+)
+
+PLAYER_PARRY_QUERY = WorldQuery(
+    component_types=(ParryComponent, TransformComponent),
     tags=("player",),
 )
 

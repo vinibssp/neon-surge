@@ -13,6 +13,7 @@ from game.components.data_components import (
     GhostComponent,
     InvulnerabilityComponent,
     MovementComponent,
+    ParryComponent,
     ShootComponent,
     SniperComponent,
     TurretComponent,
@@ -187,6 +188,7 @@ class PlayerRenderStrategy:
         _draw_pixel_eyes(screen, center, (245, 255, 255), spacing=max(3, int(self.radius * 0.3)))
 
         dash = entity.get_component(DashComponent)
+        parry = entity.get_component(ParryComponent)
         if dash is None:
             return
 
@@ -220,6 +222,16 @@ class PlayerRenderStrategy:
             ready_color = (*_brighten(self.outer_color, gain=1.12, bias=14), 120)
             pygame.draw.ellipse(ready_surface, ready_color, local_rect, 1)
             screen.blit(ready_surface, ready_rect)
+
+        if parry is not None and parry.active_time_left > 0.0:
+            parry_ratio = parry.active_time_left / max(0.001, parry.duration)
+            burst_radius = int(self.radius + 10 + (1.0 - parry_ratio) * 14)
+            burst_alpha = int(90 + 90 * parry_ratio)
+            parry_surface = pygame.Surface((burst_radius * 2 + 12, burst_radius * 2 + 12), pygame.SRCALPHA)
+            parry_center = (parry_surface.get_width() // 2, parry_surface.get_height() // 2)
+            pygame.draw.circle(parry_surface, (220, 245, 255, burst_alpha), parry_center, burst_radius, 2)
+            pygame.draw.circle(parry_surface, (255, 255, 255, max(60, burst_alpha - 30)), parry_center, max(4, burst_radius - 6), 1)
+            screen.blit(parry_surface, (center[0] - parry_center[0], center[1] - parry_center[1]))
 
 
 class FollowerRenderStrategy:

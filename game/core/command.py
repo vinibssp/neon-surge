@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from pygame import Vector2
 
-from game.components.data_components import DashComponent, MovementComponent
+from game.components.data_components import DashComponent, MovementComponent, ParryComponent
 from game.ecs.entity import Entity
 
 
@@ -34,6 +34,14 @@ class DashCommand(Command):
         if dash is None:
             return
         dash.requested = True
+
+
+class ParryCommand(Command):
+    def execute(self, entity: Entity, world: "GameWorld") -> None:
+        parry = entity.get_component(ParryComponent)
+        if parry is None:
+            return
+        parry.requested = True
 
 
 from game.core.world import GameWorld

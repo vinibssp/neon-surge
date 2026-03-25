@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame
 from pygame import Vector2
 
-from game.core.command import Command, DashCommand, MoveCommand
+from game.core.command import Command, DashCommand, MoveCommand, ParryCommand
 
 
 class InputHandler:
@@ -18,5 +18,7 @@ class InputHandler:
         for event in events:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_LSHIFT, pygame.K_RSHIFT):
                 commands.append(DashCommand())
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                commands.append(ParryCommand())
 
         return commands

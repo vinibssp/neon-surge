@@ -7,6 +7,7 @@ from game.components.data_components import (
     DashComponent,
     InvulnerabilityComponent,
     MovementComponent,
+    ParryComponent,
     RenderComponent,
     TransformComponent,
 )
@@ -17,6 +18,10 @@ from game.config import (
     PLAYER_DASH_DURATION,
     PLAYER_DASH_INVULN_EXTRA,
     PLAYER_DASH_SPEED,
+    PLAYER_PARRY_COOLDOWN,
+    PLAYER_PARRY_DURATION,
+    PLAYER_PARRY_RADIUS,
+    PLAYER_PARRY_STAGGER_DURATION,
     PLAYER_RADIUS,
     PLAYER_SPEED,
 )
@@ -40,6 +45,14 @@ class PlayerFactory:
             )
         )
         player.add_component(InvulnerabilityComponent())
+        player.add_component(
+            ParryComponent(
+                duration=PLAYER_PARRY_DURATION,
+                cooldown=PLAYER_PARRY_COOLDOWN,
+                radius=PLAYER_PARRY_RADIUS,
+                stagger_duration=PLAYER_PARRY_STAGGER_DURATION,
+            )
+        )
         player.add_component(CollisionComponent(radius=PLAYER_RADIUS, layer="player"))
         player.add_component(
             RenderComponent(
