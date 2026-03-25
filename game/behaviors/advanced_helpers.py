@@ -9,6 +9,24 @@ def normalized(vector: Vector2, fallback: Vector2 | None = None) -> Vector2:
     return vector.normalize()
 
 
+def smoothing_factor(responsiveness: float, dt: float) -> float:
+    return max(0.0, min(1.0, responsiveness * 60.0 * dt))
+
+
+def predict_intercept_position(
+    origin: Vector2,
+    target_position: Vector2,
+    target_velocity: Vector2,
+    projectile_speed: float,
+    max_lead_time: float = 0.9,
+) -> Vector2:
+    if projectile_speed <= 0.0:
+        return Vector2(target_position)
+    distance = (target_position - origin).length()
+    lead_time = min(max_lead_time, distance / max(1.0, projectile_speed))
+    return target_position + (target_velocity * lead_time)
+
+
 def shoot_radial(
     world: "GameWorld",
     origin: Vector2,

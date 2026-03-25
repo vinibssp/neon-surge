@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from game.behaviors.advanced_helpers import normalized
+from game.behaviors.advanced_helpers import normalized, smoothing_factor
 from game.behaviors.behavior import Behavior
 from game.components.data_components import (
     CollisionComponent,
@@ -12,6 +12,13 @@ from game.ecs.entity import Entity
 
 
 class ExplosiveBehavior(Behavior):
+    BASE_RADIUS = 12.0
+    DIRECT_CHASE_SPEED = 168.0
+    CHASE_RESPONSIVENESS = 0.18
+    ARMING_DISTANCE = 110.0
+    BLAST_MAX_RADIUS = 96.0
+    BLAST_GROWTH_RATE = 130.0
+
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
         player = world.player
         if player is None:
@@ -32,19 +39,36 @@ class ExplosiveBehavior(Behavior):
             return
 
         explosive.timer += dt
-        if explosive.timer < explosive.chase_time:
-            target_vector = player_transform.position - transform.position
-            desired_velocity = normalized(target_vector) * (movement.max_speed * 1.05)
-            smoothing = max(0.0, min(1.0, 0.09 * 60.0 * dt))
-            movement.velocity = movement.velocity.lerp(desired_velocity, smoothing)
-            movement.input_direction = normalized(movement.velocity)
-            movement.max_speed = max(1.0, movement.velocity.length())
+        to_player = player_transform.position - transform.position
+        distance_to_player = to_player.length()
+
+        if explosive.timer < explosive.chase_time and distance_to_player > self.ARMING_DISTANCE:
+            desired_direction = normalized(to_player)
+            desired_velocity = desired_direction * self.DIRECT_CHASE_SPEED
+            movement.velocity = movement.velocity.lerp(
+                desired_velocity,
+                smoothing_factor(self.CHASE_RESPONSIVENESS, dt),
+            )
+            movement.input_direction = desired_direction
+            movement.max_speed = self.DIRECT_CHASE_SPEED
+            collision.radius = self.BASE_RADIUS
             return
 
-        movement.velocity *= 0.9
-        movement.input_direction = normalized(movement.velocity)
-        if explosive.timer > 3.5:
-            collision.radius = min(80.0, 12.0 + (explosive.timer - 3.5) * 80.0)
+        slowdown = 0.82 if distance_to_player <= self.ARMING_DISTANCE else 0.9
+        movement.velocity *= slowdown
+        movement.input_direction = normalized(movement.velocity, normalized(to_player))
+
+        arm_time_boost = 0.0
+        if distance_to_player <= self.ARMING_DISTANCE:
+            arm_time_boost += dt * 1.35
+        if distance_to_player <= self.ARMING_DISTANCE * 0.6:
+            arm_time_boost += dt * 1.15
+        explosive.timer += arm_time_boost
+
+        arm_start_time = min(explosive.chase_time, explosive.detonate_time * 0.68)
+        if explosive.timer >= arm_start_time:
+            growth_time = explosive.timer - arm_start_time
+            collision.radius = min(self.BLAST_MAX_RADIUS, self.BASE_RADIUS + growth_time * self.BLAST_GROWTH_RATE)
 
         if explosive.timer >= explosive.detonate_time:
             explosive.exploded = True
