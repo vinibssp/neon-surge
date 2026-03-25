@@ -7,49 +7,41 @@ import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.scene_stack import Scene
 from game.ui.gui_theme import create_ui_manager
-from game.ui.navigation import UINavigationInputHandler, UINavigator
-from game.ui.types import UIControl
+from game.ui.navigation import PygameGUIEventAdapter, UINavigator, UIControl
 
 
 class BaseMenuScene(Scene):
     def __init__(self, stack) -> None:
         super().__init__(stack)
         self.ui_manager = create_ui_manager((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.ui_input = UINavigationInputHandler()
         self.navigator: UINavigator | None = None
+        self.ui_event_adapter: PygameGUIEventAdapter | None = None
 
     def set_navigator(
         self,
         buttons: list[UIControl],
-        actions: list[Callable[[], None]] | None = None,
+        actions: dict[UIControl, Callable[[], None]] | None = None,
         on_cancel: Callable[[], None] | None = None,
-        directional_resolver: Callable[[int, str, int], int] | None = None,
-        use_button_selection_state: bool = True,
     ) -> None:
         self.navigator = UINavigator(
             buttons=buttons,
             actions=actions,
             on_cancel=on_cancel,
             event_bus=self.stack.event_bus,
-            directional_resolver=directional_resolver,
-            use_button_selection_state=use_button_selection_state,
         )
+        self.ui_event_adapter = PygameGUIEventAdapter(self.navigator)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
+            event_consumed = False
+            if self.ui_event_adapter is not None:
+                event_consumed = self.ui_event_adapter.process_event(event)
+            if event_consumed:
+                continue
             self.ui_manager.process_events(event)
-
-        if self.navigator is None:
-            return
-
-        commands = self.ui_input.build_commands(events)
-        for command in commands:
-            command.execute(self.navigator)
 
     def update(self, dt: float) -> None:
         self.ui_manager.update(dt)
-        if self.navigator is not None:
-            self.navigator.sync_hover_state()
         self.on_menu_update(dt)
 
     def render(self, screen: pygame.Surface) -> None:

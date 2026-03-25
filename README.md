@@ -1,6 +1,6 @@
 # Neon Surge 2
 
-Jogo 2D em Python + Pygame com arquitetura modular e desacoplada, seguindo ECS, Scene Stack, Factory/Strategy/Command Patterns, Event Bus de domínio e Query API para sistemas.
+Jogo 2D em Python + Pygame com arquitetura modular e desacoplada, seguindo ECS, Scene Stack, Factory/Strategy/Command Pattern para gameplay, Event Bus de domínio e Query API para sistemas.
 
 ## Requisitos
 
@@ -31,13 +31,9 @@ python -m game.main
 - `Espaço`: dash
 - `Esc`: alternar pausa (abrir/fechar)
 
-### Menus (UI Navigation unificado)
+### Menus (UI Navigation)
 
-- `↑/↓` ou `W/S`: navegar entre botões
-- `Enter` / `Espaço`: confirmar
-- `Esc`: cancelar/voltar
-- Mouse: hover + clique esquerdo
-- Gamepad: D-Pad/analógico vertical para navegação, `A` confirmar, `B` cancelar
+- Eventos de UI processados por `pygame_gui` (`UI_BUTTON_ON_HOVERED`, `UI_BUTTON_PRESSED`)
 
 ## Arquitetura e Design
 
@@ -190,28 +186,25 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 
 - `MoveCommand` e `DashCommand` desacoplam input do estado interno da entidade
 
-#### UI desacoplada de player cursor
+#### UI
 
-Menus não dependem mais do player para navegação:
-
-- `UINavigator` é a fonte única de foco/seleção
-- `UINavigationInputHandler` traduz dispositivo em comandos de UI
-- mesma semântica de navegação para teclado, mouse e gamepad
-- cenas de menu consomem comandos; não roteiam lógica de navegação manualmente
+- Menus usam eventos de alto nível do `pygame_gui`
+- `PygameGUIEventAdapter` traduz eventos de framework para chamadas de domínio
+- `UINavigator` mantém estado lógico/ações e publica `UINavigated`/`UIConfirmed`/`UICancelled`
 
 ### 9) Arquitetura de UI, Menus e Cenas de Menu
 
 #### Princípios de design
 
 - UI orientada a composição (builders/configs/controllers), sem herança profunda
-- contrato explícito entre input de UI, navegação e ações de cena
+- contrato explícito entre eventos de UI, adapter e ações de cena
 - responsabilidade da cena: orquestrar fluxo; responsabilidade da UI: estado visual e estrutura
 - estilo visual centralizado em tema, sem decisões visuais espalhadas em regras de domínio
 
 #### Contratos arquiteturais
 
 - `BaseMenuScene` define o ciclo padrão de menu (input/update/render) e evita duplicação
-- cenas de menu registram `buttons` + `actions` no navigator; ações disparam transições de stack
+- cenas de menu registram `actions` por controle (`dict[UIControl, Callable]`) no navigator
 - overlays compartilham construção via factory de cena (`OverlaySceneFactory`) para consistência de contrato
 - componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
 

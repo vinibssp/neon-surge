@@ -79,24 +79,11 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 - Novos padrões de combate devem priorizar behaviors dedicados e reutilizáveis (composição), evitando ramificações por tipo em systems globais
 
-### Modo Labirinto (Contrato)
-
-- `LabyrinthMode` deve manter geracao procedural por grade com labirinto perfeito (conexo)
-- Chave e saida devem ser objetivos de sistema (`LabyrinthObjectiveSystem`), nunca em render
-- Saida deve existir na borda externa e iniciar bloqueada ate coleta da chave
-- Posicao da chave deve usar criterio de maior distancia Euclidiana em relacao a saida
-- Pathfinding de virus deve ser encapsulado em system dedicado (`LabyrinthAISystem`)
-- Colisao de paredes deve usar indice espacial/localidade; evitar varredura total por frame
-- Parry do player deve funcionar no `LabyrinthMode` e aplicar stagger nos virus com congelamento de movimento
-- Virus em stagger no labirinto devem exibir feedback visual pulsante em preto e branco
-- A cada 5 niveis, usar arena de boss com maquina de estados no comportamento de chefe
-- Progressao do modo deve ser infinita e sem retenção de entidades de niveis anteriores
 
 ### Command Pattern
 
-- Input -> Command -> alvo (entidade/system/navegador)
-- Contratos distintos para gameplay e UI são desejáveis
-- Entrada de dispositivo deve ser traduzida, não acoplada ao fluxo da cena
+- Input de gameplay -> Command -> alvo (entidade/system)
+- Para UI, usar eventos de alto nível do framework pygame_gui + adapter fino
 - Gameplay deve suportar ação de parry por comando dedicado, desacoplada do input físico
 - Inimigos sob efeito de stagger do parry nao devem causar dano ao player (contato ou projeteis)
 
@@ -143,9 +130,9 @@ Resiliência operacional:
 
 ### Navegação de UI
 
-- Contrato único: input de UI -> comandos -> `UINavigator` -> ação
+- Contrato único: evento `pygame_gui` -> `PygameGUIEventAdapter` -> `UINavigator` -> ação
 - Sem navegação baseada em “player cursor”
-- Semântica consistente entre teclado, mouse e gamepad
+- Sem tradução manual de input bruto para navegação de menu
 - Evitar caminhos paralelos/ambíguos para confirmar, cancelar e navegar
 
 ### Menu Scenes
