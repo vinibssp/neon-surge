@@ -290,6 +290,63 @@ class CircleRenderStrategy:
         self.trail_length = max(0, trail_length)
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
+        if self.style == "coin":
+            now = time.time()
+            phase = (entity.id % 17) * 0.23
+            pulse = 1.0 + 0.09 * math.sin((now * self.pulse_speed * 0.45) + phase)
+            spin = math.sin((now * self.pulse_speed * 0.8) + phase)
+            spin_abs = abs(spin)
+
+            center = (int(transform.position.x), int(transform.position.y))
+            half_h = max(3, int(self.radius * pulse))
+            half_w = max(2, int(self.radius * (0.35 + (1.0 - spin_abs) * 0.65) * pulse))
+
+            dark_green = (14, 70, 28)
+            mid_green = (34, 150, 56)
+            bright_green = (92, 238, 124)
+            spec_green = (176, 255, 190)
+            outline = (10, 14, 10)
+
+            draw_neon_glow(
+                surface=screen,
+                color=mid_green,
+                center_x=center[0],
+                center_y=center[1],
+                radius=max(2, half_h + 3),
+                layers=3,
+            )
+
+            outer_rect = pygame.Rect(center[0] - half_w - 2, center[1] - half_h - 2, (half_w + 2) * 2, (half_h + 2) * 2)
+            mid_rect = pygame.Rect(center[0] - half_w, center[1] - half_h, half_w * 2, half_h * 2)
+            inner_rect = pygame.Rect(
+                center[0] - max(1, half_w - 2),
+                center[1] - max(1, half_h - 2),
+                max(2, (half_w - 2) * 2),
+                max(2, (half_h - 2) * 2),
+            )
+
+            pygame.draw.ellipse(screen, outline, outer_rect)
+            pygame.draw.ellipse(screen, dark_green, mid_rect)
+            pygame.draw.ellipse(screen, mid_green, inner_rect)
+            pygame.draw.ellipse(screen, bright_green, inner_rect, 1)
+
+            # Reflexo deslocado para reforcar a leitura de rotacao da moeda.
+            shine_offset = int(spin * max(1, half_w - 2))
+            shine_x = center[0] + shine_offset
+            pygame.draw.line(
+                screen,
+                spec_green,
+                (shine_x, center[1] - max(1, half_h - 3)),
+                (shine_x, center[1] + max(1, half_h - 3)),
+                1,
+            )
+
+            emblem_w = max(1, int(half_w * (0.45 + (1.0 - spin_abs) * 0.35)))
+            emblem_h = max(1, int(half_h * 0.45))
+            emblem = pygame.Rect(center[0] - emblem_w, center[1] - emblem_h, emblem_w * 2, emblem_h * 2)
+            pygame.draw.ellipse(screen, dark_green, emblem, 1)
+            return
+
         if self.style != "projectile":
             pygame.draw.circle(
                 screen,

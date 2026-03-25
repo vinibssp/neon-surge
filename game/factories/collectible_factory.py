@@ -26,6 +26,8 @@ class CollectibleFactory:
                 render_strategy=CircleRenderStrategy(
                     color=COLLECTIBLE_COLOR,
                     radius=COLLECTIBLE_RADIUS,
+                    style="coin",
+                    pulse_speed=8.5,
                 )
             )
         )
