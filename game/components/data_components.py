@@ -156,3 +156,22 @@ class BossComponent(Component):
     variant: int = 1
     ability_timer: float = 0.0
     shot_timer: float = 0.0
+
+
+@dataclass
+class LabyrinthVirusComponent(Component):
+    behavior_kind: str
+    base_speed: float
+    retarget_interval: float = 0.2
+    retarget_time_left: float = 0.0
+    interception_seconds: float = 0.45
+
+
+@dataclass
+class LabyrinthKeyComponent(Component):
+    collected: bool = False
+
+
+@dataclass
+class LabyrinthExitComponent(Component):
+    unlocked: bool = False

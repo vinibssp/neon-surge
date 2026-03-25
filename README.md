@@ -95,6 +95,7 @@ Criação de entidades centralizada nas factories (`game/factories`):
 
 - `RaceMode`
 - `SurvivalMode`
+- `LabyrinthMode`
 
 Cada modo define:
 
@@ -103,6 +104,24 @@ Cada modo define:
 - estratégia de progressão (`build_level_progression_strategy`)
 - HUD (`build_hud_lines`)
 - retry (`create_retry_strategy`)
+
+#### Modo Labirinto
+
+`LabyrinthMode` implementa progressão infinita baseada em grade procedural:
+
+- geração com `Recursive Backtracking` (labirinto perfeito e conexo)
+- escala de dificuldade por nível (dimensão de grade, contagem e velocidade de vírus)
+- chave posicionada pelo maior valor de distância Euclidiana até a saída
+- saída posicionada em borda externa e bloqueada até coleta da chave
+- arena de boss em cada nível múltiplo de 5
+
+Sistemas dedicados do modo:
+
+- `LabyrinthAISystem`: pathfinding em grade para vírus com perfis `chaser` e `interceptor`
+- `LabyrinthCollisionSystem`: colisão com paredes por índice espacial local
+- `LabyrinthObjectiveSystem`: chave/porta e conclusão de boss arena
+
+Para evitar acoplamento com o `SpawnDirector` global, o modo usa `LabyrinthSpawnStrategy` com ciclos de portal desativados e controla spawns via configuração de nível.
 
 #### Presets por modo
 
@@ -238,10 +257,12 @@ game/
 ## Fluxo de Alto Nível
 
 1. `main` inicia `Game` e `SceneStack`
-2. `MainMenuScene` escolhe `RaceMode` ou `SurvivalMode`
+2. `MainMenuScene` escolhe `RaceMode`, `SurvivalMode` ou `LabyrinthMode`
 3. `GameScene` monta `LevelProgressionStrategy`, `SystemPipeline` e `SpawnDirector` desacoplado (world + strategy)
 4. systems atualizam estado via ECS, queries reutilizáveis e fases do pipeline
 5. systems publicam eventos; `GameScene` despacha handlers por tipo e decide transições
+
+No `LabyrinthMode`, a progressão é infinita e a transição de nível ocorre por objetivo de sistema (porta destravada após chave ou limpeza de boss arena), sem lógica de objetivo em render.
 
 ## Observações
 

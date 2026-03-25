@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 import time
 
 import pygame
@@ -558,4 +559,83 @@ class MortarRenderStrategy:
         outer_rect.center = (int(transform.position.x), int(transform.position.y))
         pygame.draw.rect(screen, self.base_color, outer_rect)
         pygame.draw.rect(screen, (5, 5, 8), outer_rect, 2)
+
+
+class VirusGlitchRenderStrategy:
+    def __init__(self, primary_color: tuple[int, int, int], secondary_color: tuple[int, int, int], radius: float) -> None:
+        self.primary_color = primary_color
+        self.secondary_color = secondary_color
+        self.radius = radius
+
+    def render(self, screen: pygame.Surface, entity, transform) -> None:
+        now = time.time()
+        pulse = 1.0 + 0.15 * math.sin(now * 8.0)
+        radius = self.radius * pulse
+        center_x = int(transform.position.x)
+        center_y = int(transform.position.y)
+
+        draw_neon_glow(
+            surface=screen,
+            color=self.primary_color,
+            center_x=center_x,
+            center_y=center_y,
+            radius=max(1, int(radius + 2)),
+            layers=4,
+        )
+        pygame.draw.circle(screen, self.primary_color, transform.position, max(1, int(radius)))
+        pygame.draw.circle(screen, self.secondary_color, transform.position, max(1, int(radius * 0.48)))
+
+        # Raster digital curto para simular ruído visual de "vírus".
+        for _ in range(6):
+            glitch_width = random.randint(6, max(6, int(self.radius * 1.2)))
+            glitch_height = random.randint(1, 3)
+            offset_x = random.randint(-int(self.radius), int(self.radius))
+            offset_y = random.randint(-int(self.radius), int(self.radius))
+            alpha = random.randint(95, 170)
+            glitch_surface = pygame.Surface((glitch_width, glitch_height), pygame.SRCALPHA)
+            glitch_surface.fill((*self.primary_color, alpha))
+            screen.blit(glitch_surface, (center_x + offset_x, center_y + offset_y))
+
+
+class LabyrinthKeyRenderStrategy:
+    def __init__(self, color: tuple[int, int, int], radius: float) -> None:
+        self.color = color
+        self.radius = radius
+
+    def render(self, screen: pygame.Surface, entity, transform) -> None:
+        del entity
+        pulse = abs(math.sin(time.time() * 5.2))
+        radius = self.radius + pulse * 3.0
+        center = (int(transform.position.x), int(transform.position.y))
+        draw_neon_glow(screen, self.color, center[0], center[1], max(1, int(radius + 3)), 3)
+        pygame.draw.circle(screen, self.color, center, max(1, int(radius)), 2)
+        pygame.draw.rect(
+            screen,
+            self.color,
+            pygame.Rect(center[0] - int(radius * 0.25), center[1] - int(radius * 0.1), int(radius * 0.85), 3),
+            border_radius=2,
+        )
+        pygame.draw.circle(screen, self.color, (center[0] + int(radius * 0.72), center[1]), max(2, int(radius * 0.2)), 2)
+
+
+class LabyrinthExitRenderStrategy:
+    def __init__(self, locked_color: tuple[int, int, int], unlocked_color: tuple[int, int, int], size: float) -> None:
+        self.locked_color = locked_color
+        self.unlocked_color = unlocked_color
+        self.size = size
+
+    def render(self, screen: pygame.Surface, entity, transform) -> None:
+        from game.components.data_components import LabyrinthExitComponent
+
+        exit_component = entity.get_component(LabyrinthExitComponent)
+        is_unlocked = exit_component is not None and exit_component.unlocked
+        color = self.unlocked_color if is_unlocked else self.locked_color
+        center = (int(transform.position.x), int(transform.position.y))
+        half = int(self.size * 0.5)
+        rect = pygame.Rect(center[0] - half, center[1] - half, half * 2, half * 2)
+        draw_neon_glow(screen, color, center[0], center[1], half + 4, 4)
+        pygame.draw.rect(screen, color, rect, width=3, border_radius=6)
+        if not is_unlocked:
+            pygame.draw.line(screen, color, rect.topleft, rect.bottomright, 3)
+            pygame.draw.line(screen, color, rect.topright, rect.bottomleft, 3)
         pygame.draw.circle(screen, (245, 245, 245), transform.position, 6)

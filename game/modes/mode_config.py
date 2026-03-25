@@ -50,3 +50,11 @@ class SurvivalConfig:
 @dataclass(frozen=True)
 class OneVsOneConfig:
     description: str = "Enfrente um inimigo por vez e use o portal para progredir."
+
+
+@dataclass(frozen=True)
+class LabyrinthConfig:
+    description: str = "Explore labirintos procedurais, pegue a chave e escape por uma saida bloqueada."
+    base_enemy_speed: float = 95.0
+    boss_level_interval: int = 5
+    boss_speed_gain_per_level: float = 0.06

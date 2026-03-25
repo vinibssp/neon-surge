@@ -110,6 +110,21 @@ class AudioUnduckRequested(DomainEvent):
 
 
 @dataclass(frozen=True)
+class LabyrinthKeyCollected(DomainEvent):
+    level: int
+
+
+@dataclass(frozen=True)
+class LabyrinthExitUnlocked(DomainEvent):
+    level: int
+
+
+@dataclass(frozen=True)
+class LabyrinthBossCleared(DomainEvent):
+    level: int
+
+
+@dataclass(frozen=True)
 class SubscriptionToken:
     event_type: type[DomainEvent]
     handler_id: int

@@ -143,3 +143,24 @@ class OneVsOneSpawnStrategy(SpawnStrategy):
 
     def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
         del world, enemy
+
+
+class LabyrinthSpawnStrategy(SpawnStrategy):
+    def initial_timer(self, world: GameWorld, elapsed_time: float) -> float:
+        del world, elapsed_time
+        return 999_999.0
+
+    def next_interval(self, world: GameWorld, elapsed_time: float) -> float:
+        del world, elapsed_time
+        return 999_999.0
+
+    def choose_enemy_kind(self, world: GameWorld, elapsed_time: float) -> str:
+        del world, elapsed_time
+        return EnemyFactory.registered_enemy_kinds()[0]
+
+    def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
+        del world, elapsed_time
+        return 0
+
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
+        del world, enemy

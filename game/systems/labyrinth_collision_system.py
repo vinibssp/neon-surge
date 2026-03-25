@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+import math
+from typing import Callable
+
+from pygame import Vector2
+
+from game.components.data_components import CollisionComponent, MovementComponent, TransformComponent
+from game.core.world import GameWorld
+from game.ecs.query import WorldQuery
+from game.modes.labyrinth_layout import LabyrinthRuntimeState, circle_rect_overlap
+
+
+MAZE_COLLISION_QUERY = WorldQuery(
+    component_types=(TransformComponent, CollisionComponent),
+    tags=(),
+)
+
+
+class LabyrinthCollisionSystem:
+    def __init__(self, world: GameWorld, runtime_provider: Callable[[], LabyrinthRuntimeState | None]) -> None:
+        self.world = world
+        self.runtime_provider = runtime_provider
+
+    def update(self, dt: float) -> None:
+        runtime = self.runtime_provider()
+        if runtime is None or runtime.is_boss_level:
+            return
+
+        for entity in self.world.query(MAZE_COLLISION_QUERY):
+            if not (entity.has_tag("player") or entity.has_tag("enemy") or entity.has_tag("bullet")):
+                continue
+
+            transform = entity.get_component(TransformComponent)
+            collision = entity.get_component(CollisionComponent)
+            movement = entity.get_component(MovementComponent)
+            if transform is None or collision is None:
+                continue
+
+            collided_with_wall = False
+            if movement is None or dt <= 0.0:
+                collided_with_wall = self._resolve_wall_overlap(runtime, transform, collision, movement)
+            else:
+                end_position = Vector2(transform.position)
+                start_position = end_position - (movement.velocity * dt)
+                travel = end_position - start_position
+                distance = travel.length()
+                max_step = max(0.5, min(collision.radius * 0.33, runtime.layout.geometry.wall_thickness * 0.33))
+                step_count = max(1, int(math.ceil(distance / max_step)))
+                step_delta = Vector2() if step_count <= 0 else (travel / step_count)
+
+                sweep_position = Vector2(start_position)
+                for _ in range(step_count):
+                    sweep_position += step_delta
+                    transform.position = Vector2(sweep_position)
+                    collided = self._resolve_wall_overlap(runtime, transform, collision, movement)
+                    if collided:
+                        collided_with_wall = True
+                    sweep_position = Vector2(transform.position)
+
+            if collided_with_wall and entity.has_tag("bullet"):
+                self.world.remove_entity(entity)
+
+    def _resolve_wall_overlap(
+        self,
+        runtime: LabyrinthRuntimeState,
+        transform: TransformComponent,
+        collision: CollisionComponent,
+        movement: MovementComponent | None,
+    ) -> bool:
+        current_cell = runtime.layout.to_cell(transform.position)
+        if current_cell is None:
+            current_cell = self._closest_cell(runtime, transform.position)
+
+        rect_indices = self._rect_indices_near_cell(runtime, current_cell)
+        if not rect_indices:
+            rect_indices = list(range(len(runtime.layout.wall_rects)))
+        collided_with_wall = False
+        for _ in range(6):
+            resolved = False
+            for rect_index in rect_indices:
+                if rect_index < 0 or rect_index >= len(runtime.layout.wall_rects):
+                    continue
+                wall_rect = runtime.layout.wall_rects[rect_index]
+                overlapped, normal, penetration = circle_rect_overlap(transform.position, collision.radius, wall_rect)
+                if not overlapped:
+                    continue
+
+                resolved = True
+                collided_with_wall = True
+                transform.position += normal * penetration
+                if movement is not None and normal.length_squared() > 0:
+                    if abs(normal.x) > 0.5:
+                        movement.velocity.x = 0.0
+                    if abs(normal.y) > 0.5:
+                        movement.velocity.y = 0.0
+            if not resolved:
+                break
+
+        if not collided_with_wall and len(rect_indices) < len(runtime.layout.wall_rects):
+            for rect_index in range(len(runtime.layout.wall_rects)):
+                wall_rect = runtime.layout.wall_rects[rect_index]
+                overlapped, normal, penetration = circle_rect_overlap(transform.position, collision.radius, wall_rect)
+                if not overlapped:
+                    continue
+                collided_with_wall = True
+                transform.position += normal * penetration
+                if movement is not None and normal.length_squared() > 0:
+                    if abs(normal.x) > 0.5:
+                        movement.velocity.x = 0.0
+                    if abs(normal.y) > 0.5:
+                        movement.velocity.y = 0.0
+        return collided_with_wall
+
+    @staticmethod
+    def _closest_cell(runtime: LabyrinthRuntimeState, position: Vector2) -> tuple[int, int]:
+        origin = runtime.layout.geometry.origin
+        cell_size = runtime.layout.geometry.cell_size
+        local_x = (position.x - origin.x) / max(1.0, cell_size)
+        local_y = (position.y - origin.y) / max(1.0, cell_size)
+        x = int(max(0, min(runtime.layout.width - 1, math.floor(local_x))))
+        y = int(max(0, min(runtime.layout.height - 1, math.floor(local_y))))
+        return (x, y)
+
+    @staticmethod
+    def _rect_indices_near_cell(runtime: LabyrinthRuntimeState, cell: tuple[int, int]) -> list[int]:
+        seen: set[int] = set()
+        x, y = cell
+        for offset_y in (-1, 0, 1):
+            for offset_x in (-1, 0, 1):
+                nx = x + offset_x
+                ny = y + offset_y
+                if nx < 0 or ny < 0 or nx >= runtime.layout.width or ny >= runtime.layout.height:
+                    continue
+                for rect_index in runtime.spatial_index.nearby_rect_indices((nx, ny)):
+                    seen.add(rect_index)
+        return list(seen)

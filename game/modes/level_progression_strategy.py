@@ -132,3 +132,11 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
         scene.world.level = next_index + 1
         scene.world.add_entity(EnemyFactory.create_by_kind(enemy_kind, scene.random_play_area_position()))
 
+
+class LabyrinthLevelProgressionStrategy(LevelProgressionStrategy):
+    def update(self, scene: "GameScene", dt: float) -> None:
+        del scene, dt
+
+    def on_level_portal_crossed(self, scene: "GameScene") -> None:
+        scene.setup_level(scene.world.level + 1)
+

@@ -9,6 +9,7 @@ from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
 from game.modes.mode_config import RaceConfig, SurvivalConfig
 from game.modes.one_vs_one_mode import OneVsOneMode
+from game.modes.labyrinth_mode import LabyrinthMode
 from game.modes.race_mode import RaceMode
 from game.modes.survival_mode import SurvivalMode
 from game.scenes.base_menu_scene import BaseMenuScene
@@ -114,7 +115,7 @@ class MainMenuScene(BaseMenuScene):
             ("INFINITA", "#mode_button_infinite", self._start_survival),
             ("SOBREVIVENCIA", "#mode_button_survival", self._start_survival),
             ("HARDCORE", "#mode_button_hardcore", self._start_hardcore),
-            ("LABIRINTO", "#mode_button_labyrinth", self._start_one_vs_one),
+            ("LABIRINTO", "#mode_button_labyrinth", self._start_labyrinth),
             ("TREINO", "#mode_button_training", self._start_race),
             ("GUIA", "#mode_button_guide", self._open_help),
             ("CONFIG", "#mode_button_config", self._open_settings),
@@ -198,7 +199,7 @@ class MainMenuScene(BaseMenuScene):
             ),
             ModeCardData(
                 title="Labirinto",
-                description="Combate em arena com rota variavel e pressao de movimento.",
+                description="Gere labirintos procedurais, colete a chave distante e escape por uma saida bloqueada.",
                 color=(48, 255, 90),
             ),
             ModeCardData(
@@ -271,6 +272,9 @@ class MainMenuScene(BaseMenuScene):
 
     def _start_one_vs_one(self) -> None:
         self.stack.replace(GameScene(self.stack, mode=OneVsOneMode()))
+
+    def _start_labyrinth(self) -> None:
+        self.stack.replace(GameScene(self.stack, mode=LabyrinthMode()))
 
     def _start_hardcore(self) -> None:
         self.stack.replace(GameScene(self.stack, mode=SurvivalMode()))

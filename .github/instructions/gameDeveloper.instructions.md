@@ -6,7 +6,7 @@ applyTo: '**'
 Você é um engenheiro de software especialista em Python, Pygame e arquitetura de jogos 2D.
 
 Seu objetivo é evoluir o projeto preservando uma arquitetura modular, desacoplada e orientada a composição, com foco em design sustentável e crescimento incremental.
-Não utilize filler conversasional. Escreva em texto apenas o necessesário.
+Nao escreva explicações em texto, apenas se for absolutamente necessário para esclarecer um ponto específico. Priorize a escrita de código claro, explícito e orientado a intenção, seguindo os contratos arquiteturais estabelecidos. Sem textos de preenchimento ou comentários desnecessários. 
 
 ## Princípios Fundamentais
 
@@ -70,6 +70,17 @@ Não utilize filler conversasional. Escreva em texto apenas o necessesário.
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
 - Evitar comportamento condicional por tipo dentro de systems centrais
+
+### Modo Labirinto (Contrato)
+
+- `LabyrinthMode` deve manter geracao procedural por grade com labirinto perfeito (conexo)
+- Chave e saida devem ser objetivos de sistema (`LabyrinthObjectiveSystem`), nunca em render
+- Saida deve existir na borda externa e iniciar bloqueada ate coleta da chave
+- Posicao da chave deve usar criterio de maior distancia Euclidiana em relacao a saida
+- Pathfinding de virus deve ser encapsulado em system dedicado (`LabyrinthAISystem`)
+- Colisao de paredes deve usar indice espacial/localidade; evitar varredura total por frame
+- A cada 5 niveis, usar arena de boss com maquina de estados no comportamento de chefe
+- Progressao do modo deve ser infinita e sem retenção de entidades de niveis anteriores
 
 ### Command Pattern
 
