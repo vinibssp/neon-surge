@@ -21,5 +21,15 @@ class RaceInfiniteMode(RaceMode):
             f"Nivel: {scene.world.level}",
         ]
 
+    def on_player_death(self, scene: "GameScene") -> None:
+        death_cause = scene.world.runtime_state.get("last_death_cause")
+        scene.open_game_over(
+            title="Corrida Infinita - Derrota",
+            subtitle=f"Nivel alcancado: {scene.world.level}",
+            retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
+        )
+
     def create_retry_strategy(self) -> GameModeStrategy:
         return RaceInfiniteMode(config=self.config)

@@ -40,10 +40,13 @@ class LabyrinthMode(GameModeStrategy):
         scene.setup_level(1)
 
     def on_player_death(self, scene: "GameScene") -> None:
+        death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Labirinto - Falha de Sistema",
             subtitle=f"Nivel alcancado: {scene.world.level}",
             retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
         )
 
     def configure_level(self, scene: "GameScene", level: int) -> None:

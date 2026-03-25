@@ -150,6 +150,9 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), região de água com navios canhoneiros, nuvem de balas e buraco negro móvel com sucção
 - eventos ambientais são mutuamente exclusivos: lava, neve, água, nuvem de balas e buraco negro nunca acontecem juntos
 - player possui parry em `J`; inimigos atingidos no raio do parry ficam desestabilizados temporariamente com pulso visual
+- tela de morte estilo resumo de run: causa da morte + estatisticas da sessao (tempo, nivel, dashes, coletaveis, etc.)
+- no sobrevivencia/hardcore ha coletaveis de campo; a cada 100 coletados, ganha 1 carga de bomba nuclear acionada em I para limpar os inimigos atuais
+- explosoes de dominio (`ExplosionTriggered`) exibem animacao de impacto e aplicam screen shake no gameplay
 - escala de spawn por modo:
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo

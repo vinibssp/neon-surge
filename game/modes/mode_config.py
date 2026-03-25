@@ -81,6 +81,8 @@ class SurvivalConfig:
     lava_active_duration: float = 8.0
     lava_blink_duration: float = 1.5
     lava_height_ratio: float = 0.18
+    collectible_spawn_interval: float = 3.4
+    collectible_spawn_cap: int = 10
     env_event_interval: float = 34.0
     env_event_duration: float = 13.0
     snow_drag_multiplier: float = 0.78
@@ -117,6 +119,8 @@ class SurvivalHardcoreConfig(SurvivalConfig):
     lava_active_duration: float = 9.0
     lava_blink_duration: float = 2.0
     lava_height_ratio: float = 0.23
+    collectible_spawn_interval: float = 2.5
+    collectible_spawn_cap: int = 14
     env_event_interval: float = 24.0
     env_event_duration: float = 14.0
     snow_drag_multiplier: float = 0.72

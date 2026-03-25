@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+from dataclasses import dataclass
 from typing import Callable
 
 import pygame
@@ -14,6 +15,7 @@ from game.core.events import (
     CollectibleCollected,
     DashStarted,
     EnemySpawned,
+    ExplosionTriggered,
     LifetimeExpired,
     PlayerDied,
     PortalEntered,
@@ -32,6 +34,14 @@ from game.modes.game_mode_strategy import GameModeStrategy
 from game.systems.render_system import RenderSystem
 from game.systems.spawn_director import SpawnDirector
 from game.systems.system_pipeline import SystemPipeline
+
+
+@dataclass
+class ExplosionFxState:
+    position: Vector2
+    age: float = 0.0
+    duration: float = 0.34
+    max_radius: float = 86.0
 
 
 class GameScene(Scene):
@@ -56,6 +66,11 @@ class GameScene(Scene):
         self._transition_in_progress = False
         self.stats_collector = StatsCollector()
         self.session_stats = self.stats_collector.stats
+        self._explosion_fx: list[ExplosionFxState] = []
+        self._shake_time_left = 0.0
+        self._shake_duration = 0.0
+        self._shake_intensity = 0.0
+        self._world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="game_scene_entered"))
@@ -86,12 +101,19 @@ class GameScene(Scene):
 
         self.system_pipeline.update(dt)
         self.world.apply_pending()
+        self._update_screen_shake(dt)
+        self._update_explosion_fx(dt)
 
     def render(self, screen: pygame.Surface) -> None:
-        self.background_renderer.render(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.render_system.render(screen)
-        self._render_survival_lava_overlay(screen)
-        self._render_environment_event_overlay(screen)
+        self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.render_system.render(self._world_surface)
+        self._render_survival_lava_overlay(self._world_surface)
+        self._render_environment_event_overlay(self._world_surface)
+        self._render_explosion_fx(self._world_surface)
+
+        screen.fill((0, 0, 0))
+        shake_offset = self._screen_shake_offset()
+        screen.blit(self._world_surface, shake_offset)
         self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
 
     def _render_survival_lava_overlay(self, screen: pygame.Surface) -> None:
@@ -172,6 +194,7 @@ class GameScene(Scene):
         self.world.level = level
         self.level_portal_spawned = False
         self._transition_in_progress = False
+        self.world.runtime_state.pop("last_death_cause", None)
 
         if self.world.player is None:
             player = PlayerFactory.create(Vector2(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5))
@@ -200,7 +223,10 @@ class GameScene(Scene):
         title: str,
         subtitle: str,
         retry_strategy_factory: Callable[[], GameModeStrategy],
+        death_cause: str | None = None,
+        include_session_summary: bool = False,
     ) -> None:
+        summary_stats = self.session_stats if include_session_summary else None
         self.stack.replace(
             GameOverScene(
                 self.stack,
@@ -208,6 +234,9 @@ class GameScene(Scene):
                 title=title,
                 subtitle=subtitle,
                 retry_strategy_factory=retry_strategy_factory,
+                death_cause=death_cause,
+                session_stats=summary_stats,
+                elapsed_time=self.elapsed_time if include_session_summary else None,
             )
         )
 
@@ -216,6 +245,7 @@ class GameScene(Scene):
         self._event_tokens = [
             event_bus.on(PlayerDied, self._on_player_died),
             event_bus.on(PortalEntered, self._on_portal_entered),
+            event_bus.on(ExplosionTriggered, self._on_explosion_triggered),
             event_bus.on(EnemySpawned, self.stats_collector.on_enemy_spawned),
             event_bus.on(CollectibleCollected, self.stats_collector.on_collectible_collected),
             event_bus.on(SpawnPortalDestroyed, self.stats_collector.on_spawn_portal_destroyed),
@@ -235,6 +265,7 @@ class GameScene(Scene):
         if self._transition_in_progress:
             return
         self._transition_in_progress = True
+        self.world.runtime_state["death_transition"] = True
         self.mode.on_player_death(self)
 
     def _on_portal_entered(self, event: PortalEntered) -> None:
@@ -243,3 +274,56 @@ class GameScene(Scene):
             return
         self._transition_in_progress = True
         self.level_progression.on_level_portal_crossed(self)
+
+    def _on_explosion_triggered(self, event: ExplosionTriggered) -> None:
+        self._explosion_fx.append(ExplosionFxState(position=event.position.copy()))
+        self._start_screen_shake(intensity=9.0, duration=0.22)
+
+    def _update_explosion_fx(self, dt: float) -> None:
+        if not self._explosion_fx:
+            return
+        active_fx: list[ExplosionFxState] = []
+        for effect in self._explosion_fx:
+            effect.age += dt
+            if effect.age < effect.duration:
+                active_fx.append(effect)
+        self._explosion_fx = active_fx
+
+    def _render_explosion_fx(self, screen: pygame.Surface) -> None:
+        for effect in self._explosion_fx:
+            progress = min(1.0, effect.age / max(0.001, effect.duration))
+            radius = int(10 + effect.max_radius * progress)
+            alpha = int(200 * (1.0 - progress))
+            if radius <= 0 or alpha <= 0:
+                continue
+
+            size = radius * 2 + 8
+            overlay = pygame.Surface((size, size), pygame.SRCALPHA)
+            center = (size // 2, size // 2)
+            core_radius = max(2, int(radius * 0.33))
+            ring_radius = max(core_radius + 2, radius)
+            pygame.draw.circle(overlay, (255, 242, 188, min(255, alpha + 20)), center, core_radius)
+            pygame.draw.circle(overlay, (255, 140, 70, alpha), center, ring_radius, 3)
+            pygame.draw.circle(overlay, (255, 210, 120, max(0, alpha - 40)), center, max(core_radius + 3, ring_radius - 8), 2)
+            screen.blit(overlay, (int(effect.position.x - size / 2), int(effect.position.y - size / 2)))
+
+    def _start_screen_shake(self, intensity: float, duration: float) -> None:
+        self._shake_intensity = max(self._shake_intensity, intensity)
+        self._shake_duration = max(self._shake_duration, duration)
+        self._shake_time_left = max(self._shake_time_left, duration)
+
+    def _update_screen_shake(self, dt: float) -> None:
+        if self._shake_time_left <= 0.0:
+            self._shake_time_left = 0.0
+            return
+        self._shake_time_left = max(0.0, self._shake_time_left - dt)
+
+    def _screen_shake_offset(self) -> tuple[int, int]:
+        if self._shake_time_left <= 0.0 or self._shake_duration <= 0.0 or self._shake_intensity <= 0.0:
+            return (0, 0)
+        ratio = self._shake_time_left / self._shake_duration
+        amplitude = self._shake_intensity * ratio
+        return (
+            int(random.uniform(-amplitude, amplitude)),
+            int(random.uniform(-amplitude, amplitude)),
+        )

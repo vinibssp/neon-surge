@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from game.components.data_components import NuclearBombComponent
 from game.core.world import GameWorld
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.modes.level_progression_strategy import LevelProgressionStrategy, SurvivalLevelProgressionStrategy
@@ -14,9 +15,11 @@ from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
 from game.systems.lifetime_system import LifetimeSystem
 from game.systems.movement_system import MovementSystem
+from game.systems.nuclear_bomb_system import NuclearBombSystem
 from game.systems.parry_system import ParrySystem
 from game.systems.shoot_system import ShootSystem
 from game.systems.stagger_system import StaggerSystem
+from game.systems.survival_collectible_system import SurvivalCollectibleSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
@@ -29,12 +32,18 @@ class SurvivalMode(GameModeStrategy):
 
     def on_enter(self, scene: "GameScene") -> None:
         scene.setup_level(1)
+        player = scene.world.player
+        if player is not None and player.get_component(NuclearBombComponent) is None:
+            player.add_component(NuclearBombComponent())
 
     def on_player_death(self, scene: "GameScene") -> None:
+        death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Game Over",
             subtitle=f"Sobreviveu: {scene.elapsed_time:.2f}s",
             retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
         )
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
@@ -73,11 +82,22 @@ class SurvivalMode(GameModeStrategy):
             else:
                 env_line = f"Evento em: {float(env_state.get('cooldown_left', 0.0)):.1f}s"
 
+        bomb_line = "Bomba Nuclear: indisponivel"
+        player = scene.world.player
+        if player is not None:
+            bomb = player.get_component(NuclearBombComponent)
+            if bomb is not None:
+                bomb_line = (
+                    f"Bomba Nuclear [I]: {bomb.charges} carga(s) | Progresso: "
+                    f"{bomb.collectibles_progress}/{bomb.charge_threshold}"
+                )
+
         return [
             "Modo: Sobrevivencia",
             f"Tempo: {scene.elapsed_time:.2f}s",
             f"Nivel: {scene.world.level}",
             f"Escalada em: {next_level_in:.1f}s",
+            bomb_line,
             lava_line,
             env_line,
         ]
@@ -90,6 +110,7 @@ class SurvivalMode(GameModeStrategy):
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
             SystemSpec(system=ParrySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=15),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),
+            SystemSpec(system=NuclearBombSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=22),
             SystemSpec(
                 system=EnvironmentEventSystem(
                     world=world,
@@ -110,6 +131,15 @@ class SurvivalMode(GameModeStrategy):
                 ),
                 phase=PipelinePhase.PRE_UPDATE,
                 priority=25,
+            ),
+            SystemSpec(
+                system=SurvivalCollectibleSystem(
+                    world=world,
+                    spawn_interval=self.config.collectible_spawn_interval,
+                    spawn_cap=self.config.collectible_spawn_cap,
+                ),
+                phase=PipelinePhase.PRE_UPDATE,
+                priority=28,
             ),
             SystemSpec(system=FollowSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=30),
             SystemSpec(system=ShootSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=40),

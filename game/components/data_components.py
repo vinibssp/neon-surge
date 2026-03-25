@@ -51,6 +51,14 @@ class StaggeredComponent(Component):
 
 
 @dataclass
+class NuclearBombComponent(Component):
+    charges: int = 0
+    collectibles_progress: int = 0
+    charge_threshold: int = 100
+    requested: bool = False
+
+
+@dataclass
 class CollisionComponent(Component):
     radius: float
     layer: str

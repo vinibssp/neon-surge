@@ -33,10 +33,13 @@ class OneVsOneMode(GameModeStrategy):
         defeated_count = 0
         if self._progression is not None:
             defeated_count = max(0, self._progression.current_enemy_index)
+        death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="1v1 - Derrota",
             subtitle=f"Rounds completos: {defeated_count}/{len(self.enemy_kinds)}",
             retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
         )
 
     def configure_level(self, scene: "GameScene", level: int) -> None:

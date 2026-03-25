@@ -224,6 +224,7 @@ class EnvironmentEventSystem:
                 invulnerability = entity.get_component(InvulnerabilityComponent)
                 if invulnerability is not None and invulnerability.time_left > 0.0:
                     continue
+                self.world.runtime_state["last_death_cause"] = "Consumido pelo buraco negro"
                 self.world.event_bus.publish(PlayerDamaged())
                 self.world.event_bus.publish(PlayerDied())
                 return
@@ -263,6 +264,7 @@ class EnvironmentEventSystem:
         if transform.position.y + collision.radius < lava_line:
             return
 
+        self.world.runtime_state["last_death_cause"] = "Queimado na lava"
         self.world.event_bus.publish(PlayerDamaged())
         self.world.event_bus.publish(PlayerDied())
 

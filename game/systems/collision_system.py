@@ -8,6 +8,7 @@ from game.components.data_components import (
     DashComponent,
     GhostComponent,
     InvulnerabilityComponent,
+    NuclearBombComponent,
     ParryComponent,
     MovementComponent,
     MortarShellComponent,
@@ -83,6 +84,12 @@ class CollisionSystem:
                 collectible = entity.get_component(CollectibleComponent)
                 value = 1 if collectible is None else collectible.value
                 self.world.event_bus.publish(CollectibleCollected(value=value))
+                bomb = player.get_component(NuclearBombComponent)
+                if bomb is not None:
+                    bomb.collectibles_progress += value
+                    while bomb.collectibles_progress >= bomb.charge_threshold:
+                        bomb.collectibles_progress -= bomb.charge_threshold
+                        bomb.charges += 1
                 self.world.remove_entity(entity)
                 continue
 
@@ -127,8 +134,8 @@ class CollisionSystem:
                     continue
 
                 if not is_player_invulnerable:
-                    self.world.event_bus.publish(PlayerDamaged())
-                    self.world.event_bus.publish(PlayerDied())
+                    cause = "Atingido por projetil" if entity.has_tag("bullet") else "Colisao com inimigo"
+                    self._kill_player(cause)
                     return
 
     def _update_mortar_shells(
@@ -165,8 +172,7 @@ class CollisionSystem:
             if is_player_invulnerable:
                 continue
             if self._collides(player_position, player_radius, shell.target_position, shell.explosion_radius):
-                self.world.event_bus.publish(PlayerDamaged())
-                self.world.event_bus.publish(PlayerDied())
+                self._kill_player("Explosao de morteiro")
                 return True
         return False
 
@@ -205,3 +211,8 @@ class CollisionSystem:
             if entity.id == entity_id:
                 return entity
         return None
+
+    def _kill_player(self, cause: str) -> None:
+        self.world.runtime_state["last_death_cause"] = cause
+        self.world.event_bus.publish(PlayerDamaged())
+        self.world.event_bus.publish(PlayerDied())

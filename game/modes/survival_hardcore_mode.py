@@ -15,10 +15,13 @@ class SurvivalHardcoreMode(SurvivalMode):
         super().__init__(config=SurvivalHardcoreConfig() if config is None else config)
 
     def on_player_death(self, scene: "GameScene") -> None:
+        death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Hardcore Over",
             subtitle=f"Resistiu: {scene.elapsed_time:.2f}s",
             retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
         )
 
     def build_hud_lines(self, scene: "GameScene") -> list[str]:

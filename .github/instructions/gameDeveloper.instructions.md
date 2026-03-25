@@ -56,6 +56,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - `GameScene` registra/desregistra handlers de gameplay no ciclo `on_enter()`/`on_exit()`
 - Não usar flags globais para transições de estado
 - Evitar roteamento espalhado baseado em `isinstance`
+- Eventos de explosão de domínio (`ExplosionTriggered`) devem acionar feedback visual (animação + tremor de tela) na orquestração de cena/render, sem acoplamento da regra de dano
 
 ### Factories
 
@@ -152,6 +153,7 @@ Resiliência operacional:
 - `Esc` em gameplay abre pausa; `Esc` na pausa/submenu fecha o overlay atual
 - Menu de pausa padrão: retomar, configurações, abandonar partida
 - Configurações de pausa devem aceitar mouse + teclado/gamepad no mesmo contrato de navegação
+- `GameOverScene` deve exibir causa da morte e estatisticas da sessao encerrada, sem acoplar coleta de dados ao render
 
 ### Evolução de Menus
 
@@ -172,6 +174,7 @@ Resiliência operacional:
 - Presets de sobrevivência devem concentrar hazards periódicos (ex.: lava): intervalo, aviso, duração ativa e janela de pisca de encerramento
 - Presets de sobrevivência devem concentrar eventos ambientais periódicos (neve/água/nuvem de balas/buraco negro): intervalo global, duração e intensidade por evento
 - Lava integra o sistema de eventos ambientais e deve respeitar exclusividade: apenas um evento ativo por vez
+- Presets de sobrevivência devem concentrar progressão de coletáveis especiais e habilidades de pico (ex.: bomba nuclear por limiar de coleta)
 
 ---
 

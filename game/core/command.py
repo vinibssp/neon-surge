@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from pygame import Vector2
 
-from game.components.data_components import DashComponent, MovementComponent, ParryComponent
+from game.components.data_components import DashComponent, MovementComponent, NuclearBombComponent, ParryComponent
 from game.ecs.entity import Entity
 
 
@@ -42,6 +42,14 @@ class ParryCommand(Command):
         if parry is None:
             return
         parry.requested = True
+
+
+class NuclearBombCommand(Command):
+    def execute(self, entity: Entity, world: "GameWorld") -> None:
+        bomb = entity.get_component(NuclearBombComponent)
+        if bomb is None:
+            return
+        bomb.requested = True
 
 
 from game.core.world import GameWorld
