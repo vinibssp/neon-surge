@@ -153,61 +153,66 @@ class EnemyFactory:
     def _ensure_registry(cls) -> None:
         if cls._enemy_registry or cls._miniboss_registry or cls._boss_registry:
             return
-        cls.register_enemy("follower", cls.create_follower, weight=0.22)
-        cls.register_enemy("shooter", cls.create_shooter, weight=0.12)
-        cls.register_enemy("quique", cls.create_bouncer, weight=0.11)
-        cls.register_enemy("investida", cls.create_charge, weight=0.10)
-        cls.register_enemy("explosivo", cls.create_explosive, weight=0.08)
-        cls.register_enemy("metralhadora", cls.create_turret, weight=0.06)
-        cls.register_enemy("morteiro", cls.create_mortar, weight=0.05)
-        cls.register_enemy("estrafador_arcano", cls.create_arcane_strafer, weight=0.08)
-        cls.register_enemy("emboscador_escopeta", cls.create_shotgun_ambusher, weight=0.07)
-        cls.register_enemy("orbitador_hex", cls.create_hex_orbiter, weight=0.06)
-        cls.register_enemy("sombra_investida", cls.create_shadow_pouncer, weight=0.06)
-        cls.register_enemy("bombardeiro_runa", cls.create_runic_bombardier, weight=0.06)
-        cls.register_enemy("atirador_laser", cls.create_laser_shooter, weight=0.06)
-        cls.register_enemy("kamehameha", cls.create_kamehameha, weight=0.05)
-        cls.register_enemy("lanca_chamas", cls.create_flamethrower, weight=0.06)
-        cls.register_enemy("fantasma", cls.create_ghost_boo, weight=0.05)
-        cls.register_enemy("buffer", cls.create_buffer_mage, weight=0.04)
-        cls.register_enemy("sapo", cls.create_frog_acid, weight=0.05)
-        cls.register_enemy("bandido_arcano", cls.create_bandit_arcane, weight=0.06)
-        cls.register_enemy("mago_hobbit", cls.create_hobbit_mage, weight=0.05)
-        cls.register_enemy("escorpiao_rainha", cls.create_scorpion_queen, weight=0.05)
-        cls.register_enemy("gazer_vazio", cls.create_void_gazer, weight=0.04)
-        cls.register_enemy("abominacao_limo", cls.create_slime_abomination, weight=0.05)
-        cls.register_enemy("assassino_crepuscular", cls.create_twilight_assassin, weight=0.05)
-        cls.register_enemy("sentinela_estelar", cls.create_stellar_sentinel, weight=0.04)
-        cls.register_enemy("necrolorde_orbital", cls.create_necrolord_orbiter, weight=0.04)
-        cls.register_enemy("horror_igneo", cls.create_ignis_horror, weight=0.04)
-        cls.register_enemy("espectro_lancante", cls.create_lancer_specter, weight=0.04)
-        cls.register_enemy("aracnideo_venenoso", cls.create_venom_arachnid, weight=0.04)
-        cls.register_enemy("bombardeiro_abyssal", cls.create_abyssal_bombardier, weight=0.04)
-        cls.register_enemy("olho_orbitante", cls.create_orbiting_eye, weight=0.04)
-        cls.register_enemy("vigia_supressor", cls.create_suppressor_sentry, weight=0.04)
-        cls.register_enemy("xama_mineiro", cls.create_miner_shaman, weight=0.04)
-        cls.register_enemy("algoz_faseado", cls.create_phased_executioner, weight=0.04)
-        cls.register_enemy("guardiao_cosmico", cls.create_cosmic_guardian, weight=0.03)
-        cls.register_enemy("caotico_estilha", cls.create_shard_chaotic, weight=0.03)
-        cls.register_enemy("fuzileiro_runico", cls.create_runic_rifleman, weight=0.04)
-        cls.register_enemy("cavaleiro_voraz", cls.create_ravenous_knight, weight=0.04)
-        cls.register_enemy("necromante_torre", cls.create_tower_necromancer, weight=0.03)
-        cls.register_enemy("aranha_laser", cls.create_laser_arachnid, weight=0.03)
-        cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
-        cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
-        cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
-        cls.register_miniboss("miniboss_sniper", cls.create_miniboss_sniper, weight=0.02)
-        cls.register_miniboss("miniboss_laser_matrix", cls.create_miniboss_laser_matrix, weight=0.03)
-        cls.register_miniboss("miniboss_oraculo_kame", cls.create_miniboss_kame_oracle, weight=0.03)
-        cls.register_miniboss("miniboss_piro_hidra", cls.create_miniboss_pyro_hydra, weight=0.03)
-        cls.register_miniboss("miniboss_fantasma_senhor", cls.create_miniboss_phantom_overlord, weight=0.02)
-        cls.register_miniboss("miniboss_alquimista", cls.create_miniboss_alchemist, weight=0.02)
-        cls.register_boss("boss", cls.create_boss, weight=0.01)
-        cls.register_boss("boss_artilharia", cls.create_boss_artillery, weight=0.005)
-        cls.register_boss("boss_caotico", cls.create_boss_chaotic, weight=0.005)
-        cls.register_boss("boss_colosso_laser", cls.create_boss_laser_colossus, weight=0.004)
-        cls.register_boss("boss_druida_toxico", cls.create_boss_toxic_druid, weight=0.004)
-        cls.register_boss("boss_soberano_espectral", cls.create_boss_spectral_overlord, weight=0.004)
+        # Enemies
+        cls.register_enemy("follower", cls.create_follower, weight=0.22)  # perseguidor basico
+        cls.register_enemy("shooter", cls.create_shooter, weight=0.12)  # atirador de mira lenta
+        cls.register_enemy("quique", cls.create_bouncer, weight=0.11)  # ricochete agressivo
+        cls.register_enemy("investida", cls.create_charge, weight=0.10)  # dash telegrafado
+        cls.register_enemy("explosivo", cls.create_explosive, weight=0.08)  # bomba suicida
+        cls.register_enemy("metralhadora", cls.create_turret, weight=0.06)  # torre de rajada
+        cls.register_enemy("morteiro", cls.create_mortar, weight=0.05)  # artilharia em area
+        cls.register_enemy("estrafador_arcano", cls.create_arcane_strafer, weight=0.08)  # strafe com tiro preciso
+        cls.register_enemy("emboscador_escopeta", cls.create_shotgun_ambusher, weight=0.07)  # burst de curta distancia
+        cls.register_enemy("orbitador_hex", cls.create_hex_orbiter, weight=0.06)  # orbita com pressao
+        cls.register_enemy("sombra_investida", cls.create_shadow_pouncer, weight=0.06)  # pulo de emboscada
+        cls.register_enemy("bombardeiro_runa", cls.create_runic_bombardier, weight=0.06)  # bombardeio runico
+        cls.register_enemy("atirador_laser", cls.create_laser_shooter, weight=0.06)  # laser rapido
+        cls.register_enemy("kamehameha", cls.create_kamehameha, weight=0.05)  # feixe canalizado
+        cls.register_enemy("lanca_chamas", cls.create_flamethrower, weight=0.06)  # cone continuo
+        cls.register_enemy("fantasma", cls.create_ghost_boo, weight=0.05)  # invisibilidade intermitente
+        cls.register_enemy("buffer", cls.create_buffer_mage, weight=0.04)  # suporte de campo
+        cls.register_enemy("sapo", cls.create_frog_acid, weight=0.05)  # acido em rajada
+        cls.register_enemy("bandido_arcano", cls.create_bandit_arcane, weight=0.06)  # strafe rapido
+        cls.register_enemy("mago_hobbit", cls.create_hobbit_mage, weight=0.05)  # caster de tiro pesado
+        cls.register_enemy("escorpiao_rainha", cls.create_scorpion_queen, weight=0.05)  # bouncer veloz
+        cls.register_enemy("gazer_vazio", cls.create_void_gazer, weight=0.04)  # sniper laser extremo
+        cls.register_enemy("abominacao_limo", cls.create_slime_abomination, weight=0.05)  # explosivo acelerado
+        cls.register_enemy("assassino_crepuscular", cls.create_twilight_assassin, weight=0.05)  # emboscador agil
+        cls.register_enemy("sentinela_estelar", cls.create_stellar_sentinel, weight=0.04)  # feixe ritmico
+        cls.register_enemy("necrolorde_orbital", cls.create_necrolord_orbiter, weight=0.04)  # orbita de elite
+        cls.register_enemy("horror_igneo", cls.create_ignis_horror, weight=0.04)  # pressao de fogo
+        cls.register_enemy("espectro_lancante", cls.create_lancer_specter, weight=0.04)  # investida espectral
+        cls.register_enemy("aracnideo_venenoso", cls.create_venom_arachnid, weight=0.04)  # veneno rapido
+        cls.register_enemy("bombardeiro_abyssal", cls.create_abyssal_bombardier, weight=0.04)  # bombardeio pesado
+        cls.register_enemy("olho_orbitante", cls.create_orbiting_eye, weight=0.04)  # orbita e triplo disparo
+        cls.register_enemy("vigia_supressor", cls.create_suppressor_sentry, weight=0.04)  # controle de distancia
+        cls.register_enemy("xama_mineiro", cls.create_miner_shaman, weight=0.04)  # minas preditivas
+        cls.register_enemy("algoz_faseado", cls.create_phased_executioner, weight=0.04)  # teleporte ofensivo
+        cls.register_enemy("guardiao_cosmico", cls.create_cosmic_guardian, weight=0.03)  # orbita ampla
+        cls.register_enemy("caotico_estilha", cls.create_shard_chaotic, weight=0.03)  # caos de ricochete
+        cls.register_enemy("fuzileiro_runico", cls.create_runic_rifleman, weight=0.04)  # rifle de supressao
+        cls.register_enemy("cavaleiro_voraz", cls.create_ravenous_knight, weight=0.04)  # investidor robusto
+        cls.register_enemy("necromante_torre", cls.create_tower_necromancer, weight=0.03)  # caster estatico
+        cls.register_enemy("aranha_laser", cls.create_laser_arachnid, weight=0.03)  # laser com mobilidade
+
+        # Minibosses
+        cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)  # espiral de projeteis
+        cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)  # caca agressiva
+        cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)  # defesa orbital
+        cls.register_miniboss("miniboss_sniper", cls.create_miniboss_sniper, weight=0.02)  # tiro de precisao
+        cls.register_miniboss("miniboss_laser_matrix", cls.create_miniboss_laser_matrix, weight=0.03)  # grade de laser
+        cls.register_miniboss("miniboss_oraculo_kame", cls.create_miniboss_kame_oracle, weight=0.03)  # feixe prolongado
+        cls.register_miniboss("miniboss_piro_hidra", cls.create_miniboss_pyro_hydra, weight=0.03)  # fogo multiponto
+        cls.register_miniboss("miniboss_fantasma_senhor", cls.create_miniboss_phantom_overlord, weight=0.02)  # stealth tatico
+        cls.register_miniboss("miniboss_alquimista", cls.create_miniboss_alchemist, weight=0.02)  # rajada alquimica
+
+        # Bosses
+        cls.register_boss("boss", cls.create_boss, weight=0.01)  # chefe balanceado
+        cls.register_boss("boss_artilharia", cls.create_boss_artillery, weight=0.005)  # radial de artilharia
+        cls.register_boss("boss_caotico", cls.create_boss_chaotic, weight=0.005)  # pressao imprevisivel
+        cls.register_boss("boss_colosso_laser", cls.create_boss_laser_colossus, weight=0.004)  # varredura de laser
+        cls.register_boss("boss_druida_toxico", cls.create_boss_toxic_druid, weight=0.004)  # invocacao toxica
+        cls.register_boss("boss_soberano_espectral", cls.create_boss_spectral_overlord, weight=0.004)  # rajada espectral
 
     @classmethod
     def _choose_random_kind_from(
