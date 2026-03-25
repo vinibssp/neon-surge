@@ -93,13 +93,16 @@ class FollowerRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
+        now = time.time()
+        pulse = 0.5 + 0.5 * math.sin(now * 6.2)
+        ring_radius = self.radius + 3 + pulse * 3
         draw_neon_glow(
             surface=screen,
             color=self.outer_color,
             center_x=int(transform.position.x),
             center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
-            layers=3,
+            radius=max(1, int(self.radius + 2 + pulse * 2)),
+            layers=4,
         )
         pygame.draw.circle(
             screen,
@@ -108,6 +111,7 @@ class FollowerRenderStrategy:
             self.radius,
             self.thickness,
         )
+        pygame.draw.circle(screen, self.core_color, transform.position, int(ring_radius), 1)
         pygame.draw.circle(
             screen,
             self.core_color,
@@ -130,13 +134,15 @@ class ShooterRenderStrategy:
         self.thickness = thickness
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
+        now = time.time()
+        pulse = 0.5 + 0.5 * math.sin(now * 8.0)
         draw_neon_glow(
             surface=screen,
             color=self.outer_color,
             center_x=int(transform.position.x),
             center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
-            layers=3,
+            radius=max(1, int(self.radius + 2 + pulse * 2)),
+            layers=4,
         )
         pygame.draw.circle(
             screen,
@@ -148,6 +154,12 @@ class ShooterRenderStrategy:
 
         pygame.draw.circle(screen, self.inner_color, transform.position, max(1, int(self.radius - 5)))
         pygame.draw.circle(screen, ENEMY_SHOOTER_CORE_COLOR, transform.position, 5)
+
+        ring_rect = pygame.Rect(0, 0, int((self.radius + 10) * 2), int((self.radius + 10) * 2))
+        ring_rect.center = (int(transform.position.x), int(transform.position.y))
+        angle = (now * 5.0) % (math.pi * 2)
+        pygame.draw.arc(screen, self.outer_color, ring_rect, angle, angle + math.pi * 0.8, 2)
+        pygame.draw.arc(screen, ENEMY_SHOOTER_CORE_COLOR, ring_rect, angle + math.pi, angle + math.pi * 1.75, 2)
 
         shoot = entity.get_component(ShootComponent)
         if shoot is None or shoot.target_direction.length_squared() <= 0:
@@ -230,32 +242,44 @@ class PortalRenderStrategy:
         background_color: tuple[int, int, int],
         arc_color: tuple[int, int, int],
         base_radius: float = 22.0,
+        vortex_color: tuple[int, int, int] | None = None,
+        spin_speed: float = 5.0,
     ) -> None:
         self.neon_color = neon_color
         self.background_color = background_color
         self.arc_color = arc_color
         self.base_radius = base_radius
+        self.vortex_color = arc_color if vortex_color is None else vortex_color
+        self.spin_speed = spin_speed
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
         center_x = int(transform.position.x)
         center_y = int(transform.position.y)
+        now = time.time()
 
-        pulse_radius = self.base_radius + abs(math.sin(time.time() * 5.0)) * 4.0
+        pulse_radius = self.base_radius + abs(math.sin(now * self.spin_speed)) * 4.0
         radius_int = int(pulse_radius)
 
         draw_neon_glow(screen, self.neon_color, center_x, center_y, int(pulse_radius + 2), 4)
+        draw_neon_glow(screen, self.arc_color, center_x, center_y, int(pulse_radius - 2), 2)
 
-        aura_radius = int(pulse_radius + 3)
+        aura_radius = int(pulse_radius + 4)
         aura_surface = pygame.Surface((aura_radius * 2, aura_radius * 2), pygame.SRCALPHA)
         aura_center = (aura_radius, aura_radius)
-        pygame.draw.circle(aura_surface, (*self.neon_color, 180), aura_center, aura_radius)
+        pygame.draw.circle(aura_surface, (*self.neon_color, 150), aura_center, aura_radius)
+        pygame.draw.circle(aura_surface, (*self.arc_color, 100), aura_center, max(1, aura_radius - 5), 3)
         screen.blit(aura_surface, (center_x - aura_radius, center_y - aura_radius))
 
-        pygame.draw.circle(screen, self.background_color, (center_x, center_y), max(1, int(pulse_radius - 5)))
+        inner_background_radius = max(1, int(pulse_radius - 6))
+        pygame.draw.circle(screen, self.background_color, (center_x, center_y), inner_background_radius)
         pygame.draw.circle(screen, self.neon_color, (center_x, center_y), radius_int, 3)
+        pygame.draw.circle(screen, self.arc_color, (center_x, center_y), max(1, radius_int - 3), 1)
 
-        angle_start = (time.time() * 5.0) % (math.pi * 2)
+        vortex_radius = max(2, int(pulse_radius * 0.45 + math.sin(now * (self.spin_speed * 1.8)) * 1.5))
+        pygame.draw.circle(screen, self.vortex_color, (center_x, center_y), vortex_radius, 2)
+
+        angle_start = (now * self.spin_speed) % (math.pi * 2)
         rect = pygame.Rect(
             int(center_x - pulse_radius),
             int(center_y - pulse_radius),
@@ -263,6 +287,21 @@ class PortalRenderStrategy:
             int(pulse_radius * 2),
         )
         pygame.draw.arc(screen, self.arc_color, rect, angle_start, angle_start + math.pi * 1.25, 4)
+        pygame.draw.arc(
+            screen,
+            self.arc_color,
+            rect,
+            angle_start + math.pi,
+            angle_start + math.pi + math.pi * 0.85,
+            3,
+        )
+
+        sparkle_orbit_radius = pulse_radius + 2.0
+        for offset in (0.0, math.pi / 2, math.pi, math.pi * 1.5):
+            sparkle_angle = angle_start * 1.1 + offset
+            sparkle_x = int(center_x + math.cos(sparkle_angle) * sparkle_orbit_radius)
+            sparkle_y = int(center_y + math.sin(sparkle_angle) * sparkle_orbit_radius)
+            pygame.draw.circle(screen, self.arc_color, (sparkle_x, sparkle_y), 2)
 
 
 class NeonCoreEnemyRenderStrategy:
@@ -273,15 +312,18 @@ class NeonCoreEnemyRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
+        now = time.time()
+        pulse = 0.5 + 0.5 * math.sin(now * 7.4)
         draw_neon_glow(
             surface=screen,
             color=self.outer_color,
             center_x=int(transform.position.x),
             center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
-            layers=3,
+            radius=max(1, int(self.radius + 2 + pulse * 2)),
+            layers=4,
         )
         pygame.draw.circle(screen, self.outer_color, transform.position, self.radius)
+        pygame.draw.circle(screen, self.core_color, transform.position, int(self.radius + 4 + pulse * 2), 1)
         pygame.draw.circle(screen, self.core_color, transform.position, max(1, int(self.radius // 3)))
 
 
@@ -292,6 +334,8 @@ class ChargeEnemyRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         charge = entity.get_component(ChargeComponent)
+        now = time.time()
+        pulse = 0.5 + 0.5 * math.sin(now * 9.0)
         if charge is None:
             neon_color = self.base_color
         else:
@@ -300,14 +344,18 @@ class ChargeEnemyRenderStrategy:
                 line_color = (245, 245, 245) if charge.is_target_locked else (230, 60, 60)
                 line_width = 4 if charge.is_target_locked else 2
                 pygame.draw.line(screen, line_color, transform.position, charge.locked_target, line_width)
+                aim_ring = int(self.radius + 8 + pulse * 3)
+                pygame.draw.circle(screen, line_color, transform.position, aim_ring, 2)
+            elif charge.state == "attacking":
+                pygame.draw.circle(screen, (230, 60, 60), transform.position, int(self.radius + 10), 2)
 
         draw_neon_glow(
             surface=screen,
             color=neon_color,
             center_x=int(transform.position.x),
             center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
-            layers=3,
+            radius=max(1, int(self.radius + 2 + pulse * 2)),
+            layers=4,
         )
         pygame.draw.circle(screen, neon_color, transform.position, self.radius)
         pygame.draw.circle(screen, (245, 245, 245), transform.position, max(1, int(self.radius // 3)))
@@ -323,6 +371,7 @@ class ExplosiveEnemyRenderStrategy:
         explosive = entity.get_component(ExplosiveComponent)
         color = self.base_color
         timer = 0.0 if explosive is None else explosive.timer
+        now = time.time()
         if timer > 2.5 and int(timer * 15) % 2 == 0:
             color = (245, 245, 245)
 
@@ -331,11 +380,18 @@ class ExplosiveEnemyRenderStrategy:
             color=color,
             center_x=int(transform.position.x),
             center_y=int(transform.position.y),
-            radius=max(1, int(self.radius + 1)),
+            radius=max(1, int(self.radius + 2 + abs(math.sin(now * 8.0)) * 3)),
             layers=4,
         )
         pygame.draw.circle(screen, color, transform.position, self.radius)
         pygame.draw.circle(screen, (245, 245, 245), transform.position, max(1, int(self.radius // 3)))
+
+        orbit = self.radius + 7
+        for index in range(3):
+            angle = (now * 3.8) + index * (math.pi * 2 / 3)
+            px = int(transform.position.x + math.cos(angle) * orbit)
+            py = int(transform.position.y + math.sin(angle) * orbit)
+            pygame.draw.circle(screen, self.warning_color, (px, py), 2)
 
         if timer > 3.5:
             indicator_radius = min(80.0, (timer - 3.5) * 80.0)
@@ -366,7 +422,8 @@ class TurretEnemyRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         turret = entity.get_component(TurretComponent)
-        pulse = abs(math.sin(time.time() * self.pulse_speed)) * self.pulse_gain
+        now = time.time()
+        pulse = abs(math.sin(now * self.pulse_speed)) * self.pulse_gain
         core_color = self.idle_color
         direction = pygame.Vector2(1, 0)
         shot_angles: tuple[float, ...] = ()
@@ -386,6 +443,11 @@ class TurretEnemyRenderStrategy:
         pygame.draw.circle(screen, self.base_color, transform.position, self.radius)
         pygame.draw.circle(screen, self.middle_color, transform.position, max(1, int(self.radius - 5)))
         pygame.draw.circle(screen, core_color, transform.position, 5)
+
+        ring_rect = pygame.Rect(0, 0, int((self.radius + 9) * 2), int((self.radius + 9) * 2))
+        ring_rect.center = (int(transform.position.x), int(transform.position.y))
+        angle = (now * 4.2) % (math.pi * 2)
+        pygame.draw.arc(screen, core_color, ring_rect, angle, angle + math.pi * 0.9, 2)
 
         if shot_angles:
             for angle in shot_angles:
@@ -427,7 +489,8 @@ class ShieldMinibossRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
-        pulse = abs(math.sin(time.time() * 6.0)) * 4.0
+        now = time.time()
+        pulse = abs(math.sin(now * 6.0)) * 4.0
         draw_neon_glow(
             surface=screen,
             color=self.base_color,
@@ -441,6 +504,13 @@ class ShieldMinibossRenderStrategy:
         pygame.draw.circle(screen, (245, 245, 245), transform.position, 5)
         pygame.draw.circle(screen, (245, 245, 245), transform.position, int(self.radius + 9), 2)
 
+        ring_radius = self.radius + 12
+        ring_rect = pygame.Rect(0, 0, int(ring_radius * 2), int(ring_radius * 2))
+        ring_rect.center = (int(transform.position.x), int(transform.position.y))
+        angle = (now * 3.6) % (math.pi * 2)
+        pygame.draw.arc(screen, self.base_color, ring_rect, angle, angle + math.pi * 0.8, 3)
+        pygame.draw.arc(screen, (245, 245, 245), ring_rect, angle + math.pi, angle + math.pi * 1.7, 2)
+
 
 class SniperMinibossRenderStrategy:
     def __init__(self, base_color: tuple[int, int, int], radius: float) -> None:
@@ -449,6 +519,7 @@ class SniperMinibossRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         sniper = entity.get_component(SniperComponent)
+        now = time.time()
         draw_neon_glow(
             surface=screen,
             color=self.base_color,
@@ -460,8 +531,26 @@ class SniperMinibossRenderStrategy:
         pygame.draw.circle(screen, self.base_color, transform.position, self.radius)
         pygame.draw.circle(screen, (5, 5, 8), transform.position, max(1, int(self.radius - 5)))
         pygame.draw.circle(screen, (245, 245, 245), transform.position, 4)
+
+        scope_radius = int(self.radius + 8 + abs(math.sin(now * 5.6)) * 2)
+        pygame.draw.circle(screen, (245, 245, 245), transform.position, scope_radius, 1)
         if sniper is not None and sniper.state == "aiming":
             pygame.draw.line(screen, (245, 245, 245), transform.position, sniper.aim_target, 2)
+            pygame.draw.circle(screen, self.base_color, sniper.aim_target, 8, 1)
+            pygame.draw.line(
+                screen,
+                (245, 245, 245),
+                (sniper.aim_target.x - 6, sniper.aim_target.y),
+                (sniper.aim_target.x + 6, sniper.aim_target.y),
+                1,
+            )
+            pygame.draw.line(
+                screen,
+                (245, 245, 245),
+                (sniper.aim_target.x, sniper.aim_target.y - 6),
+                (sniper.aim_target.x, sniper.aim_target.y + 6),
+                1,
+            )
 
 
 class BossRenderStrategy:
@@ -544,7 +633,8 @@ class MortarRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
-        pulse = abs(math.sin(time.time() * 5.0)) * 2.0
+        now = time.time()
+        pulse = abs(math.sin(now * 5.0)) * 2.0
         draw_neon_glow(
             surface=screen,
             color=self.base_color,
@@ -558,6 +648,15 @@ class MortarRenderStrategy:
         outer_rect.center = (int(transform.position.x), int(transform.position.y))
         pygame.draw.rect(screen, self.base_color, outer_rect)
         pygame.draw.rect(screen, (5, 5, 8), outer_rect, 2)
+
+        barrel_len = int(self.radius * 1.2)
+        angle = now * 1.9
+        tip = (
+            int(transform.position.x + math.cos(angle) * barrel_len),
+            int(transform.position.y + math.sin(angle) * barrel_len),
+        )
+        pygame.draw.line(screen, (245, 245, 245), transform.position, tip, 3)
+        pygame.draw.circle(screen, (245, 245, 245), tip, 3)
 
 
 class VirusGlitchRenderStrategy:
