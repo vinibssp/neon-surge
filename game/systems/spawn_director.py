@@ -27,7 +27,8 @@ class SpawnDirector:
         self._spawn_timer = 0.0
 
     def reset(self, elapsed_time: float) -> None:
-        self._spawn_timer = self.strategy.initial_timer(self.world, elapsed_time)
+        del elapsed_time
+        self._spawn_timer = 0.0
 
     def update(self, dt: float, elapsed_time: float) -> None:
         self._update_enemy_portals(dt, elapsed_time)
