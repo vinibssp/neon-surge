@@ -125,12 +125,17 @@ Resiliência operacional:
 - UI orientada a composição (`builders`, `configs`, `controllers`)
 - Estado de foco/seleção com fonte única de verdade
 - Componentes declarativos e reutilizáveis
+- Componentes devem ser criados por factories declarativas (`ButtonConfig`, `LabelConfig`, `PanelConfig`, `SliderConfig`, `CheckboxConfig`, `TextInputConfig`, `StatusBarConfig`)
 - Decisões de tema/estilo centralizadas e desacopladas da regra de fluxo
 - Componentes visuais não devem conter regra de domínio
 
 ### Navegação de UI
 
 - Contrato único: evento `pygame_gui` -> `PygameGUIEventAdapter` -> `UINavigator` -> ação
+- `UINavigator` deve operar sobre `FocusableControl` (não apenas botão), suportando no mesmo fluxo: `button`, `slider`, `checkbox`, `text_entry`
+- `PygameGUIEventAdapter` é a fronteira única para mouse/teclado/eventos do framework; cenas não podem criar rota paralela de navegação
+- A lista ordenada de `controls` é a fonte oficial da ordem de foco
+- `UINavigated`, `UIConfirmed` e `UICancelled` devem continuar sendo o contrato de evento de domínio para feedback transversal (áudio/UI)
 - Sem navegação baseada em “player cursor”
 - Sem tradução manual de input bruto para navegação de menu
 - Evitar caminhos paralelos/ambíguos para confirmar, cancelar e navegar
@@ -139,6 +144,7 @@ Resiliência operacional:
 
 - `BaseMenuScene` é o contrato base para ciclo de menu (`input/update/render`)
 - Cenas de menu devem orquestrar transições, não implementar motor de navegação
+- Cenas devem registrar navegação via `set_navigator(controls=..., actions=...)`; `buttons=` é compatibilidade legada e não deve ser usado em novas telas
 - Ordem de foco deve refletir ordem de ações registradas
 - Cancelamento (`Esc`/`B`) explícito e consistente por cena
 - Overlays com contrato compartilhado via composição/factory (ex.: `OverlaySceneFactory`)
@@ -153,6 +159,7 @@ Resiliência operacional:
 - Novas telas devem estender por composição, não duplicar estrutura
 - Separar layout/configuração da decisão de fluxo
 - Evitar números mágicos de layout; preferir specs/configs declarativos
+- Interações de confirmação devem permanecer no `UINavigator` (inclusive toggle de `checkbox`), sem lógica duplicada na cena
 - Preservar contratos públicos estáveis para evolução incremental
 
 ---

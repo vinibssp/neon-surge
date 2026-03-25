@@ -189,7 +189,8 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 #### UI
 
 - Menus usam eventos de alto nível do `pygame_gui`
-- `PygameGUIEventAdapter` traduz eventos de framework para chamadas de domínio
+- `PygameGUIEventAdapter` é a fronteira única e traduz eventos de framework para chamadas de domínio
+- `UINavigator` opera sobre `FocusableControl` e unifica navegação para `button`, `slider`, `checkbox`, `text_entry`
 - `UINavigator` mantém estado lógico/ações e publica `UINavigated`/`UIConfirmed`/`UICancelled`
 
 ### 9) Arquitetura de UI, Menus e Cenas de Menu
@@ -200,11 +201,13 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 - contrato explícito entre eventos de UI, adapter e ações de cena
 - responsabilidade da cena: orquestrar fluxo; responsabilidade da UI: estado visual e estrutura
 - estilo visual centralizado em tema, sem decisões visuais espalhadas em regras de domínio
+- construção de widgets via configs/factories (`create_button`, `create_label`, `create_panel`, `create_slider`, `create_checkbox`, `create_text_input`, `create_status_bar`)
 
 #### Contratos arquiteturais
 
 - `BaseMenuScene` define o ciclo padrão de menu (input/update/render) e evita duplicação
-- cenas de menu registram `actions` por controle (`dict[UIControl, Callable]`) no navigator
+- cenas de menu registram `controls` e `actions` por controle (`dict[UIControl, Callable]`) no navigator
+- ordem da lista `controls` define ordem de foco/navegação
 - overlays compartilham construção via factory de cena (`OverlaySceneFactory`) para consistência de contrato
 - componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
 
@@ -213,6 +216,7 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 - menu scene não concentra detalhe de composição de widget em cascata
 - menu scene não usa estado global/flags implícitas para navegação
 - overlays usam `transparent=True` e mantêm comportamento previsível de cancelamento
+- confirmação/cancelamento de controles passa pelo `UINavigator`, sem rota paralela no `handle_input`
 - extensões de menu devem adicionar novas ações/componentes sem alterar contratos base
 
 ### 10) Query API completa
