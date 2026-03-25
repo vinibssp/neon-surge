@@ -35,6 +35,7 @@ class LabyrinthFactory:
                     edge_color=(28, 180, 96),
                     width=float(wall_rect.width),
                     height=float(wall_rect.height),
+                    line_thickness=10,
                 )
             )
         )

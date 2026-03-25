@@ -605,11 +605,19 @@ class VirusGlitchRenderStrategy:
 
 
 class LabyrinthWallRenderStrategy:
-    def __init__(self, fill_color: tuple[int, int, int], edge_color: tuple[int, int, int], width: float, height: float) -> None:
+    def __init__(
+        self,
+        fill_color: tuple[int, int, int],
+        edge_color: tuple[int, int, int],
+        width: float,
+        height: float,
+        line_thickness: int,
+    ) -> None:
         self.fill_color = fill_color
         self.edge_color = edge_color
         self.width = width
         self.height = height
+        self.line_thickness = max(1, int(line_thickness))
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
@@ -619,9 +627,15 @@ class LabyrinthWallRenderStrategy:
             int(self.width),
             int(self.height),
         )
-        # Bloco contínuo sem riscos internos para leitura visual limpa.
-        rect = rect.inflate(2, 2)
-        pygame.draw.rect(screen, self.fill_color, rect)
+        if rect.width >= rect.height:
+            start = (rect.left, rect.centery)
+            end = (rect.right, rect.centery)
+        else:
+            start = (rect.centerx, rect.top)
+            end = (rect.centerx, rect.bottom)
+
+        pygame.draw.line(screen, self.edge_color, start, end, self.line_thickness + 2)
+        pygame.draw.line(screen, self.fill_color, start, end, self.line_thickness)
 
 
 class LabyrinthKeyRenderStrategy:

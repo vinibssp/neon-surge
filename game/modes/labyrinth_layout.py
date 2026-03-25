@@ -197,6 +197,12 @@ class LabyrinthLayout:
         border_exit_cell: CellCoord,
     ) -> list[Rect]:
         wall_rects: list[Rect] = []
+        layout_bounds = Rect(
+            int(geometry.origin.x),
+            int(geometry.origin.y),
+            int(width * geometry.cell_size),
+            int(height * geometry.cell_size),
+        )
         opened_border_direction = cls._border_open_direction(border_exit_cell, width, height)
 
         for y in range(height):
@@ -251,7 +257,14 @@ class LabyrinthLayout:
                         )
                     )
 
-        return _dedupe_rects(wall_rects)
+        normalized_rects: list[Rect] = []
+        for wall_rect in wall_rects:
+            clipped = wall_rect.clip(layout_bounds)
+            if clipped.width <= 0 or clipped.height <= 0:
+                continue
+            normalized_rects.append(clipped)
+
+        return _dedupe_rects(normalized_rects)
 
     @staticmethod
     def _border_open_direction(cell: CellCoord, width: int, height: int) -> int:
