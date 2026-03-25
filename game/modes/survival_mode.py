@@ -82,25 +82,24 @@ class SurvivalMode(GameModeStrategy):
             else:
                 env_line = f"Evento em: {float(env_state.get('cooldown_left', 0.0)):.1f}s"
 
-        bomb_line = "Bomba Nuclear: indisponivel"
+        bomb_line = "Bomba [I]: indisponivel"
         player = scene.world.player
         if player is not None:
             bomb = player.get_component(NuclearBombComponent)
             if bomb is not None:
                 bomb_line = (
-                    f"Bomba Nuclear [I]: {bomb.charges} carga(s) | Progresso: "
+                    f"Bomba [I]: {bomb.charges} carga(s) | Progresso: "
                     f"{bomb.collectibles_progress}/{bomb.charge_threshold}"
                 )
 
-        return [
-            "Modo: Sobrevivencia",
-            f"Tempo: {scene.elapsed_time:.2f}s",
-            f"Nivel: {scene.world.level}",
-            f"Escalada em: {next_level_in:.1f}s",
+        lines = [
+            f"Sobrevivencia | Nivel {scene.world.level} | Tempo {scene.elapsed_time:.1f}s",
+            f"Escalada em: {next_level_in:.1f}s | {env_line}",
             bomb_line,
-            lava_line,
-            env_line,
         ]
+        if lava_line:
+            lines.append(lava_line)
+        return lines
 
     def create_retry_strategy(self) -> GameModeStrategy:
         return SurvivalMode(config=self.config)

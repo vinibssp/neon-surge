@@ -84,8 +84,8 @@ class GameOverScene(BaseMenuScene):
     ) -> str:
         lines = [f"<font size='4'><b>{subtitle}</b></font>"]
 
-        if death_cause is not None:
-            lines.append(f"<font color='#ff8f8f'><b>Causa da morte:</b> {death_cause}</font>")
+        lines.append("<br><font color='#ffb4b4'><b>Causa da morte</b></font>")
+        lines.append(f"<font color='#ffd7d7'>{GameOverScene._format_death_cause(death_cause)}</font>")
 
         lines.append("<br><font color='#9ddcff'><b>Resumo da partida</b></font>")
         lines.append(f"Nivel alcancado: {reached_level}")
@@ -109,6 +109,28 @@ class GameOverScene(BaseMenuScene):
             return None
         kind, _ = max(enemy_spawned_by_kind.items(), key=lambda item: item[1])
         return kind.replace("_", " ").title()
+
+    @staticmethod
+    def _format_death_cause(death_cause: str | None) -> str:
+        if death_cause is None or not death_cause.strip():
+            return "Falha critica nao identificada."
+
+        normalized = death_cause.strip().lower()
+        if "projetil" in normalized:
+            return "Voce foi atingido por um projetil inimigo."
+        if "colisao" in normalized or "impacto" in normalized:
+            return "Voce colidiu com um inimigo."
+        if "morteiro" in normalized:
+            return "Voce foi pego na explosao de um morteiro."
+        if "lava" in normalized:
+            return "Voce permaneceu na zona de lava durante a fase ativa."
+        if "buraco negro" in normalized:
+            return "Voce foi consumido por um buraco negro."
+
+        text = death_cause.strip()
+        if text.endswith((".", "!", "?")):
+            return text[0].upper() + text[1:]
+        return (text[0].upper() + text[1:]) + "."
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene
