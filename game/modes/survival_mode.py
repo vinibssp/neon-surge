@@ -56,50 +56,18 @@ class SurvivalMode(GameModeStrategy):
         return SurvivalSpawnStrategy(config=self.config)
 
     def build_hud_lines(self, scene: "GameScene") -> list[str]:
-        elapsed_in_level = scene.elapsed_time % self.config.level_duration
-        next_level_in = max(0.0, self.config.level_duration - elapsed_in_level)
-        lava_state = scene.world.runtime_state.get("survival_lava")
-        env_state = scene.world.runtime_state.get("environment_event")
-        lava_line = ""
-        env_line = ""
-        if isinstance(lava_state, dict):
-            state = str(lava_state.get("state", "idle"))
-            if state == "active":
-                lava_line = f"Lava ativa: {float(lava_state.get('active_time_left', 0.0)):.1f}s"
-            elif state == "warning":
-                lava_line = f"Lava em: {float(lava_state.get('time_to_lava', 0.0)):.1f}s"
-
-        if isinstance(env_state, dict):
-            event_name = env_state.get("name")
-            if isinstance(event_name, str):
-                names = {
-                    "snow_drift": "Neve",
-                    "water_region": "Agua",
-                    "bullet_cloud": "Nuvem de Balas",
-                    "black_hole": "Buraco Negro",
-                }
-                env_line = f"Evento: {names.get(event_name, event_name)} ({float(env_state.get('time_left', 0.0)):.1f}s)"
-            else:
-                env_line = f"Evento em: {float(env_state.get('cooldown_left', 0.0)):.1f}s"
-
-        bomb_line = "Bomba [I]: indisponivel"
+        bomb_charges = 0
         player = scene.world.player
         if player is not None:
             bomb = player.get_component(NuclearBombComponent)
             if bomb is not None:
-                bomb_line = (
-                    f"Bomba [I]: {bomb.charges} carga(s) | Progresso: "
-                    f"{bomb.collectibles_progress}/{bomb.charge_threshold}"
-                )
+                bomb_charges = bomb.charges
 
-        lines = [
-            f"Sobrevivencia | Nivel {scene.world.level} | Tempo {scene.elapsed_time:.1f}s",
-            f"Escalada em: {next_level_in:.1f}s | {env_line}",
-            bomb_line,
+        return [
+            f"Tempo vivo: {scene.elapsed_time:.1f}s",
+            f"Moedas: {scene.session_stats.collectible_collected_total}",
+            f"Bomba [I]: {bomb_charges} carga(s)",
         ]
-        if lava_line:
-            lines.append(lava_line)
-        return lines
 
     def create_retry_strategy(self) -> GameModeStrategy:
         return SurvivalMode(config=self.config)
