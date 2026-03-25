@@ -188,8 +188,12 @@ class EnemyFactory:
         cls,
         registry: dict[str, Callable[[Vector2], Entity]],
         spawn_weights: dict[str, float],
+        allowed_kinds: list[str] | None = None,
     ) -> str:
         kinds = list(registry.keys())
+        if allowed_kinds is not None:
+            allowed_set = set(allowed_kinds)
+            kinds = [kind for kind in kinds if kind in allowed_set]
         if not kinds:
             raise ValueError("No enemy kinds registered for requested category")
         weights = [spawn_weights.get(kind, 0.0) for kind in kinds]
@@ -214,14 +218,41 @@ class EnemyFactory:
         return cls._choose_random_kind_from(cls._enemy_registry, cls._enemy_spawn_weights)
 
     @classmethod
+    def choose_random_enemy_kind_from(cls, allowed_kinds: list[str]) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(
+            cls._enemy_registry,
+            cls._enemy_spawn_weights,
+            allowed_kinds=allowed_kinds,
+        )
+
+    @classmethod
     def choose_random_miniboss_kind(cls) -> str:
         cls._ensure_registry()
         return cls._choose_random_kind_from(cls._miniboss_registry, cls._miniboss_spawn_weights)
 
     @classmethod
+    def choose_random_miniboss_kind_from(cls, allowed_kinds: list[str]) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(
+            cls._miniboss_registry,
+            cls._miniboss_spawn_weights,
+            allowed_kinds=allowed_kinds,
+        )
+
+    @classmethod
     def choose_random_boss_kind(cls) -> str:
         cls._ensure_registry()
         return cls._choose_random_kind_from(cls._boss_registry, cls._boss_spawn_weights)
+
+    @classmethod
+    def choose_random_boss_kind_from(cls, allowed_kinds: list[str]) -> str:
+        cls._ensure_registry()
+        return cls._choose_random_kind_from(
+            cls._boss_registry,
+            cls._boss_spawn_weights,
+            allowed_kinds=allowed_kinds,
+        )
 
     @classmethod
     def create_random_enemy(cls, position: Vector2) -> Entity:

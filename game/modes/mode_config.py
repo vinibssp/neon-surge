@@ -31,12 +31,12 @@ class RaceConfig:
     initial_spawn_cap: float = MODE_INITIAL_SPAWN_CAP
     portal_growth_levels: int = 2
     max_portals_per_cycle: int = 8
-    miniboss_start_level: int = 4
-    boss_start_level: int = 8
-    miniboss_spawn_chance: float = 0.18
-    boss_spawn_chance: float = 0.07
-    miniboss_spawn_chance_gain_per_level: float = 0.01
-    boss_spawn_chance_gain_per_level: float = 0.004
+    miniboss_start_level: int = 5
+    boss_start_level: int = 9
+    miniboss_spawn_chance: float = 0.15
+    boss_spawn_chance: float = 0.05
+    miniboss_spawn_chance_gain_per_level: float = 0.009
+    boss_spawn_chance_gain_per_level: float = 0.003
 
 
 @dataclass(frozen=True)
@@ -44,17 +44,17 @@ class RaceInfiniteConfig(RaceConfig):
     description: str = "Corrida infinita com aumento continuo de pressao a cada nivel."
     infinite: bool = True
     total_levels: int = 999_999
-    spawn_interval_base: float = 2.9
-    spawn_interval_min: float = 0.9
-    spawn_interval_level_step: float = 0.08
+    spawn_interval_base: float = 3.1
+    spawn_interval_min: float = 1.0
+    spawn_interval_level_step: float = 0.075
     portal_growth_levels: int = 1
     max_portals_per_cycle: int = 10
-    miniboss_start_level: int = 3
-    boss_start_level: int = 6
-    miniboss_spawn_chance: float = 0.22
-    boss_spawn_chance: float = 0.1
-    miniboss_spawn_chance_gain_per_level: float = 0.012
-    boss_spawn_chance_gain_per_level: float = 0.006
+    miniboss_start_level: int = 4
+    boss_start_level: int = 7
+    miniboss_spawn_chance: float = 0.20
+    boss_spawn_chance: float = 0.08
+    miniboss_spawn_chance_gain_per_level: float = 0.010
+    boss_spawn_chance_gain_per_level: float = 0.005
 
 
 @dataclass(frozen=True)
@@ -70,33 +70,33 @@ class SurvivalConfig:
     initial_spawn_cap: float = MODE_INITIAL_SPAWN_CAP
     portal_growth_time_step: float = 28.0
     max_portals_per_cycle: int = 8
-    miniboss_start_time: float = 45.0
-    boss_start_time: float = 120.0
-    miniboss_spawn_chance: float = 0.24
-    boss_spawn_chance: float = 0.10
-    miniboss_spawn_chance_gain_per_minute: float = 0.02
-    boss_spawn_chance_gain_per_minute: float = 0.01
+    miniboss_start_time: float = 55.0
+    boss_start_time: float = 135.0
+    miniboss_spawn_chance: float = 0.20
+    boss_spawn_chance: float = 0.08
+    miniboss_spawn_chance_gain_per_minute: float = 0.018
+    boss_spawn_chance_gain_per_minute: float = 0.008
 
 
 @dataclass(frozen=True)
 class SurvivalHardcoreConfig(SurvivalConfig):
     description: str = "Sobrevivencia extrema com ritmo agressivo e ondas densas."
     level_duration: float = 16.0
-    spawn_interval_base: float = 1.7
-    spawn_interval_min: float = 0.45
-    spawn_interval_level_step: float = 0.14
+    spawn_interval_base: float = 1.8
+    spawn_interval_min: float = 0.5
+    spawn_interval_level_step: float = 0.13
     enemy_lifetime: float = 14.0
     enemy_lifetime_gain_per_level: float = 0.6
     enemy_lifetime_max: float = 22.0
     initial_spawn_cap: float = 1.0
     portal_growth_time_step: float = 18.0
     max_portals_per_cycle: int = 12
-    miniboss_start_time: float = 25.0
-    boss_start_time: float = 70.0
-    miniboss_spawn_chance: float = 0.32
-    boss_spawn_chance: float = 0.16
-    miniboss_spawn_chance_gain_per_minute: float = 0.028
-    boss_spawn_chance_gain_per_minute: float = 0.014
+    miniboss_start_time: float = 35.0
+    boss_start_time: float = 85.0
+    miniboss_spawn_chance: float = 0.28
+    boss_spawn_chance: float = 0.14
+    miniboss_spawn_chance_gain_per_minute: float = 0.024
+    boss_spawn_chance_gain_per_minute: float = 0.012
 
 
 @dataclass(frozen=True)

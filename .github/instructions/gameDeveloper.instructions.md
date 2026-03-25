@@ -72,6 +72,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
+- Estratégias de spawn devem aplicar progressão de roster por fase (nível/tempo), liberando arquétipos de maior pressão de forma gradual
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 
@@ -166,6 +167,7 @@ Resiliência operacional:
 - `config.py` contém base global
 - Presets (`RaceConfig`, `RaceInfiniteConfig`, `SurvivalConfig`, `SurvivalHardcoreConfig`, etc.) concentram tuning por modo
 - Presets de modo devem concentrar tuning de política de spawn por categoria
+- Tuning global de dificuldade deve priorizar curva progressiva: frequência de spawn, chance por categoria e desbloqueio de roster
 
 ---
 

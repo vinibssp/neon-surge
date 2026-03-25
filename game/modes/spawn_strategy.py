@@ -10,6 +10,73 @@ from game.factories.enemy_factory import EnemyFactory
 from game.modes.mode_config import RaceConfig, SurvivalConfig
 
 
+EARLY_ENEMY_KINDS: tuple[str, ...] = (
+    "follower",
+    "shooter",
+    "quique",
+    "investida",
+    "explosivo",
+)
+
+MID_ENEMY_KINDS: tuple[str, ...] = (
+    *EARLY_ENEMY_KINDS,
+    "metralhadora",
+    "morteiro",
+    "estrafador_arcano",
+    "emboscador_escopeta",
+    "orbitador_hex",
+    "sombra_investida",
+)
+
+LATE_ENEMY_KINDS: tuple[str, ...] = (
+    *MID_ENEMY_KINDS,
+    "bombardeiro_runa",
+    "atirador_laser",
+    "kamehameha",
+    "lanca_chamas",
+    "fantasma",
+    "buffer",
+    "sapo",
+)
+
+EARLY_MINIBOSS_KINDS: tuple[str, ...] = (
+    "miniboss_espiral",
+    "miniboss_cacador",
+)
+
+MID_MINIBOSS_KINDS: tuple[str, ...] = (
+    *EARLY_MINIBOSS_KINDS,
+    "miniboss_escudo",
+    "miniboss_sniper",
+    "miniboss_laser_matrix",
+)
+
+LATE_MINIBOSS_KINDS: tuple[str, ...] = (
+    *MID_MINIBOSS_KINDS,
+    "miniboss_oraculo_kame",
+    "miniboss_piro_hidra",
+    "miniboss_fantasma_senhor",
+    "miniboss_alquimista",
+)
+
+EARLY_BOSS_KINDS: tuple[str, ...] = (
+    "boss",
+    "boss_artilharia",
+)
+
+MID_BOSS_KINDS: tuple[str, ...] = (
+    *EARLY_BOSS_KINDS,
+    "boss_caotico",
+)
+
+LATE_BOSS_KINDS: tuple[str, ...] = (
+    *MID_BOSS_KINDS,
+    "boss_colosso_laser",
+    "boss_druida_toxico",
+    "boss_soberano_espectral",
+)
+
+
 class SpawnStrategy(ABC):
     @abstractmethod
     def initial_timer(self, world: GameWorld, elapsed_time: float) -> float:
@@ -50,10 +117,31 @@ class RaceSpawnStrategy(SpawnStrategy):
         del elapsed_time
         category = self._choose_spawn_category(world.level)
         if category == "boss":
-            return EnemyFactory.choose_random_boss_kind()
+            return EnemyFactory.choose_random_boss_kind_from(self._boss_pool_for_level(world.level))
         if category == "miniboss":
-            return EnemyFactory.choose_random_miniboss_kind()
-        return EnemyFactory.choose_random_enemy_kind()
+            return EnemyFactory.choose_random_miniboss_kind_from(self._miniboss_pool_for_level(world.level))
+        return EnemyFactory.choose_random_enemy_kind_from(self._enemy_pool_for_level(world.level))
+
+    def _enemy_pool_for_level(self, level: int) -> list[str]:
+        if level <= 3:
+            return list(EARLY_ENEMY_KINDS)
+        if level <= 7:
+            return list(MID_ENEMY_KINDS)
+        return list(LATE_ENEMY_KINDS)
+
+    def _miniboss_pool_for_level(self, level: int) -> list[str]:
+        if level <= 6:
+            return list(EARLY_MINIBOSS_KINDS)
+        if level <= 10:
+            return list(MID_MINIBOSS_KINDS)
+        return list(LATE_MINIBOSS_KINDS)
+
+    def _boss_pool_for_level(self, level: int) -> list[str]:
+        if level <= 10:
+            return list(EARLY_BOSS_KINDS)
+        if level <= 15:
+            return list(MID_BOSS_KINDS)
+        return list(LATE_BOSS_KINDS)
 
     def _choose_spawn_category(self, level: int) -> str:
         if level < self.config.miniboss_start_level:
@@ -114,10 +202,31 @@ class SurvivalSpawnStrategy(SpawnStrategy):
         del world
         category = self._choose_spawn_category(elapsed_time)
         if category == "boss":
-            return EnemyFactory.choose_random_boss_kind()
+            return EnemyFactory.choose_random_boss_kind_from(self._boss_pool_for_time(elapsed_time))
         if category == "miniboss":
-            return EnemyFactory.choose_random_miniboss_kind()
-        return EnemyFactory.choose_random_enemy_kind()
+            return EnemyFactory.choose_random_miniboss_kind_from(self._miniboss_pool_for_time(elapsed_time))
+        return EnemyFactory.choose_random_enemy_kind_from(self._enemy_pool_for_time(elapsed_time))
+
+    def _enemy_pool_for_time(self, elapsed_time: float) -> list[str]:
+        if elapsed_time < 50.0:
+            return list(EARLY_ENEMY_KINDS)
+        if elapsed_time < 120.0:
+            return list(MID_ENEMY_KINDS)
+        return list(LATE_ENEMY_KINDS)
+
+    def _miniboss_pool_for_time(self, elapsed_time: float) -> list[str]:
+        if elapsed_time < 100.0:
+            return list(EARLY_MINIBOSS_KINDS)
+        if elapsed_time < 180.0:
+            return list(MID_MINIBOSS_KINDS)
+        return list(LATE_MINIBOSS_KINDS)
+
+    def _boss_pool_for_time(self, elapsed_time: float) -> list[str]:
+        if elapsed_time < 150.0:
+            return list(EARLY_BOSS_KINDS)
+        if elapsed_time < 240.0:
+            return list(MID_BOSS_KINDS)
+        return list(LATE_BOSS_KINDS)
 
     def _choose_spawn_category(self, elapsed_time: float) -> str:
         minute_factor = elapsed_time / 60.0

@@ -145,6 +145,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - `SpawnDirector` desacoplado de cena em `game/systems/spawn_director.py`
 - `SpawnStrategy` em `game/modes/spawn_strategy.py` opera por `GameWorld` + `elapsed_time`
 - cada modo controla a política de spawn por categoria (`enemy`, `miniboss`, `boss`)
+- pools de roster são liberados por fase (nível/tempo) para evitar picos injustos no early game
 - escala de spawn por modo:
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo
