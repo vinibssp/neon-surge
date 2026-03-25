@@ -9,6 +9,7 @@ from game.modes.mode_config import SurvivalConfig
 from game.modes.spawn_strategy import SpawnStrategy, SurvivalSpawnStrategy
 from game.systems.collision_system import CollisionSystem
 from game.systems.dash_system import DashSystem
+from game.systems.environment_event_system import EnvironmentEventSystem
 from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
 from game.systems.lifetime_system import LifetimeSystem
@@ -46,11 +47,37 @@ class SurvivalMode(GameModeStrategy):
     def build_hud_lines(self, scene: "GameScene") -> list[str]:
         elapsed_in_level = scene.elapsed_time % self.config.level_duration
         next_level_in = max(0.0, self.config.level_duration - elapsed_in_level)
+        lava_state = scene.world.runtime_state.get("survival_lava")
+        env_state = scene.world.runtime_state.get("environment_event")
+        lava_line = ""
+        env_line = ""
+        if isinstance(lava_state, dict):
+            state = str(lava_state.get("state", "idle"))
+            if state == "active":
+                lava_line = f"Lava ativa: {float(lava_state.get('active_time_left', 0.0)):.1f}s"
+            elif state == "warning":
+                lava_line = f"Lava em: {float(lava_state.get('time_to_lava', 0.0)):.1f}s"
+
+        if isinstance(env_state, dict):
+            event_name = env_state.get("name")
+            if isinstance(event_name, str):
+                names = {
+                    "snow_drift": "Neve",
+                    "water_region": "Agua",
+                    "bullet_cloud": "Nuvem de Balas",
+                    "black_hole": "Buraco Negro",
+                }
+                env_line = f"Evento: {names.get(event_name, event_name)} ({float(env_state.get('time_left', 0.0)):.1f}s)"
+            else:
+                env_line = f"Evento em: {float(env_state.get('cooldown_left', 0.0)):.1f}s"
+
         return [
             "Modo: Sobrevivencia",
             f"Tempo: {scene.elapsed_time:.2f}s",
             f"Nivel: {scene.world.level}",
             f"Escalada em: {next_level_in:.1f}s",
+            lava_line,
+            env_line,
         ]
 
     def create_retry_strategy(self) -> GameModeStrategy:
@@ -60,6 +87,27 @@ class SurvivalMode(GameModeStrategy):
         return [
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),
+            SystemSpec(
+                system=EnvironmentEventSystem(
+                    world=world,
+                    interval=self.config.env_event_interval,
+                    duration=self.config.env_event_duration,
+                    snow_drag_multiplier=self.config.snow_drag_multiplier,
+                    snow_turn_response=self.config.snow_turn_response,
+                    water_pirate_count=self.config.water_pirate_count,
+                    bullet_cloud_fire_interval=self.config.bullet_cloud_fire_interval,
+                    black_hole_pull_radius=self.config.black_hole_pull_radius,
+                    black_hole_pull_strength=self.config.black_hole_pull_strength,
+                    black_hole_speed=self.config.black_hole_speed,
+                    black_hole_consume_radius=self.config.black_hole_consume_radius,
+                    lava_warning_duration=self.config.lava_warning_duration,
+                    lava_active_duration=self.config.lava_active_duration,
+                    lava_blink_duration=self.config.lava_blink_duration,
+                    lava_height_ratio=self.config.lava_height_ratio,
+                ),
+                phase=PipelinePhase.PRE_UPDATE,
+                priority=25,
+            ),
             SystemSpec(system=FollowSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=30),
             SystemSpec(system=ShootSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=40),
             SystemSpec(system=LifetimeSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=50),

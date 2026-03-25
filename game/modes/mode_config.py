@@ -76,6 +76,21 @@ class SurvivalConfig:
     boss_spawn_chance: float = 0.08
     miniboss_spawn_chance_gain_per_minute: float = 0.018
     boss_spawn_chance_gain_per_minute: float = 0.008
+    lava_interval: float = 42.0
+    lava_warning_duration: float = 4.0
+    lava_active_duration: float = 8.0
+    lava_blink_duration: float = 1.5
+    lava_height_ratio: float = 0.18
+    env_event_interval: float = 34.0
+    env_event_duration: float = 13.0
+    snow_drag_multiplier: float = 0.78
+    snow_turn_response: float = 0.16
+    water_pirate_count: int = 3
+    bullet_cloud_fire_interval: float = 0.08
+    black_hole_pull_radius: float = 190.0
+    black_hole_pull_strength: float = 280.0
+    black_hole_speed: float = 48.0
+    black_hole_consume_radius: float = 26.0
 
 
 @dataclass(frozen=True)
@@ -97,6 +112,21 @@ class SurvivalHardcoreConfig(SurvivalConfig):
     boss_spawn_chance: float = 0.14
     miniboss_spawn_chance_gain_per_minute: float = 0.024
     boss_spawn_chance_gain_per_minute: float = 0.012
+    lava_interval: float = 30.0
+    lava_warning_duration: float = 3.0
+    lava_active_duration: float = 9.0
+    lava_blink_duration: float = 2.0
+    lava_height_ratio: float = 0.23
+    env_event_interval: float = 24.0
+    env_event_duration: float = 14.0
+    snow_drag_multiplier: float = 0.72
+    snow_turn_response: float = 0.12
+    water_pirate_count: int = 4
+    bullet_cloud_fire_interval: float = 0.055
+    black_hole_pull_radius: float = 220.0
+    black_hole_pull_strength: float = 360.0
+    black_hole_speed: float = 55.0
+    black_hole_consume_radius: float = 30.0
 
 
 @dataclass(frozen=True)

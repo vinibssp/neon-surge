@@ -90,7 +90,83 @@ class GameScene(Scene):
     def render(self, screen: pygame.Surface) -> None:
         self.background_renderer.render(screen, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.render_system.render(screen)
+        self._render_survival_lava_overlay(screen)
+        self._render_environment_event_overlay(screen)
         self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
+
+    def _render_survival_lava_overlay(self, screen: pygame.Surface) -> None:
+        lava_state = self.world.runtime_state.get("survival_lava")
+        if not isinstance(lava_state, dict):
+            return
+
+        state = str(lava_state.get("state", "idle"))
+        height = int(float(lava_state.get("height", 0.0)))
+        if height <= 0:
+            return
+
+        top = SCREEN_HEIGHT - height
+        if state == "active":
+            blink_visible = bool(lava_state.get("blink_visible", True))
+            if not blink_visible:
+                return
+            overlay = pygame.Surface((SCREEN_WIDTH, height), pygame.SRCALPHA)
+            overlay.fill((255, 80, 35, 112))
+            screen.blit(overlay, (0, top))
+            pygame.draw.line(screen, (255, 206, 94), (0, top), (SCREEN_WIDTH, top), 3)
+            return
+
+        warning_left = float(lava_state.get("time_to_lava", 0.0))
+        warning_duration = float(lava_state.get("warning_duration", 0.0))
+        if state != "warning" or warning_duration <= 0.0:
+            return
+
+        alpha_ratio = max(0.2, min(1.0, 1.0 - (warning_left / warning_duration)))
+        alpha = int(40 + 90 * alpha_ratio)
+        overlay = pygame.Surface((SCREEN_WIDTH, height), pygame.SRCALPHA)
+        overlay.fill((255, 185, 42, alpha))
+        screen.blit(overlay, (0, top))
+        pygame.draw.line(screen, (255, 230, 120), (0, top), (SCREEN_WIDTH, top), 2)
+
+    def _render_environment_event_overlay(self, screen: pygame.Surface) -> None:
+        event_state = self.world.runtime_state.get("environment_event")
+        if not isinstance(event_state, dict):
+            return
+
+        event_name = event_state.get("name")
+        region = event_state.get("region")
+        if isinstance(event_name, str) and isinstance(region, tuple) and len(region) == 4:
+            rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+            if event_name == "snow_drift":
+                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                surface.fill((180, 220, 255, 70))
+                screen.blit(surface, rect.topleft)
+                pygame.draw.rect(screen, (220, 245, 255), rect, 2)
+            elif event_name == "water_region":
+                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                surface.fill((60, 145, 220, 85))
+                screen.blit(surface, rect.topleft)
+                pygame.draw.rect(screen, (115, 200, 255), rect, 2)
+            elif event_name == "bullet_cloud":
+                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+                surface.fill((255, 220, 120, 75))
+                screen.blit(surface, rect.topleft)
+                pygame.draw.rect(screen, (255, 236, 150), rect, 2)
+
+        black_hole = event_state.get("black_hole")
+        if not isinstance(black_hole, dict):
+            return
+        x = int(float(black_hole.get("x", 0.0)))
+        y = int(float(black_hole.get("y", 0.0)))
+        pull_radius = int(float(black_hole.get("pull_radius", 0.0)))
+        consume_radius = int(float(black_hole.get("consume_radius", 0.0)))
+        if pull_radius <= 0 or consume_radius <= 0:
+            return
+        pulse = 80 + int(35 * (0.5 + 0.5 * pygame.time.get_ticks() * 0.01 % 1.0))
+        aura = pygame.Surface((pull_radius * 2, pull_radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(aura, (142, 90, 255, pulse), (pull_radius, pull_radius), pull_radius)
+        screen.blit(aura, (x - pull_radius, y - pull_radius))
+        pygame.draw.circle(screen, (15, 8, 28), (x, y), consume_radius)
+        pygame.draw.circle(screen, (190, 148, 255), (x, y), consume_radius + 3, 2)
 
     def setup_level(self, level: int) -> None:
         self.world.level = level

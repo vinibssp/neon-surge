@@ -20,6 +20,7 @@ class GameWorld:
     player: Entity | None = None
     event_bus: EventBus = field(default_factory=EventBus)
     level: int = 1
+    runtime_state: dict[str, object] = field(default_factory=dict)
 
     def add_entity(self, entity: Entity) -> None:
         self.pending_add.append(entity)

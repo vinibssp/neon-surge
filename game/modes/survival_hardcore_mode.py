@@ -22,11 +22,10 @@ class SurvivalHardcoreMode(SurvivalMode):
         )
 
     def build_hud_lines(self, scene: "GameScene") -> list[str]:
-        return [
-            "Modo: Survival Hardcore",
-            f"Tempo: {scene.elapsed_time:.2f}s",
-            f"Nivel: {scene.world.level}",
-        ]
+        lines = super().build_hud_lines(scene)
+        if lines:
+            lines[0] = "Modo: Survival Hardcore"
+        return lines
 
     def create_retry_strategy(self) -> GameModeStrategy:
         return SurvivalHardcoreMode(config=self.config)
