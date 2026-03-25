@@ -1,24 +1,4 @@
 {
-  "fonts": [
-    {
-      "name": "noto_sans",
-      "point_size": "48",
-      "style": "bold",
-      "antialiased": "1"
-    },
-    {
-      "name": "noto_sans",
-      "point_size": "28",
-      "style": "bold",
-      "antialiased": "1"
-    },
-    {
-      "name": "noto_sans",
-      "point_size": "20",
-      "style": "bold",
-      "antialiased": "1"
-    }
-  ],
   "defaults": {
     "colours": {
       "normal_bg": "#170b2e",
@@ -194,6 +174,14 @@
       "line_spacing": "1.0",
       "text_horiz_alignment": "center",
       "text_vert_alignment": "center"
+    }
+  },
+
+  "text_box.#main_menu_title": {
+    "font": {
+      "name": "noto_sans",
+      "size": "56",
+      "bold": "1"
     }
   },
 

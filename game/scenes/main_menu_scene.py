@@ -51,7 +51,7 @@ class MainMenuScene(BaseMenuScene):
             manager=self.ui_manager,
             container=self.menu_panel,
             config=TextBoxConfig(
-                html_text="<font size='8' color='#00dcff'><b>NEON SURGE</b></font>",
+                html_text="<font color='#00dcff'><b>NEON SURGE</b></font>",
                 rect=pygame.Rect(0, 20, SCREEN_WIDTH, 56),
                 object_id="#main_menu_title",
             ),
