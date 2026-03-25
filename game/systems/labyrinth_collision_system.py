@@ -60,6 +60,10 @@ class LabyrinthCollisionSystem:
 
             if collided_with_wall and entity.has_tag("bullet"):
                 self.world.remove_entity(entity)
+                continue
+
+            if entity.has_tag("player"):
+                self._clamp_player_inside_layout(runtime, transform, collision)
 
     def _resolve_wall_overlap(
         self,
@@ -135,3 +139,19 @@ class LabyrinthCollisionSystem:
                 for rect_index in runtime.spatial_index.nearby_rect_indices((nx, ny)):
                     seen.add(rect_index)
         return list(seen)
+
+    @staticmethod
+    def _clamp_player_inside_layout(
+        runtime: LabyrinthRuntimeState,
+        transform: TransformComponent,
+        collision: CollisionComponent,
+    ) -> None:
+        origin = runtime.layout.geometry.origin
+        width_px = runtime.layout.width * runtime.layout.geometry.cell_size
+        height_px = runtime.layout.height * runtime.layout.geometry.cell_size
+        min_x = origin.x + collision.radius
+        min_y = origin.y + collision.radius
+        max_x = origin.x + width_px - collision.radius
+        max_y = origin.y + height_px - collision.radius
+        transform.position.x = max(min_x, min(max_x, transform.position.x))
+        transform.position.y = max(min_y, min(max_y, transform.position.y))
