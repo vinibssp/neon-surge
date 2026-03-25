@@ -7,10 +7,12 @@ import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
-from game.modes.mode_config import RaceConfig, SurvivalConfig
+from game.modes.mode_config import RaceConfig, RaceInfiniteConfig, SurvivalConfig, SurvivalHardcoreConfig
 from game.modes.one_vs_one_mode import OneVsOneMode
 from game.modes.labyrinth_mode import LabyrinthMode
+from game.modes.race_infinite_mode import RaceInfiniteMode
 from game.modes.race_mode import RaceMode
+from game.modes.survival_hardcore_mode import SurvivalHardcoreMode
 from game.modes.survival_mode import SurvivalMode
 from game.scenes.base_menu_scene import BaseMenuScene
 from game.scenes.game_scene import GameScene
@@ -112,7 +114,7 @@ class MainMenuScene(BaseMenuScene):
 
         button_specs = [
             ("CORRIDA", "#mode_button_race", self._start_race),
-            ("INFINITA", "#mode_button_infinite", self._start_survival),
+            ("INFINITA", "#mode_button_infinite", self._start_race_infinite),
             ("SOBREVIVENCIA", "#mode_button_survival", self._start_survival),
             ("HARDCORE", "#mode_button_hardcore", self._start_hardcore),
             ("LABIRINTO", "#mode_button_labyrinth", self._start_labyrinth),
@@ -184,7 +186,7 @@ class MainMenuScene(BaseMenuScene):
             ),
             ModeCardData(
                 title="Infinita",
-                description="Sobrevivencia infinita com progressao continua e sem fim.",
+                description=RaceInfiniteConfig().description,
                 color=(166, 88, 255),
             ),
             ModeCardData(
@@ -194,7 +196,7 @@ class MainMenuScene(BaseMenuScene):
             ),
             ModeCardData(
                 title="Hardcore",
-                description="Versao extrema da sobrevivencia, com pressao maxima.",
+                description=SurvivalHardcoreConfig().description,
                 color=(255, 110, 0),
             ),
             ModeCardData(
@@ -270,6 +272,9 @@ class MainMenuScene(BaseMenuScene):
     def _start_survival(self) -> None:
         self.stack.replace(GameScene(self.stack, mode=SurvivalMode()))
 
+    def _start_race_infinite(self) -> None:
+        self.stack.replace(GameScene(self.stack, mode=RaceInfiniteMode()))
+
     def _start_one_vs_one(self) -> None:
         self.stack.replace(GameScene(self.stack, mode=OneVsOneMode()))
 
@@ -277,7 +282,7 @@ class MainMenuScene(BaseMenuScene):
         self.stack.replace(GameScene(self.stack, mode=LabyrinthMode()))
 
     def _start_hardcore(self) -> None:
-        self.stack.replace(GameScene(self.stack, mode=SurvivalMode()))
+        self.stack.replace(GameScene(self.stack, mode=SurvivalHardcoreMode()))
 
     def _quit(self) -> None:
         while not self.stack.is_empty():

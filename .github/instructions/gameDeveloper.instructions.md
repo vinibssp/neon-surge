@@ -67,6 +67,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 ### Strategy Pattern
 
 - Variabilidade por strategy em IA, modos de jogo e renderização
+- Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
 - Evitar comportamento condicional por tipo dentro de systems centrais
@@ -160,7 +161,7 @@ Resiliência operacional:
 
 - Evitar números mágicos em blocos de regra
 - `config.py` contém base global
-- Presets (`RaceConfig`, `SurvivalConfig`, etc.) concentram tuning por modo
+- Presets (`RaceConfig`, `RaceInfiniteConfig`, `SurvivalConfig`, `SurvivalHardcoreConfig`, etc.) concentram tuning por modo
 - Presets de modo devem concentrar tuning de política de spawn por categoria
 
 ---

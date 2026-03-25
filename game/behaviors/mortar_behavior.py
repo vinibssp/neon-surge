@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import random
-
 from pygame import Vector2
 
 from game.behaviors.behavior import Behavior
@@ -34,8 +32,6 @@ class MortarBehavior(Behavior):
         turret.shot_timer = 0.0
 
         target = Vector2(player_transform.position)
-        target.x += random.uniform(-30.0, 30.0)
-        target.y += random.uniform(-30.0, 30.0)
         bullet_speed = 240.0
         explosion_radius = 40.0
         world.add_entity(

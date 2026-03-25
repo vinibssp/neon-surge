@@ -32,7 +32,8 @@ class RaceMode(GameModeStrategy):
         scene.setup_level(scene.world.level)
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
-        collectible_count = self.config.collectible_base + level
+        growth_steps = max(0, (level - 1) // max(1, self.config.collectible_growth_every))
+        collectible_count = self.config.collectible_base + growth_steps * self.config.collectible_growth_step
         for _ in range(collectible_count):
             scene.world.add_entity(CollectibleFactory.create(scene.random_play_area_position()))
 

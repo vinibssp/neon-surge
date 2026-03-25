@@ -44,10 +44,13 @@ class SurvivalMode(GameModeStrategy):
         return SurvivalSpawnStrategy(config=self.config)
 
     def build_hud_lines(self, scene: "GameScene") -> list[str]:
+        elapsed_in_level = scene.elapsed_time % self.config.level_duration
+        next_level_in = max(0.0, self.config.level_duration - elapsed_in_level)
         return [
             "Modo: Sobrevivencia",
             f"Tempo: {scene.elapsed_time:.2f}s",
             f"Nivel: {scene.world.level}",
+            f"Escalada em: {next_level_in:.1f}s",
         ]
 
     def create_retry_strategy(self) -> GameModeStrategy:

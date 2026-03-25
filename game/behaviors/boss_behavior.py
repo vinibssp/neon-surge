@@ -63,22 +63,14 @@ class BossBehavior(Behavior):
             interval = max(0.42, 0.85 - (boss.variant * 0.06))
             if boss.shot_timer >= interval:
                 boss.shot_timer = 0.0
-                spread = 8.0 + min(14.0, boss.variant * 2.0)
-                shot_count = 3 if boss.variant < 3 else 5
-                offsets = (
-                    (-spread, 0.0, spread)
-                    if shot_count == 3
-                    else (-spread * 1.6, -spread * 0.7, 0.0, spread * 0.7, spread * 1.6)
-                )
                 speed = 310.0 + min(85.0, boss.variant * 20.0)
-                for offset in offsets:
-                    world.spawn_enemy_bullet(
-                        transform.position,
-                        normalized(to_player).rotate(offset),
-                        speed,
-                        8.0,
-                        color=ENEMY_BOSS_STANDARD_BULLET_COLOR,
-                    )
+                world.spawn_enemy_bullet(
+                    transform.position,
+                    normalized(to_player),
+                    speed,
+                    8.0,
+                    color=ENEMY_BOSS_STANDARD_BULLET_COLOR,
+                )
 
             if boss.ability_timer > 3.0:
                 boss.state = "invoking"
@@ -171,16 +163,14 @@ class BossBehavior(Behavior):
         interval = max(0.34, 0.62 - (boss.variant * 0.03))
         if boss.shot_timer >= interval:
             boss.shot_timer = 0.0
-            base = normalized(to_player)
             speed = 320.0 + min(90.0, boss.variant * 18.0)
-            for offset in (-24.0, -10.0, 0.0, 10.0, 24.0):
-                world.spawn_enemy_bullet(
-                    transform.position,
-                    base.rotate(offset),
-                    speed=speed,
-                    radius=7.0,
-                    color=ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
-                )
+            world.spawn_enemy_bullet(
+                transform.position,
+                normalized(to_player),
+                speed=speed,
+                radius=7.0,
+                color=ENEMY_BOSS_CHAOTIC_BULLET_COLOR,
+            )
 
         if boss.ability_timer >= 3.2:
             boss.ability_timer = 0.0

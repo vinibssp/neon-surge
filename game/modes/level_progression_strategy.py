@@ -34,7 +34,7 @@ class RaceLevelProgressionStrategy(LevelProgressionStrategy):
             scene.level_portal_spawned = True
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:
-        if scene.world.level >= self.config.total_levels:
+        if not self.config.infinite and scene.world.level >= self.config.total_levels:
             scene.open_game_over(
                 title="Corrida Completa",
                 subtitle=f"Tempo: {scene.elapsed_time:.2f}s",

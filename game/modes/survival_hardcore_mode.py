@@ -1,0 +1,32 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from game.modes.game_mode_strategy import GameModeStrategy
+from game.modes.mode_config import SurvivalHardcoreConfig
+from game.modes.survival_mode import SurvivalMode
+
+if TYPE_CHECKING:
+    from game.scenes.game_scene import GameScene
+
+
+class SurvivalHardcoreMode(SurvivalMode):
+    def __init__(self, config: SurvivalHardcoreConfig | None = None) -> None:
+        super().__init__(config=SurvivalHardcoreConfig() if config is None else config)
+
+    def on_player_death(self, scene: "GameScene") -> None:
+        scene.open_game_over(
+            title="Hardcore Over",
+            subtitle=f"Resistiu: {scene.elapsed_time:.2f}s",
+            retry_strategy_factory=self.create_retry_strategy,
+        )
+
+    def build_hud_lines(self, scene: "GameScene") -> list[str]:
+        return [
+            "Modo: Survival Hardcore",
+            f"Tempo: {scene.elapsed_time:.2f}s",
+            f"Nivel: {scene.world.level}",
+        ]
+
+    def create_retry_strategy(self) -> GameModeStrategy:
+        return SurvivalHardcoreMode(config=self.config)

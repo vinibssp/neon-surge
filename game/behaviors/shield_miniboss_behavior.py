@@ -52,15 +52,13 @@ class ShieldMinibossBehavior(Behavior):
             return
         turret.shot_timer = 0.0
 
-        for angle in range(0, 360, 60):
-            direction = Vector2(1, 0).rotate(angle + turret.burst_timer * 35.0)
-            world.spawn_enemy_bullet(
-                transform.position,
-                direction,
-                speed=280.0,
-                radius=7.0,
-                color=ENEMY_SHIELD_BULLET_COLOR,
-            )
+        world.spawn_enemy_bullet(
+            transform.position,
+            normalized(player_transform.position - transform.position),
+            speed=280.0,
+            radius=7.0,
+            color=ENEMY_SHIELD_BULLET_COLOR,
+        )
 
 
 from game.core.world import GameWorld

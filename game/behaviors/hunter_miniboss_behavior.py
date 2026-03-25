@@ -32,15 +32,13 @@ class HunterMinibossBehavior(Behavior):
             return
         turret.shot_timer = 0.0
 
-        base_direction = normalized(to_player)
-        for offset in (-14.0, 0.0, 14.0):
-            world.spawn_enemy_bullet(
-                transform.position,
-                base_direction.rotate(offset),
-                speed=305.0,
-                radius=8.0,
-                color=ENEMY_HUNTER_BULLET_COLOR,
-            )
+        world.spawn_enemy_bullet(
+            transform.position,
+            normalized(to_player),
+            speed=305.0,
+            radius=8.0,
+            color=ENEMY_HUNTER_BULLET_COLOR,
+        )
 
 
 from game.core.world import GameWorld

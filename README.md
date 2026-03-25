@@ -94,7 +94,9 @@ Criação de entidades centralizada nas factories (`game/factories`):
 `GameScene` recebe um `GameModeStrategy` e delega comportamento ao modo:
 
 - `RaceMode`
+- `RaceInfiniteMode`
 - `SurvivalMode`
+- `SurvivalHardcoreMode`
 - `LabyrinthMode`
 
 Cada modo define:
@@ -128,7 +130,9 @@ Para evitar acoplamento com o `SpawnDirector` global, o modo usa `LabyrinthSpawn
 Configuração por preset em `game/modes/mode_config.py`:
 
 - `RaceConfig`
+- `RaceInfiniteConfig`
 - `SurvivalConfig`
+- `SurvivalHardcoreConfig`
 
 Isso remove blocos hardcoded e concentra tuning por modo.
 

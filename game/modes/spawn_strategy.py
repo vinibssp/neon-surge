@@ -60,18 +60,36 @@ class RaceSpawnStrategy(SpawnStrategy):
             return "enemy"
 
         if level < self.config.boss_start_level:
-            return "miniboss" if random.random() < self.config.miniboss_spawn_chance else "enemy"
+            level_offset = level - self.config.miniboss_start_level
+            miniboss_chance = min(
+                0.85,
+                self.config.miniboss_spawn_chance
+                + level_offset * self.config.miniboss_spawn_chance_gain_per_level,
+            )
+            return "miniboss" if random.random() < miniboss_chance else "enemy"
 
+        level_offset = level - self.config.boss_start_level
+        boss_chance = min(
+            0.45,
+            self.config.boss_spawn_chance
+            + level_offset * self.config.boss_spawn_chance_gain_per_level,
+        )
+        miniboss_chance = min(
+            0.75,
+            self.config.miniboss_spawn_chance
+            + level_offset * self.config.miniboss_spawn_chance_gain_per_level,
+        )
         roll = random.random()
-        if roll < self.config.boss_spawn_chance:
+        if roll < boss_chance:
             return "boss"
-        if roll < self.config.boss_spawn_chance + self.config.miniboss_spawn_chance:
+        if roll < boss_chance + miniboss_chance:
             return "miniboss"
         return "enemy"
 
     def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
         del elapsed_time
-        return max(1, world.level)
+        levels_per_step = max(1, self.config.portal_growth_levels)
+        return min(self.config.max_portals_per_cycle, 1 + (max(0, world.level - 1) // levels_per_step))
 
     def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
         del world, enemy
@@ -102,26 +120,40 @@ class SurvivalSpawnStrategy(SpawnStrategy):
         return EnemyFactory.choose_random_enemy_kind()
 
     def _choose_spawn_category(self, elapsed_time: float) -> str:
+        minute_factor = elapsed_time / 60.0
+        miniboss_chance = min(
+            0.85,
+            self.config.miniboss_spawn_chance
+            + minute_factor * self.config.miniboss_spawn_chance_gain_per_minute,
+        )
+        boss_chance = min(
+            0.55,
+            self.config.boss_spawn_chance + minute_factor * self.config.boss_spawn_chance_gain_per_minute,
+        )
         if elapsed_time < self.config.miniboss_start_time:
             return "enemy"
 
         if elapsed_time < self.config.boss_start_time:
-            return "miniboss" if random.random() < self.config.miniboss_spawn_chance else "enemy"
+            return "miniboss" if random.random() < miniboss_chance else "enemy"
 
         roll = random.random()
-        if roll < self.config.boss_spawn_chance:
+        if roll < boss_chance:
             return "boss"
-        if roll < self.config.boss_spawn_chance + self.config.miniboss_spawn_chance:
+        if roll < boss_chance + miniboss_chance:
             return "miniboss"
         return "enemy"
 
     def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
         del world
-        return max(1, int(elapsed_time // self.config.level_duration) + 1)
+        growth_step = max(1.0, self.config.portal_growth_time_step)
+        return min(self.config.max_portals_per_cycle, 1 + int(elapsed_time // growth_step))
 
     def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
-        del world
-        enemy.add_component(LifetimeComponent(time_left=self.config.enemy_lifetime))
+        lifetime = min(
+            self.config.enemy_lifetime_max,
+            self.config.enemy_lifetime + max(0, world.level - 1) * self.config.enemy_lifetime_gain_per_level,
+        )
+        enemy.add_component(LifetimeComponent(time_left=lifetime))
 
 
 class OneVsOneSpawnStrategy(SpawnStrategy):
