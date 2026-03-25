@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+import math
 
 import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
-from game.modes.mode_config import OneVsOneConfig, RaceConfig, SurvivalConfig
+from game.modes.mode_config import RaceConfig, SurvivalConfig
 from game.modes.one_vs_one_mode import OneVsOneMode
 from game.modes.race_mode import RaceMode
 from game.modes.survival_mode import SurvivalMode
@@ -38,117 +38,141 @@ class MainMenuScene(BaseMenuScene):
         self._last_mode_card_index: int | None = None
         self.background_renderer = CyberpunkMenuBackgroundRenderer()
         self._menu_panel_rect = pygame.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self._mode_card_glow_rect = pygame.Rect(138, 126, 1004, 186)
+        self._mode_card_glow_rect = pygame.Rect(0, 0, 0, 0)
 
         self.menu_panel = create_centered_panel(
             manager=self.ui_manager,
             screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
             config=PanelConfig(size=(SCREEN_WIDTH, SCREEN_HEIGHT), object_id="#menu_panel"),
         )
+
+        self.title_box = create_text_box(
+            manager=self.ui_manager,
+            container=self.menu_panel,
+            config=TextBoxConfig(
+                html_text="<font size='8' color='#00dcff'><b>NEON SURGE</b></font>",
+                rect=pygame.Rect(0, 20, SCREEN_WIDTH, 56),
+                object_id="#main_menu_title",
+            ),
+        )
+        self.subtitle_box = create_text_box(
+            manager=self.ui_manager,
+            container=self.menu_panel,
+            config=TextBoxConfig(
+                html_text="<font size='4' color='#dfe2ff'><b>ESCOLHA SEU DESAFIO</b></font>",
+                rect=pygame.Rect(0, 74, SCREEN_WIDTH, 28),
+                object_id="#main_menu_subtitle",
+            ),
+        )
+
+        card_size = (1040, 220)
+        card_left = (SCREEN_WIDTH - card_size[0]) // 2
+        card_top = 116
         self.mode_card = create_centered_panel(
             manager=self.ui_manager,
             screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
-            config=PanelConfig(size=(1004, 186), object_id="#mode_card", container=self.menu_panel),
+            config=PanelConfig(size=card_size, object_id="#mode_card", container=self.menu_panel),
         )
-        self.mode_card.set_relative_position((138, 126))
+        self.mode_card.set_relative_position((card_left, card_top))
+        self._mode_card_glow_rect = self.mode_card.rect.copy()
 
         self.mode_title_box = create_text_box(
             manager=self.ui_manager,
             container=self.mode_card,
-            config=TextBoxConfig(html_text="", rect=pygame.Rect(16, 10, 972, 84), object_id="#mode_title"),
+            config=TextBoxConfig(html_text="", rect=pygame.Rect(20, 16, 1000, 96), object_id="#mode_title"),
         )
         self.mode_description_box = create_text_box(
             manager=self.ui_manager,
             container=self.mode_card,
-            config=TextBoxConfig(html_text="", rect=pygame.Rect(16, 94, 972, 78), object_id="#mode_description"),
+            config=TextBoxConfig(html_text="", rect=pygame.Rect(28, 122, 984, 78), object_id="#mode_description"),
         )
 
-        self.race_button: UIControl = create_button(
+        grid_padding_x = 24
+        grid_padding_y = 20
+        button_width = 220
+        button_height = 74
+        gap_x = 18
+        gap_y = 16
+        grid_width = (button_width * 4) + (gap_x * 3)
+        grid_height = (button_height * 2) + gap_y
+        panel_width = grid_width + (grid_padding_x * 2)
+        panel_height = grid_height + (grid_padding_y * 2)
+        grid_left = (SCREEN_WIDTH - panel_width) // 2
+        grid_top = 368
+        grid_origin_x = grid_left + grid_padding_x
+        grid_origin_y = grid_top + grid_padding_y
+
+        self.grid_panel = create_centered_panel(
             manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="CORRIDA", rect=pygame.Rect(130, 370, 240, 92), object_id="#mode_button_race"),
+            screen_size=(SCREEN_WIDTH, SCREEN_HEIGHT),
+            config=PanelConfig(size=(panel_width, panel_height), object_id="#menu_grid_panel", container=self.menu_panel),
         )
-        self.infinite_button: UIControl = create_button(
+        self.grid_panel.set_relative_position((grid_left, grid_top))
+
+        button_specs = [
+            ("CORRIDA", "#mode_button_race", self._start_race),
+            ("INFINITA", "#mode_button_infinite", self._start_survival),
+            ("SOBREVIVENCIA", "#mode_button_survival", self._start_survival),
+            ("HARDCORE", "#mode_button_hardcore", self._start_hardcore),
+            ("LABIRINTO", "#mode_button_labyrinth", self._start_one_vs_one),
+            ("TREINO", "#mode_button_training", self._start_race),
+            ("GUIA", "#mode_button_guide", self._open_help),
+            ("CONFIG", "#mode_button_config", self._open_settings),
+        ]
+
+        self.mode_buttons: list[UIControl] = []
+        self._menu_actions = []
+        for index, (label, object_id, action) in enumerate(button_specs):
+            row = index // 4
+            col = index % 4
+            rect = pygame.Rect(
+                grid_origin_x + col * (button_width + gap_x),
+                grid_origin_y + row * (button_height + gap_y),
+                button_width,
+                button_height,
+            )
+            self.mode_buttons.append(
+                create_button(
+                    manager=self.ui_manager,
+                    container=self.menu_panel,
+                    config=ButtonConfig(text=label, rect=rect, object_id=object_id),
+                )
+            )
+            self._menu_actions.append(action)
+
+        footer_y = SCREEN_HEIGHT - 62
+        self.exit_button = create_button(
             manager=self.ui_manager,
             container=self.menu_panel,
-            config=ButtonConfig(text="INFINITA", rect=pygame.Rect(390, 370, 240, 92), object_id="#mode_button_infinite"),
+            config=ButtonConfig(
+                text="[X] SAIR",
+                rect=pygame.Rect(grid_left, footer_y, 190, 42),
+                object_id="#menu_footer_exit",
+            ),
         )
-        self.survival_button: UIControl = create_button(
+        self.settings_button = create_button(
             manager=self.ui_manager,
             container=self.menu_panel,
-            config=ButtonConfig(text="SOBREVIVENCIA", rect=pygame.Rect(650, 370, 240, 92), object_id="#mode_button_survival"),
-        )
-        self.hardcore_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="HARDCORE", rect=pygame.Rect(910, 370, 240, 92), object_id="#mode_button_hardcore"),
+            config=ButtonConfig(
+                text="SET",
+                rect=pygame.Rect(grid_left + panel_width - 66, footer_y, 66, 42),
+                object_id="#footer_control_cyan",
+            ),
         )
 
-        self.labyrinth_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="LABIRINTO", rect=pygame.Rect(130, 490, 240, 92), object_id="#mode_button_labyrinth"),
-        )
-        self.training_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="TREINO", rect=pygame.Rect(390, 490, 240, 92), object_id="#mode_button_training"),
-        )
-        self.guide_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="GUIA", rect=pygame.Rect(650, 490, 240, 92), object_id="#mode_button_guide"),
-        )
-        self.one_vs_one_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="CONFIG", rect=pygame.Rect(910, 490, 240, 92), object_id="#mode_button_config"),
-        )
-
-        self.exit_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="[X] SAIR", rect=pygame.Rect(20, SCREEN_HEIGHT - 66, 184, 44), object_id="#menu_footer_exit"),
-        )
-
-        self.settings_button: UIControl = create_button(
-            manager=self.ui_manager,
-            container=self.menu_panel,
-            config=ButtonConfig(text="⚙", rect=pygame.Rect(SCREEN_WIDTH - 74, SCREEN_HEIGHT - 66, 44, 44), object_id="#footer_control_cyan"),
-        )
-
-        self._menu_buttons: list[UIControl] = [
-            self.race_button,
-            self.infinite_button,
-            self.survival_button,
-            self.hardcore_button,
-            self.labyrinth_button,
-            self.training_button,
-            self.guide_button,
-            self.one_vs_one_button,
+        self._menu_buttons = [
+            *self.mode_buttons,
             self.exit_button,
             self.settings_button,
         ]
-
-        self._menu_actions: list[Callable[[], None]] = [
-            self._start_race,
-            self._start_survival,
-            self._start_survival,
-            self._start_hardcore,
-            self._start_one_vs_one,
-            self._start_race,
-            self._open_help,
-            self._open_settings,
-            self._quit,
-            self._open_settings,
-        ]
+        self._menu_actions.extend([self._quit, self._open_settings])
 
         self.set_navigator(
             buttons=self._menu_buttons,
             actions=self._menu_actions,
             on_cancel=self._quit,
             directional_resolver=self._resolve_directional_index,
-            use_button_selection_state=False,
+            use_button_selection_state=True,
         )
 
         self.mode_cards = [
@@ -202,7 +226,7 @@ class MainMenuScene(BaseMenuScene):
             container=self.mode_card,
             config=TextBoxConfig(
                 html_text="",
-                rect=pygame.Rect(16, 62, 972, 38),
+                rect=pygame.Rect(16, 86, 1000, 28),
                 object_id="#mode_title_subtitle",
             ),
         )
@@ -265,65 +289,34 @@ class MainMenuScene(BaseMenuScene):
         if current_index < 0 or current_index >= total_buttons:
             return current_index
 
+        grid_count = 8
+        footer_exit = 8
+        footer_settings = 9
+
+        if current_index >= grid_count:
+            if direction in ("left", "right"):
+                return footer_settings if current_index == footer_exit else footer_exit
+            if direction == "up":
+                return 4 if current_index == footer_exit else 7
+            if direction == "down":
+                return 0 if current_index == footer_exit else 3
+            return current_index
+
+        row = current_index // 4
+        col = current_index % 4
+
         if direction == "left":
-            left_map = {
-                0: 3,
-                1: 0,
-                2: 1,
-                3: 2,
-                4: 7,
-                5: 4,
-                6: 5,
-                7: 6,
-                8: 9,
-                9: 8,
-            }
-            return left_map.get(current_index, current_index)
-
+            return row * 4 + ((col - 1) % 4)
         if direction == "right":
-            right_map = {
-                0: 1,
-                1: 2,
-                2: 3,
-                3: 0,
-                4: 5,
-                5: 6,
-                6: 7,
-                7: 4,
-                8: 9,
-                9: 8,
-            }
-            return right_map.get(current_index, current_index)
-
+            return row * 4 + ((col + 1) % 4)
         if direction == "up":
-            up_map = {
-                0: 8,
-                1: 8,
-                2: 9,
-                3: 9,
-                4: 0,
-                5: 1,
-                6: 2,
-                7: 3,
-                8: 4,
-                9: 7,
-            }
-            return up_map.get(current_index, current_index)
-
+            if row == 0:
+                return footer_exit if col < 2 else footer_settings
+            return (row - 1) * 4 + col
         if direction == "down":
-            down_map = {
-                0: 4,
-                1: 5,
-                2: 6,
-                3: 7,
-                4: 8,
-                5: 8,
-                6: 9,
-                7: 9,
-                8: 0,
-                9: 3,
-            }
-            return down_map.get(current_index, current_index)
+            if row == 1:
+                return footer_exit if col < 2 else footer_settings
+            return (row + 1) * 4 + col
 
         return current_index
 
@@ -344,7 +337,7 @@ class MainMenuScene(BaseMenuScene):
         self.mode_title_box.set_text(
             f"<font color='{self._to_hex(selected.color)}' size=\"7\"><b>{selected.title.upper()}</b></font>"
         )
-        self._card_line_2.set_text(f"<font color='#f1f1f1' size=\"5\"><b>EXTREMO</b></font>")
+        self._card_line_2.set_text("<font color='#f1f1f1' size=\"4\"><b>MODO DE JOGO</b></font>")
         self.mode_description_box.set_text(selected.description)
         self._last_mode_card_index = selected_index
 
@@ -382,17 +375,28 @@ class MainMenuScene(BaseMenuScene):
             return
 
         selected_rect = self._menu_buttons[selected_index].rect
+        pulse = 0.6 + 0.4 * math.sin(self.elapsed_time * 4.2)
+        pulse_soft = 0.5 + 0.5 * math.sin(self.elapsed_time * 2.6)
         glow_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
 
-        for index, inflation in enumerate((8, 16)):
-            alpha = 70 - index * 18
+        for index, inflation in enumerate((8, 16, 26)):
+            alpha = int((70 - index * 16) * pulse)
             pygame.draw.rect(
                 glow_surface,
                 (color[0], color[1], color[2], alpha),
-                selected_rect.inflate(inflation, inflation),
+                selected_rect.inflate(inflation + int(6 * pulse), inflation + int(6 * pulse)),
                 width=2,
                 border_radius=12,
             )
+        border_alpha = int(140 + 80 * pulse_soft)
+        border_width = 2 + int(2 * pulse_soft)
+        pygame.draw.rect(
+            glow_surface,
+            (color[0], color[1], color[2], border_alpha),
+            selected_rect.inflate(2 + int(3 * pulse_soft), 2 + int(3 * pulse_soft)),
+            width=border_width,
+            border_radius=12,
+        )
         screen.blit(glow_surface, (0, 0))
 
     def _draw_selected_button_fill(self, screen: pygame.Surface, color: tuple[int, int, int]) -> None:
@@ -404,11 +408,22 @@ class MainMenuScene(BaseMenuScene):
 
         selected_rect = self._menu_buttons[selected_index].rect
         fill_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        pulse = 0.6 + 0.4 * math.sin(self.elapsed_time * 4.4)
+        pulse_soft = 0.5 + 0.5 * math.sin(self.elapsed_time * 2.2)
+        inner_alpha = int(120 + 65 * pulse)
+        outer_alpha = int(70 + 60 * pulse_soft)
         pygame.draw.rect(
             fill_surface,
-            (color[0], color[1], color[2], 165),
-            selected_rect.inflate(-8, -8),
+            (color[0], color[1], color[2], inner_alpha),
+            selected_rect.inflate(-6, -6),
             border_radius=10,
+        )
+        pygame.draw.rect(
+            fill_surface,
+            (color[0], color[1], color[2], outer_alpha),
+            selected_rect.inflate(6 + int(4 * pulse_soft), 6 + int(4 * pulse_soft)),
+            border_radius=12,
+            width=2,
         )
         screen.blit(fill_surface, (0, 0))
 

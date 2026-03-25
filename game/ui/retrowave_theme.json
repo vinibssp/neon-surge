@@ -1,4 +1,24 @@
 {
+  "fonts": [
+    {
+      "name": "noto_sans",
+      "point_size": "48",
+      "style": "bold",
+      "antialiased": "1"
+    },
+    {
+      "name": "noto_sans",
+      "point_size": "28",
+      "style": "bold",
+      "antialiased": "1"
+    },
+    {
+      "name": "noto_sans",
+      "point_size": "20",
+      "style": "bold",
+      "antialiased": "1"
+    }
+  ],
   "defaults": {
     "colours": {
       "normal_bg": "#170b2e",
@@ -90,14 +110,26 @@
     }
   },
 
+  "#menu_grid_panel": {
+    "colours": {
+      "dark_bg": "#050813b0",
+      "normal_border": "#1a2138"
+    },
+    "misc": {
+      "shape": "rounded_rectangle",
+      "shape_corner_radius": "18",
+      "border_width": "2"
+    }
+  },
+
   "#mode_card": {
     "colours": {
-      "dark_bg": "#041022dd",
-      "normal_border": "#00000000"
+      "dark_bg": "#060b18e0",
+      "normal_border": "#1b2034"
     },
     "misc": {
       "shape_corner_radius": "16",
-      "border_width": "0"
+      "border_width": "2"
     }
   },
 
@@ -138,6 +170,38 @@
       "dark_bg": "#00000000",
       "normal_border": "#00000000",
       "normal_text": "#f5f5f5"
+    },
+    "misc": {
+      "border_width": "0",
+      "shape_corner_radius": "0",
+      "padding": "0,0",
+      "line_spacing": "1.0",
+      "text_horiz_alignment": "center",
+      "text_vert_alignment": "center"
+    }
+  },
+
+  "#main_menu_title": {
+    "colours": {
+      "dark_bg": "#00000000",
+      "normal_border": "#00000000",
+      "normal_text": "#00dcff"
+    },
+    "misc": {
+      "border_width": "0",
+      "shape_corner_radius": "0",
+      "padding": "0,0",
+      "line_spacing": "1.0",
+      "text_horiz_alignment": "center",
+      "text_vert_alignment": "center"
+    }
+  },
+
+  "#main_menu_subtitle": {
+    "colours": {
+      "dark_bg": "#00000000",
+      "normal_border": "#00000000",
+      "normal_text": "#dfe2ff"
     },
     "misc": {
       "border_width": "0",
@@ -194,9 +258,9 @@
       "hovered_bg": "#00dcff",
       "selected_bg": "#00dcff",
       "normal_border": "#00dcff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#00dcff",
+      "selected_border": "#00dcff",
+      "normal_text": "#00dcff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -213,9 +277,9 @@
       "hovered_bg": "#ff37dc",
       "selected_bg": "#ff37dc",
       "normal_border": "#ff37dc",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ff37dc",
+      "selected_border": "#ff37dc",
+      "normal_text": "#ff37dc",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -246,9 +310,9 @@
       "hovered_bg": "#a658ff",
       "selected_bg": "#901bff",
       "normal_border": "#901bff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#a658ff",
+      "selected_border": "#901bff",
+      "normal_text": "#a658ff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -269,9 +333,9 @@
       "hovered_bg": "#ff6e00",
       "selected_bg": "#ff6a00",
       "normal_border": "#ff6a00",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ff6e00",
+      "selected_border": "#ff6a00",
+      "normal_text": "#ff6e00",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -292,9 +356,9 @@
       "hovered_bg": "#30ff5a",
       "selected_bg": "#1eff44",
       "normal_border": "#1eff44",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#30ff5a",
+      "selected_border": "#1eff44",
+      "normal_text": "#30ff5a",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -315,9 +379,9 @@
       "hovered_bg": "#44ffa0",
       "selected_bg": "#2be87a",
       "normal_border": "#2be87a",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#44ffa0",
+      "selected_border": "#2be87a",
+      "normal_text": "#44ffa0",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -338,9 +402,9 @@
       "hovered_bg": "#ffd832",
       "selected_bg": "#d6c213",
       "normal_border": "#d6c213",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ffd832",
+      "selected_border": "#d6c213",
+      "normal_text": "#ffd832",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -361,9 +425,9 @@
       "hovered_bg": "#40a8ff",
       "selected_bg": "#00dcff",
       "normal_border": "#00dcff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#40a8ff",
+      "selected_border": "#00dcff",
+      "normal_text": "#40a8ff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     },
@@ -499,9 +563,9 @@
       "hovered_bg": "#00dcff",
       "selected_bg": "#00dcff",
       "normal_border": "#00dcff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#00dcff",
+      "selected_border": "#00dcff",
+      "normal_text": "#00dcff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -513,9 +577,9 @@
       "hovered_bg": "#a658ff",
       "selected_bg": "#901bff",
       "normal_border": "#901bff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#a658ff",
+      "selected_border": "#901bff",
+      "normal_text": "#a658ff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -527,9 +591,9 @@
       "hovered_bg": "#ff37dc",
       "selected_bg": "#ff37dc",
       "normal_border": "#ff37dc",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ff37dc",
+      "selected_border": "#ff37dc",
+      "normal_text": "#ff37dc",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -541,9 +605,9 @@
       "hovered_bg": "#ff6e00",
       "selected_bg": "#ff6a00",
       "normal_border": "#ff6a00",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ff6e00",
+      "selected_border": "#ff6a00",
+      "normal_text": "#ff6e00",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -555,9 +619,9 @@
       "hovered_bg": "#30ff5a",
       "selected_bg": "#1eff44",
       "normal_border": "#1eff44",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#30ff5a",
+      "selected_border": "#1eff44",
+      "normal_text": "#30ff5a",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -569,9 +633,9 @@
       "hovered_bg": "#44ffa0",
       "selected_bg": "#2be87a",
       "normal_border": "#2be87a",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#44ffa0",
+      "selected_border": "#2be87a",
+      "normal_text": "#44ffa0",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -583,9 +647,9 @@
       "hovered_bg": "#ffd832",
       "selected_bg": "#d6c213",
       "normal_border": "#d6c213",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#ffd832",
+      "selected_border": "#d6c213",
+      "normal_text": "#ffd832",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
@@ -597,9 +661,9 @@
       "hovered_bg": "#40a8ff",
       "selected_bg": "#40a8ff",
       "normal_border": "#40a8ff",
-      "hovered_border": "#ffffff",
-      "selected_border": "#ffffff",
-      "normal_text": "#f0f0f0",
+      "hovered_border": "#40a8ff",
+      "selected_border": "#40a8ff",
+      "normal_text": "#40a8ff",
       "hovered_text": "#101820",
       "selected_text": "#101820"
     }
