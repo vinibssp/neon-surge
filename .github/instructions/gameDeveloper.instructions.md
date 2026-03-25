@@ -17,6 +17,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Uso consistente de `Vector2` e `dt`
 - Extensão por Strategy/Factory/Command em vez de condicionais em cascata
 - Sem lógica de gameplay na camada de renderização
+- Sempre busque SKILL adequada para sua atividade atual.
 
 ---
 
