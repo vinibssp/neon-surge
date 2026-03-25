@@ -8,6 +8,7 @@ from pygame import Vector2
 
 from game.behaviors.boss_behavior import BossBehavior
 from game.behaviors.alchemist_miniboss_behavior import AlchemistMinibossBehavior
+from game.behaviors.blink_striker_behavior import BlinkStrikerBehavior
 from game.behaviors.bouncer_behavior import BouncerBehavior
 from game.behaviors.buffer_mage_behavior import BufferMageBehavior
 from game.behaviors.charge_behavior import ChargeBehavior
@@ -22,7 +23,9 @@ from game.behaviors.kamehameha_behavior import KamehamehaBehavior
 from game.behaviors.laser_shooter_behavior import LaserShooterBehavior
 from game.behaviors.laser_matrix_miniboss_behavior import LaserMatrixMinibossBehavior
 from game.behaviors.mortar_behavior import MortarBehavior
+from game.behaviors.mine_layer_behavior import MineLayerBehavior
 from game.behaviors.arcane_strafer_behavior import ArcaneStraferBehavior
+from game.behaviors.orbit_shooter_behavior import OrbitShooterBehavior
 from game.behaviors.runic_bombardier_behavior import RunicBombardierBehavior
 from game.behaviors.shadow_pouncer_behavior import ShadowPouncerBehavior
 from game.behaviors.phantom_overlord_miniboss_behavior import PhantomOverlordMinibossBehavior
@@ -31,6 +34,7 @@ from game.behaviors.shoot_behavior import ShootBehavior
 from game.behaviors.shotgun_ambusher_behavior import ShotgunAmbusherBehavior
 from game.behaviors.sniper_miniboss_behavior import SniperMinibossBehavior
 from game.behaviors.spiral_turret_behavior import SpiralTurretBehavior
+from game.behaviors.suppressor_behavior import SuppressorBehavior
 from game.behaviors.turret_burst_behavior import TurretBurstBehavior
 from game.components.data_components import (
     BehaviorComponent,
@@ -167,6 +171,28 @@ class EnemyFactory:
         cls.register_enemy("fantasma", cls.create_ghost_boo, weight=0.05)
         cls.register_enemy("buffer", cls.create_buffer_mage, weight=0.04)
         cls.register_enemy("sapo", cls.create_frog_acid, weight=0.05)
+        cls.register_enemy("bandido_arcano", cls.create_bandit_arcane, weight=0.06)
+        cls.register_enemy("mago_hobbit", cls.create_hobbit_mage, weight=0.05)
+        cls.register_enemy("escorpiao_rainha", cls.create_scorpion_queen, weight=0.05)
+        cls.register_enemy("gazer_vazio", cls.create_void_gazer, weight=0.04)
+        cls.register_enemy("abominacao_limo", cls.create_slime_abomination, weight=0.05)
+        cls.register_enemy("assassino_crepuscular", cls.create_twilight_assassin, weight=0.05)
+        cls.register_enemy("sentinela_estelar", cls.create_stellar_sentinel, weight=0.04)
+        cls.register_enemy("necrolorde_orbital", cls.create_necrolord_orbiter, weight=0.04)
+        cls.register_enemy("horror_igneo", cls.create_ignis_horror, weight=0.04)
+        cls.register_enemy("espectro_lancante", cls.create_lancer_specter, weight=0.04)
+        cls.register_enemy("aracnideo_venenoso", cls.create_venom_arachnid, weight=0.04)
+        cls.register_enemy("bombardeiro_abyssal", cls.create_abyssal_bombardier, weight=0.04)
+        cls.register_enemy("olho_orbitante", cls.create_orbiting_eye, weight=0.04)
+        cls.register_enemy("vigia_supressor", cls.create_suppressor_sentry, weight=0.04)
+        cls.register_enemy("xama_mineiro", cls.create_miner_shaman, weight=0.04)
+        cls.register_enemy("algoz_faseado", cls.create_phased_executioner, weight=0.04)
+        cls.register_enemy("guardiao_cosmico", cls.create_cosmic_guardian, weight=0.03)
+        cls.register_enemy("caotico_estilha", cls.create_shard_chaotic, weight=0.03)
+        cls.register_enemy("fuzileiro_runico", cls.create_runic_rifleman, weight=0.04)
+        cls.register_enemy("cavaleiro_voraz", cls.create_ravenous_knight, weight=0.04)
+        cls.register_enemy("necromante_torre", cls.create_tower_necromancer, weight=0.03)
+        cls.register_enemy("aranha_laser", cls.create_laser_arachnid, weight=0.03)
         cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
         cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
         cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
@@ -968,6 +994,468 @@ class EnemyFactory:
                     outer_color=ENEMY_FROG_COLOR,
                     core_color=(210, 255, 214),
                     radius=16.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_bandit_arcane(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_arcane_strafer(position)
+        movement = enemy.get_component(MovementComponent)
+        shoot = enemy.get_component(ShootComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 208.0
+        if shoot is not None:
+            shoot.cooldown = 0.88
+            shoot.aim_time = 0.22
+            shoot.bullet_speed = 305.0
+            shoot.bullet_color = (248, 126, 84)
+        if collision is not None:
+            collision.radius = 13.0
+        enemy.add_component(BehaviorComponent(behavior=ArcaneStraferBehavior()))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=(248, 126, 84),
+                    inner_color=(255, 222, 184),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_hobbit_mage(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_shooter(position)
+        movement = enemy.get_component(MovementComponent)
+        shoot = enemy.get_component(ShootComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 95.0
+        if shoot is not None:
+            shoot.cooldown = 1.35
+            shoot.aim_time = 0.55
+            shoot.bullet_speed = 250.0
+            shoot.bullet_radius = 6.0
+            shoot.bullet_color = (186, 124, 255)
+        if collision is not None:
+            collision.radius = 13.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=(186, 124, 255),
+                    inner_color=(245, 228, 255),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_scorpion_queen(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_bouncer(position)
+        movement = enemy.get_component(MovementComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 250.0
+        if collision is not None:
+            collision.radius = 14.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=(255, 104, 82),
+                    core_color=(255, 223, 170),
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_void_gazer(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_laser_shooter(position)
+        movement = enemy.get_component(MovementComponent)
+        shoot = enemy.get_component(ShootComponent)
+        if movement is not None:
+            movement.max_speed = 60.0
+        if shoot is not None:
+            shoot.cooldown = 0.34
+            shoot.bullet_speed = 465.0
+            shoot.bullet_color = (153, 232, 255)
+        enemy.add_component(BehaviorComponent(behavior=LaserShooterBehavior()))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=(88, 206, 255),
+                    inner_color=(212, 250, 255),
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_slime_abomination(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_explosive(position)
+        movement = enemy.get_component(MovementComponent)
+        explosive = enemy.get_component(ExplosiveComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 170.0
+        if explosive is not None:
+            explosive.chase_time = 2.9
+            explosive.detonate_time = 3.8
+        if collision is not None:
+            collision.radius = 13.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ExplosiveEnemyRenderStrategy(
+                    base_color=(126, 238, 118),
+                    warning_color=(243, 255, 154),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_twilight_assassin(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_shotgun_ambusher(position)
+        movement = enemy.get_component(MovementComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 172.0
+        if collision is not None:
+            collision.radius = 13.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=(210, 132, 255),
+                    core_color=(255, 232, 255),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_stellar_sentinel(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_kamehameha(position)
+        movement = enemy.get_component(MovementComponent)
+        beam = enemy.get_component(KamehamehaComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 35.0
+        if beam is not None:
+            beam.charge_duration = 0.95
+            beam.fire_duration = 1.15
+            beam.cooldown_duration = 1.05
+            beam.fire_tick = 0.06
+            beam.beam_color = (244, 248, 255)
+        if collision is not None:
+            collision.radius = 17.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=(214, 228, 255),
+                    middle_color=(52, 74, 110),
+                    active_color=(255, 255, 255),
+                    idle_color=(214, 228, 255),
+                    radius=17.0,
+                    pulse_speed=7.2,
+                    pulse_gain=2.8,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_necrolord_orbiter(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_hex_orbiter(position)
+        movement = enemy.get_component(MovementComponent)
+        turret = enemy.get_component(TurretComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 176.0
+        if turret is not None:
+            turret.spiral_angle = random.uniform(0.0, 360.0)
+        if collision is not None:
+            collision.radius = 16.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=(176, 108, 240),
+                    middle_color=(30, 12, 46),
+                    active_color=(245, 235, 255),
+                    idle_color=(176, 108, 240),
+                    radius=16.0,
+                    pulse_speed=6.5,
+                    pulse_gain=2.5,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_ignis_horror(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_flamethrower(position)
+        movement = enemy.get_component(MovementComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 156.0
+        if collision is not None:
+            collision.radius = 16.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=(255, 112, 54),
+                    radius=16.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_lancer_specter(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_shadow_pouncer(position)
+        movement = enemy.get_component(MovementComponent)
+        charge = enemy.get_component(ChargeComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 232.0
+        if charge is not None:
+            charge.state = "aiming"
+            charge.timer = 0.35
+        if collision is not None:
+            collision.radius = 12.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ChargeEnemyRenderStrategy(
+                    base_color=(208, 224, 255),
+                    radius=12.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_venom_arachnid(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_frog_acid(position)
+        movement = enemy.get_component(MovementComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 196.0
+        if collision is not None:
+            collision.radius = 15.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=(98, 255, 134),
+                    core_color=(224, 255, 236),
+                    radius=15.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_abyssal_bombardier(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_runic_bombardier(position)
+        movement = enemy.get_component(MovementComponent)
+        collision = enemy.get_component(CollisionComponent)
+        if movement is not None:
+            movement.max_speed = 160.0
+        if collision is not None:
+            collision.radius = 18.0
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=(122, 122, 255),
+                    radius=18.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_orbiting_eye(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_follower(position)
+        enemy.add_component(MovementComponent(max_speed=170.0))
+        enemy.add_component(BehaviorComponent(behavior=OrbitShooterBehavior(orbit_radius=175.0, angular_speed=2.1)))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=(138, 216, 255),
+                    middle_color=(18, 36, 66),
+                    active_color=(245, 245, 255),
+                    idle_color=(138, 216, 255),
+                    radius=14.0,
+                    pulse_speed=7.0,
+                    pulse_gain=2.0,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_suppressor_sentry(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_follower(position)
+        enemy.add_component(MovementComponent(max_speed=178.0))
+        enemy.add_component(BehaviorComponent(behavior=SuppressorBehavior(preferred_distance=240.0)))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=(252, 238, 150),
+                    core_color=(255, 248, 205),
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_miner_shaman(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_flamethrower(position)
+        enemy.add_component(MovementComponent(max_speed=148.0))
+        enemy.add_component(BehaviorComponent(behavior=MineLayerBehavior(drop_interval=2.45)))
+        enemy.add_component(CollisionComponent(radius=16.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=(255, 148, 102),
+                    radius=16.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_phased_executioner(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_shadow_pouncer(position)
+        enemy.add_component(BehaviorComponent(behavior=BlinkStrikerBehavior(blink_interval=2.2, blink_distance=172.0)))
+        enemy.add_component(CollisionComponent(radius=13.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ChargeEnemyRenderStrategy(
+                    base_color=(232, 204, 255),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_cosmic_guardian(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_orbiting_eye(position)
+        enemy.add_component(MovementComponent(max_speed=182.0))
+        enemy.add_component(BehaviorComponent(behavior=OrbitShooterBehavior(orbit_radius=210.0, angular_speed=1.6)))
+        enemy.add_component(CollisionComponent(radius=15.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=(200, 214, 255),
+                    middle_color=(34, 36, 78),
+                    active_color=(255, 255, 255),
+                    idle_color=(200, 214, 255),
+                    radius=15.0,
+                    pulse_speed=6.4,
+                    pulse_gain=2.4,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_shard_chaotic(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_bouncer(position)
+        enemy.add_component(MovementComponent(max_speed=265.0))
+        enemy.add_component(CollisionComponent(radius=13.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=(255, 98, 164),
+                    core_color=(255, 214, 240),
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_runic_rifleman(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_arcane_strafer(position)
+        enemy.add_component(MovementComponent(max_speed=202.0))
+        enemy.add_component(BehaviorComponent(behavior=SuppressorBehavior(preferred_distance=220.0)))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=(118, 236, 255),
+                    inner_color=(226, 252, 255),
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_ravenous_knight(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_charge(position)
+        enemy.add_component(MovementComponent(max_speed=190.0))
+        enemy.add_component(BehaviorComponent(behavior=ChargeBehavior()))
+        enemy.add_component(CollisionComponent(radius=15.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ChargeEnemyRenderStrategy(
+                    base_color=(255, 154, 98),
+                    radius=15.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_tower_necromancer(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_kamehameha(position)
+        enemy.add_component(MovementComponent(max_speed=0.0))
+        enemy.add_component(BehaviorComponent(behavior=MineLayerBehavior(drop_interval=2.95)))
+        enemy.add_component(CollisionComponent(radius=17.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=(176, 124, 255),
+                    middle_color=(48, 22, 72),
+                    active_color=(248, 240, 255),
+                    idle_color=(176, 124, 255),
+                    radius=17.0,
+                    pulse_speed=6.0,
+                    pulse_gain=2.6,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_laser_arachnid(position: Vector2) -> Entity:
+        enemy = EnemyFactory.create_laser_shooter(position)
+        enemy.add_component(MovementComponent(max_speed=188.0))
+        enemy.add_component(BehaviorComponent(behavior=SuppressorBehavior(preferred_distance=190.0)))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=(118, 255, 146),
+                    inner_color=(230, 255, 238),
+                    radius=14.0,
                 )
             )
         )

@@ -66,6 +66,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Factory expõe criação por tipo/categoria; não decide política de spawn por modo
 - Evolução de roster de inimigos base deve ocorrer por novos tipos registrados (arquétipos), sem ramificações condicionais em systems de spawn
 - Evolução de roster de `miniboss` e `boss` deve seguir o mesmo princípio (registro por tipo no factory), preservando contratos públicos de seleção por categoria
+- Evoluções temáticas de roster (ex.: inspiração em jogos bullet-hell) devem manter o mesmo contrato de registro por arquétipo e desbloqueio progressivo por estratégia de spawn
 
 ### Strategy Pattern
 
@@ -76,6 +77,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Estratégias de spawn devem aplicar progressão de roster por fase (nível/tempo), liberando arquétipos de maior pressão de forma gradual
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
+- Novos padrões de combate devem priorizar behaviors dedicados e reutilizáveis (composição), evitando ramificações por tipo em systems globais
 
 ### Modo Labirinto (Contrato)
 

@@ -20,6 +20,16 @@ EARLY_ENEMY_KINDS: tuple[str, ...] = (
 
 MID_ENEMY_KINDS: tuple[str, ...] = (
     *EARLY_ENEMY_KINDS,
+    "bandido_arcano",
+    "mago_hobbit",
+    "escorpiao_rainha",
+    "abominacao_limo",
+    "olho_orbitante",
+    "vigia_supressor",
+    "xama_mineiro",
+    "algoz_faseado",
+    "cavaleiro_voraz",
+    "caotico_estilha",
     "metralhadora",
     "morteiro",
     "estrafador_arcano",
@@ -37,6 +47,18 @@ LATE_ENEMY_KINDS: tuple[str, ...] = (
     "fantasma",
     "buffer",
     "sapo",
+    "gazer_vazio",
+    "assassino_crepuscular",
+    "sentinela_estelar",
+    "necrolorde_orbital",
+    "horror_igneo",
+    "espectro_lancante",
+    "aracnideo_venenoso",
+    "bombardeiro_abyssal",
+    "guardiao_cosmico",
+    "fuzileiro_runico",
+    "necromante_torre",
+    "aranha_laser",
 )
 
 EARLY_MINIBOSS_KINDS: tuple[str, ...] = (

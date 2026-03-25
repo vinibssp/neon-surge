@@ -88,6 +88,8 @@ Criação de entidades centralizada nas factories (`game/factories`):
 - factories montam componentes, tags, behavior e render strategy
 - roster base de `enemy` inclui arquétipos de perseguição, strafe, shotgun, órbita radial, investida e bombardeio rúnico
 - roster base também inclui arquétipos de projétil especial e suporte (`atirador_laser`, `kamehameha`, `lanca_chamas`, `fantasma`, `buffer`, `sapo`)
+- roster base recebeu expansão com arquétipos inspirados em RotMG (ex.: `bandido_arcano`, `mago_hobbit`, `escorpiao_rainha`, `gazer_vazio`, `assassino_crepuscular`, `necrolorde_orbital`) mantendo registro por tipo no factory
+- nova leva de arquétipos adiciona padrões dedicados (`olho_orbitante`, `vigia_supressor`, `xama_mineiro`, `algoz_faseado`, `guardiao_cosmico`, `necromante_torre`) com behaviors específicos (`OrbitShooterBehavior`, `SuppressorBehavior`, `MineLayerBehavior`, `BlinkStrikerBehavior`)
 - roster de `miniboss` e `boss` pode evoluir por novos arquétipos registrados (ex.: matrix laser, oráculo de feixe, piro-hidra, fantasma senhor, alquimista; colosso laser, druida tóxico, soberano espectral)
 
 ### 6) Strategy Pattern (modos, progressão, spawn, render, IA)
