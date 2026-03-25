@@ -10,15 +10,16 @@ from game.modes.survival_hardcore_mode import SurvivalHardcoreMode
 from game.modes.survival_mode import SurvivalMode
 from game.scenes.game_scene import GameScene
 from game.scenes.menus._base_menu_scene import BaseMenuScene
-from game.ui.components import ButtonConfig, LabelConfig
-from game.ui.ui_factory import UIFactory
+from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
+from game.ui.gui_theme import register_custom_element_themes
 
 
 class MainMenuScene(BaseMenuScene):
     def __init__(self, stack) -> None:
         super().__init__(stack)
+        self._register_main_menu_button_themes()
 
-        title = UIFactory.label(
+        title = create_label(
             LabelConfig(
                 text="NEON SURGE 2",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 180, 120), (360, 64)),
@@ -26,7 +27,7 @@ class MainMenuScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        subtitle = UIFactory.label(
+        subtitle = create_label(
             LabelConfig(
                 text="Selecione um modo",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 180), (300, 40)),
@@ -36,35 +37,39 @@ class MainMenuScene(BaseMenuScene):
         )
         del title, subtitle
 
-        race_button = UIFactory.button(
+        race_button = create_button(
             ButtonConfig(
                 text="Corrida",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 270), (280, 56)),
                 variant="primary",
+                object_id="race_button",
             ),
             manager=self.ui_manager,
         )
-        survival_button = UIFactory.button(
+        survival_button = create_button(
             ButtonConfig(
                 text="Sobrevivencia",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 340), (280, 56)),
                 variant="primary",
+                object_id="survival_button",
             ),
             manager=self.ui_manager,
         )
-        labyrinth_button = UIFactory.button(
+        labyrinth_button = create_button(
             ButtonConfig(
                 text="Labirinto",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 410), (280, 56)),
                 variant="primary",
+                object_id="labyrinth_button",
             ),
             manager=self.ui_manager,
         )
-        quit_button = UIFactory.button(
+        quit_button = create_button(
             ButtonConfig(
                 text="Sair",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 492), (280, 52)),
                 variant="danger",
+                object_id="quit_button",
             ),
             manager=self.ui_manager,
         )
@@ -79,6 +84,88 @@ class MainMenuScene(BaseMenuScene):
             },
             on_cancel=self._quit,
         )
+
+    def _register_main_menu_button_themes(self) -> None:
+        button_themes: dict[str, dict] = {
+            "race_button": {
+                "colours": {
+                    "normal_bg": "#142400",
+                    "hovered_bg": "#1f3600",
+                    "selected_bg": "#284800",
+                    "active_bg": "#2f5a00",
+                    "normal_text": "#c6ff72",
+                    "hovered_text": "#f1ffd1",
+                    "selected_text": "#f1ffd1",
+                    "normal_border": "#7fff00",
+                    "hovered_border": "#b7ff4a",
+                    "selected_border": "#d1ff7f",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "16",
+                    "bold": "1",
+                },
+            },
+            "survival_button": {
+                "colours": {
+                    "normal_bg": "#2a1f00",
+                    "hovered_bg": "#3c2d00",
+                    "selected_bg": "#4f3a00",
+                    "active_bg": "#624700",
+                    "normal_text": "#ffd86b",
+                    "hovered_text": "#fff1ca",
+                    "selected_text": "#fff1ca",
+                    "normal_border": "#ffbf3b",
+                    "hovered_border": "#ffd86b",
+                    "selected_border": "#ffe39c",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "16",
+                    "bold": "1",
+                },
+            },
+            "labyrinth_button": {
+                "colours": {
+                    "normal_bg": "#191035",
+                    "hovered_bg": "#281c54",
+                    "selected_bg": "#35256e",
+                    "active_bg": "#443090",
+                    "normal_text": "#b8a6ff",
+                    "hovered_text": "#ece6ff",
+                    "selected_text": "#ece6ff",
+                    "normal_border": "#8f72ff",
+                    "hovered_border": "#b8a6ff",
+                    "selected_border": "#d5c9ff",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "16",
+                    "bold": "1",
+                },
+            },
+            "quit_button": {
+                "colours": {
+                    "normal_bg": "#3a0917",
+                    "hovered_bg": "#541127",
+                    "selected_bg": "#6f1834",
+                    "active_bg": "#8a2143",
+                    "normal_text": "#ff7aa3",
+                    "hovered_text": "#ffd8e4",
+                    "selected_text": "#ffd8e4",
+                    "normal_border": "#ff4f86",
+                    "hovered_border": "#ff7aa3",
+                    "selected_border": "#ffabc5",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "16",
+                    "bold": "1",
+                },
+            },
+        }
+
+        register_custom_element_themes(self.ui_manager, button_themes, rebuild_all=True)
 
     def _quit(self) -> None:
         self.stack.pop()

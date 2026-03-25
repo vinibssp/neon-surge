@@ -4,6 +4,8 @@ from typing import Optional, Tuple
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class SliderConfig:
@@ -23,7 +25,8 @@ def create_slider(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UIHorizontalSlider:
     """Fabrica um UIHorizontalSlider a partir de SliderConfig."""
-    object_id = pygame_gui.core.ObjectID(
+    object_id = build_component_object_id(
+        element_id="horizontal_slider",
         object_id=config.object_id,
     )
 

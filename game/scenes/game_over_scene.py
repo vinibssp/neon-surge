@@ -7,8 +7,7 @@ import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.menus._base_menu_scene import BaseMenuScene
-from game.ui.components import ButtonConfig, LabelConfig
-from game.ui.ui_factory import UIFactory
+from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 
 
 class GameOverScene(BaseMenuScene):
@@ -23,7 +22,7 @@ class GameOverScene(BaseMenuScene):
         super().__init__(stack)
         self.retry_strategy_factory = retry_strategy_factory
 
-        title_label = UIFactory.label(
+        title_label = create_label(
             LabelConfig(
                 text=title,
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 320, 140), (640, 64)),
@@ -31,7 +30,7 @@ class GameOverScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        subtitle_label = UIFactory.label(
+        subtitle_label = create_label(
             LabelConfig(
                 text=subtitle,
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 320, 204), (640, 42)),
@@ -39,7 +38,7 @@ class GameOverScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        level_label = UIFactory.label(
+        level_label = create_label(
             LabelConfig(
                 text=f"Nivel alcancado: {reached_level}",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 180, 252), (360, 40)),
@@ -49,7 +48,7 @@ class GameOverScene(BaseMenuScene):
         )
         del title_label, subtitle_label, level_label
 
-        retry_button = UIFactory.button(
+        retry_button = create_button(
             ButtonConfig(
                 text="Tentar Novamente",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 340), (280, 56)),
@@ -57,7 +56,7 @@ class GameOverScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        menu_button = UIFactory.button(
+        menu_button = create_button(
             ButtonConfig(
                 text="Menu Principal",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 412), (280, 56)),

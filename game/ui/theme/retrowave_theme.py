@@ -44,9 +44,9 @@ THEME_DATA = {
             "selected_border": BTN_BORDER_HOVER
         },
         "font": {
-            "name": "monospace",
-            "size": 14,
-            "bold": 0
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
         },
         "misc": {
             "shape": "rectangle",
@@ -95,9 +95,9 @@ THEME_DATA = {
             "normal_bg": "#00000000"
         },
         "font": {
-            "name": "monospace",
-            "size": 14,
-            "bold": 0
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
         }
     },
 
@@ -106,9 +106,9 @@ THEME_DATA = {
             "normal_text": ACCENT_PINK
         },
         "font": {
-            "name": "monospace",
-            "size": 22,
-            "bold": 1
+            "name": "noto_sans",
+            "size": "48",
+            "bold": "1"
         }
     },
 
@@ -117,9 +117,9 @@ THEME_DATA = {
             "normal_text": ACCENT_BLUE
         },
         "font": {
-            "name": "monospace",
-            "size": 16,
-            "bold": 0
+            "name": "noto_sans",
+            "size": "16",
+            "bold": "0"
         }
     },
 
@@ -128,9 +128,9 @@ THEME_DATA = {
             "normal_text": "#6a4a7e"
         },
         "font": {
-            "name": "monospace",
-            "size": 12,
-            "bold": 0
+            "name": "noto_sans",
+            "size": "12",
+            "bold": "0"
         }
     },
 
@@ -139,9 +139,9 @@ THEME_DATA = {
             "normal_text": ACCENT_BLUE
         },
         "font": {
-            "name": "monospace",
-            "size": 14,
-            "bold": 1
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "1"
         }
     },
 
@@ -196,9 +196,9 @@ THEME_DATA = {
             "selected_bg": "#3d0f7a"
         },
         "font": {
-            "name": "monospace",
-            "size": 14,
-            "bold": 0
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
         },
         "misc": {
             "border_width": 2,
@@ -310,9 +310,9 @@ THEME_DATA = {
             "unfilled_bar": BG_HOVER
         },
         "font": {
-            "name": "monospace",
-            "size": 14,
-            "bold": 0,
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0",
             "italic": 0
         },
         "misc": {

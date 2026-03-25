@@ -8,8 +8,7 @@ from pygame_gui.elements import UITextBox
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.menus._base_menu_scene import BaseMenuScene
-from game.ui.components import ButtonConfig, LabelConfig
-from game.ui.ui_factory import UIFactory
+from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 
 
 class PauseScene(BaseMenuScene):
@@ -19,7 +18,7 @@ class PauseScene(BaseMenuScene):
         super().__init__(stack)
         self._overlay_elapsed_time = 0.0
 
-        title = UIFactory.label(
+        title = create_label(
             LabelConfig(
                 text="PAUSADO",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 120, 170), (240, 56)),
@@ -29,7 +28,7 @@ class PauseScene(BaseMenuScene):
         )
         del title
 
-        resume_button = UIFactory.button(
+        resume_button = create_button(
             ButtonConfig(
                 text="Continuar",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 280), (280, 56)),
@@ -37,7 +36,7 @@ class PauseScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        restart_button = UIFactory.button(
+        restart_button = create_button(
             ButtonConfig(
                 text="Reiniciar",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 350), (280, 56)),
@@ -45,7 +44,7 @@ class PauseScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        menu_button = UIFactory.button(
+        menu_button = create_button(
             ButtonConfig(
                 text="Menu Principal",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 420), (280, 56)),

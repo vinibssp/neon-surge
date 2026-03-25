@@ -4,6 +4,8 @@ from typing import Optional, Tuple
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class ButtonConfig:
@@ -30,8 +32,9 @@ def create_button(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UIButton:
     """Fabrica um UIButton a partir de ButtonConfig."""
-    object_id = pygame_gui.core.ObjectID(
-        class_id=f"@{config.variant}" if config.variant else None,
+    object_id = build_component_object_id(
+        element_id="button",
+        variant=config.variant,
         object_id=config.object_id,
     )
 

@@ -4,6 +4,8 @@ from typing import Optional
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class TextInputConfig:
@@ -24,7 +26,8 @@ def create_text_input(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UITextEntryLine:
     """Fabrica um UITextEntryLine a partir de TextInputConfig."""
-    object_id = pygame_gui.core.ObjectID(
+    object_id = build_component_object_id(
+        element_id="text_entry_line",
         object_id=config.object_id,
     )
 

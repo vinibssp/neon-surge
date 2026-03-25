@@ -4,6 +4,8 @@ from typing import Optional
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class ProgressBarConfig:
@@ -25,7 +27,8 @@ def create_progress_bar(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UIProgressBar:
     """Fabrica um UIProgressBar a partir de ProgressBarConfig."""
-    object_id = pygame_gui.core.ObjectID(
+    object_id = build_component_object_id(
+        element_id="progress_bar",
         object_id=config.object_id,
     )
 

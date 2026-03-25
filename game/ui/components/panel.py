@@ -4,6 +4,8 @@ from typing import Optional
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class PanelConfig:
@@ -27,14 +29,15 @@ def create_panel(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UIPanel:
     """Fabrica um UIPanel a partir de PanelConfig."""
-    object_id = pygame_gui.core.ObjectID(
-        class_id=f"@{config.variant}" if config.variant else None,
+    object_id = build_component_object_id(
+        element_id="panel",
+        variant=config.variant,
         object_id=config.object_id,
     )
 
     return pygame_gui.elements.UIPanel(
         relative_rect=config.rect,
-        starting_layer_height=config.starting_layer_height,
+        starting_height=config.starting_layer_height,
         manager=manager,
         container=container,
         object_id=object_id,

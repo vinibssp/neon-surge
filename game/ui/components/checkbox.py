@@ -4,6 +4,8 @@ from typing import Optional
 import pygame
 import pygame_gui
 
+from game.ui.gui_theme import build_component_object_id
+
 
 @dataclass
 class CheckboxConfig:
@@ -25,7 +27,8 @@ def create_checkbox(
     container: Optional[pygame_gui.core.UIContainer] = None,
 ) -> pygame_gui.elements.UICheckBox:
     """Fabrica um UICheckBox a partir de CheckboxConfig."""
-    object_id = pygame_gui.core.ObjectID(
+    object_id = build_component_object_id(
+        element_id="check_box",
         object_id=config.object_id,
     )
 
