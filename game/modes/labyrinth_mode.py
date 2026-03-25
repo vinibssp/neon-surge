@@ -90,7 +90,12 @@ class LabyrinthMode(GameModeStrategy):
 
         blocked_cells = {key_cell, layout.border_exit_cell, player_cell}
         for index in range(difficulty.enemy_count):
-            spawn_cell = layout.random_open_cell(self._rng, blocked=blocked_cells)
+            spawn_cell = self._choose_enemy_spawn_cell(
+                layout=layout,
+                blocked_cells=blocked_cells,
+                player_cell=player_cell,
+                min_cell_distance=3,
+            )
             blocked_cells.add(spawn_cell)
             behavior_kind = "chaser" if index % 2 == 0 else "interceptor"
             speed = self.config.base_enemy_speed * difficulty.enemy_speed_multiplier
@@ -185,11 +190,9 @@ class LabyrinthMode(GameModeStrategy):
         scene.world.add_entity(boss)
 
         support_count = min(4, 1 + level // 8)
+        player_position = Vector2(scene.world.width * 0.8, scene.world.height * 0.8)
         for _ in range(support_count):
-            spawn_position = Vector2(
-                self._rng.uniform(scene.world.width * 0.2, scene.world.width * 0.8),
-                self._rng.uniform(scene.world.height * 0.2, scene.world.height * 0.8),
-            )
+            spawn_position = self._choose_arena_enemy_spawn_position(scene, player_position)
             support_enemy = LabyrinthFactory.create_virus(
                 position=spawn_position,
                 behavior_kind=self._rng.choice(("chaser", "interceptor")),
@@ -207,11 +210,7 @@ class LabyrinthMode(GameModeStrategy):
         if player_transform is None:
             return
 
-        spawn_candidates = [(0, 0), (0, layout.height - 1), (layout.width - 1, 0), (layout.width - 1, layout.height - 1)]
-        spawn_cell = max(
-            spawn_candidates,
-            key=lambda cell: (layout.cell_center(cell) - layout.cell_center(layout.border_exit_cell)).length_squared(),
-        )
+        spawn_cell = (layout.width - 1, layout.height - 1)
         player_transform.position = layout.cell_center(spawn_cell)
 
     def _player_cell(self, layout: LabyrinthLayout, scene: "GameScene") -> tuple[int, int]:
@@ -263,7 +262,46 @@ class LabyrinthMode(GameModeStrategy):
         transform = player.get_component(TransformComponent)
         if transform is None:
             return
-        transform.position = Vector2(scene.world.width * 0.2, scene.world.height * 0.5)
+        transform.position = Vector2(scene.world.width * 0.8, scene.world.height * 0.8)
 
     def _get_runtime_state(self) -> LabyrinthRuntimeState | None:
         return self._runtime_state
+
+    def _choose_enemy_spawn_cell(
+        self,
+        layout: LabyrinthLayout,
+        blocked_cells: set[tuple[int, int]],
+        player_cell: tuple[int, int],
+        min_cell_distance: int,
+    ) -> tuple[int, int]:
+        min_distance_sq = float(min_cell_distance * min_cell_distance)
+        candidates: list[tuple[int, int]] = []
+        fallback: list[tuple[int, int]] = []
+        for y in range(layout.height):
+            for x in range(layout.width):
+                cell = (x, y)
+                if cell in blocked_cells:
+                    continue
+                fallback.append(cell)
+                dx = x - player_cell[0]
+                dy = y - player_cell[1]
+                if (dx * dx) + (dy * dy) >= min_distance_sq:
+                    candidates.append(cell)
+
+        if candidates:
+            return self._rng.choice(candidates)
+        if fallback:
+            return self._rng.choice(fallback)
+        return layout.random_open_cell(self._rng, blocked=blocked_cells)
+
+    def _choose_arena_enemy_spawn_position(self, scene: "GameScene", player_position: Vector2) -> Vector2:
+        min_distance = 180.0
+        min_distance_sq = min_distance * min_distance
+        for _ in range(40):
+            candidate = Vector2(
+                self._rng.uniform(scene.world.width * 0.15, scene.world.width * 0.85),
+                self._rng.uniform(scene.world.height * 0.15, scene.world.height * 0.85),
+            )
+            if (candidate - player_position).length_squared() >= min_distance_sq:
+                return candidate
+        return Vector2(scene.world.width * 0.2, scene.world.height * 0.2)
