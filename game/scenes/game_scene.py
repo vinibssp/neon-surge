@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass
 from typing import Callable
@@ -122,19 +123,21 @@ class GameScene(Scene):
             return
 
         state = str(lava_state.get("state", "idle"))
-        height = int(float(lava_state.get("height", 0.0)))
-        if height <= 0:
+        region = lava_state.get("region")
+        if not isinstance(region, tuple) or len(region) != 4:
+            return
+        rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+        if rect.width <= 0 or rect.height <= 0:
             return
 
-        top = SCREEN_HEIGHT - height
         if state == "active":
             blink_visible = bool(lava_state.get("blink_visible", True))
             if not blink_visible:
                 return
-            overlay = pygame.Surface((SCREEN_WIDTH, height), pygame.SRCALPHA)
+            overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
             overlay.fill((255, 80, 35, 112))
-            screen.blit(overlay, (0, top))
-            pygame.draw.line(screen, (255, 206, 94), (0, top), (SCREEN_WIDTH, top), 3)
+            screen.blit(overlay, rect.topleft)
+            pygame.draw.rect(screen, (255, 206, 94), rect, 3)
             return
 
         warning_left = float(lava_state.get("time_to_lava", 0.0))
@@ -144,10 +147,10 @@ class GameScene(Scene):
 
         alpha_ratio = max(0.2, min(1.0, 1.0 - (warning_left / warning_duration)))
         alpha = int(40 + 90 * alpha_ratio)
-        overlay = pygame.Surface((SCREEN_WIDTH, height), pygame.SRCALPHA)
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         overlay.fill((255, 185, 42, alpha))
-        screen.blit(overlay, (0, top))
-        pygame.draw.line(screen, (255, 230, 120), (0, top), (SCREEN_WIDTH, top), 2)
+        screen.blit(overlay, rect.topleft)
+        pygame.draw.rect(screen, (255, 230, 120), rect, 2)
 
     def _render_environment_event_overlay(self, screen: pygame.Surface) -> None:
         event_state = self.world.runtime_state.get("environment_event")
@@ -183,12 +186,35 @@ class GameScene(Scene):
         consume_radius = int(float(black_hole.get("consume_radius", 0.0)))
         if pull_radius <= 0 or consume_radius <= 0:
             return
-        pulse = 80 + int(35 * (0.5 + 0.5 * pygame.time.get_ticks() * 0.01 % 1.0))
-        aura = pygame.Surface((pull_radius * 2, pull_radius * 2), pygame.SRCALPHA)
-        pygame.draw.circle(aura, (142, 90, 255, pulse), (pull_radius, pull_radius), pull_radius)
-        screen.blit(aura, (x - pull_radius, y - pull_radius))
-        pygame.draw.circle(screen, (15, 8, 28), (x, y), consume_radius)
-        pygame.draw.circle(screen, (190, 148, 255), (x, y), consume_radius + 3, 2)
+
+        now = pygame.time.get_ticks() * 0.001
+        pulse = 0.5 + 0.5 * math.sin(now * 2.6)
+
+        aura = pygame.Surface((pull_radius * 2 + 8, pull_radius * 2 + 8), pygame.SRCALPHA)
+        aura_center = (aura.get_width() // 2, aura.get_height() // 2)
+        outer_alpha = int(34 + pulse * 26)
+        inner_alpha = int(55 + pulse * 42)
+        pygame.draw.circle(aura, (72, 20, 130, outer_alpha), aura_center, pull_radius + 2)
+        pygame.draw.circle(aura, (120, 46, 205, inner_alpha), aura_center, max(2, int(pull_radius * 0.66)))
+        screen.blit(aura, (x - aura_center[0], y - aura_center[1]))
+
+        ring_a = consume_radius + 10 + int(3 * math.sin(now * 3.7))
+        ring_b = consume_radius + 20 + int(4 * math.cos(now * 2.4 + 0.8))
+        pygame.draw.circle(screen, (196, 128, 255), (x, y), max(2, ring_a), 2)
+        pygame.draw.circle(screen, (124, 214, 255), (x, y), max(2, ring_b), 1)
+
+        for index in range(12):
+            phase = (index / 12.0) * (math.pi * 2.0)
+            angle = (now * (1.8 + 0.12 * index)) + phase
+            orbit = consume_radius + 7 + (index % 3) * 5
+            px = int(x + math.cos(angle) * orbit)
+            py = int(y + math.sin(angle) * orbit)
+            color = (235, 200, 255) if index % 2 == 0 else (150, 230, 255)
+            pygame.draw.circle(screen, color, (px, py), 1)
+
+        core_radius = max(2, int(consume_radius * (0.92 + 0.08 * math.sin(now * 6.4))))
+        pygame.draw.circle(screen, (10, 6, 18), (x, y), core_radius)
+        pygame.draw.circle(screen, (240, 188, 255), (x, y), consume_radius + 2, 2)
 
     def setup_level(self, level: int) -> None:
         self.world.level = level

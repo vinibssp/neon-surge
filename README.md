@@ -149,7 +149,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - `SpawnStrategy` em `game/modes/spawn_strategy.py` opera por `GameWorld` + `elapsed_time`
 - cada modo controla a política de spawn por categoria (`enemy`, `miniboss`, `boss`)
 - pools de roster são liberados por fase (nível/tempo) para evitar picos injustos no early game
-- sobrevivência/hardcore incluem hazard periódico de lava com fases de aviso, ativo e pisca no encerramento
+- sobrevivência/hardcore incluem hazard periódico de lava com fases de aviso, ativo e pisca no encerramento, surgindo em regiões variáveis da tela
 - sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), região de água com navios canhoneiros, nuvem de balas e buraco negro móvel com sucção
 - eventos ambientais são mutuamente exclusivos: lava, neve, água, nuvem de balas e buraco negro nunca acontecem juntos
 - player possui parry em `J`; inimigos atingidos no raio do parry ficam desestabilizados temporariamente com pulso visual

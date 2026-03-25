@@ -98,6 +98,9 @@ class EnvironmentEventSystem:
         self._event_region = self._random_region(0.34, 0.46)
         self._bullet_timer = 0.0
 
+        if self._active_event == self.EVENT_SNOW:
+            self._event_region = Rect(0, 0, self.world.width, self.world.height)
+
         if self._active_event == self.EVENT_WATER:
             self._spawn_water_pirates()
 
@@ -107,7 +110,10 @@ class EnvironmentEventSystem:
             self._black_hole_velocity = heading * self.black_hole_speed
 
         if self._active_event == self.EVENT_LAVA:
-            self._event_region = None
+            lava_height_ratio = max(0.08, min(0.45, self.lava_height_ratio))
+            width_ratio = max(0.28, min(0.55, 0.22 + (lava_height_ratio * 1.2)))
+            height_ratio = max(0.14, min(0.42, lava_height_ratio * 1.35))
+            self._event_region = self._random_region(width_ratio, height_ratio)
             self._event_time_left = self.lava_warning_duration + self.lava_active_duration
             self._lava_phase = "warning"
             self._lava_phase_time_left = self.lava_warning_duration
@@ -259,9 +265,11 @@ class EnvironmentEventSystem:
         if invulnerability is not None and invulnerability.time_left > 0.0:
             return
 
-        lava_height = self.world.height * self.lava_height_ratio
-        lava_line = self.world.height - lava_height
-        if transform.position.y + collision.radius < lava_line:
+        region = self._event_region
+        if region is None:
+            return
+
+        if not self._circle_overlaps_rect(transform.position, collision.radius, region):
             return
 
         self.world.runtime_state["last_death_cause"] = "Queimado na lava"
@@ -280,12 +288,22 @@ class EnvironmentEventSystem:
         state = "warning" if self._lava_phase == "warning" else "active"
         warning_left = self._lava_phase_time_left if state == "warning" else 0.0
         active_left = self._lava_phase_time_left if state == "active" else 0.0
+        region = self._event_region
+        region_payload = None
+        if region is not None:
+            region_payload = (
+                float(region.left),
+                float(region.top),
+                float(region.width),
+                float(region.height),
+            )
         self.world.runtime_state["survival_lava"] = {
             "state": state,
             "time_to_lava": warning_left,
             "active_time_left": active_left,
             "blink_visible": self._lava_blink_visible(),
-            "height": self.world.height * self.lava_height_ratio,
+            "height": 0.0 if region is None else float(region.height),
+            "region": region_payload,
             "warning_duration": self.lava_warning_duration,
             "blink_duration": self.lava_blink_duration,
         }
@@ -372,3 +390,11 @@ class EnvironmentEventSystem:
             random.uniform(margin, self.world.width - margin),
             random.uniform(margin, self.world.height - margin),
         )
+
+    @staticmethod
+    def _circle_overlaps_rect(center: Vector2, radius: float, rect: Rect) -> bool:
+        closest_x = max(rect.left, min(center.x, rect.right))
+        closest_y = max(rect.top, min(center.y, rect.bottom))
+        dx = center.x - closest_x
+        dy = center.y - closest_y
+        return (dx * dx) + (dy * dy) <= (radius * radius)

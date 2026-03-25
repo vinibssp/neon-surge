@@ -27,9 +27,9 @@ class ChannelLayout:
 
 @dataclass
 class AudioSettings:
-    master_volume: float = 1.0
-    music_volume: float = 0.70
-    sfx_volume: float = 0.85
+    master_volume: float = 0.20
+    music_volume: float = 0.20
+    sfx_volume: float = 0.20
     group_volume: dict[AudioGroup, float] = field(
         default_factory=lambda: {
             "music": 1.0,
@@ -42,7 +42,7 @@ class AudioSettings:
     muted_groups: set[AudioGroup] = field(default_factory=set)
     channel_layout: ChannelLayout = field(default_factory=ChannelLayout)
     reserved_channels: int = 8
-    duck_factor: float = 0.35
+    duck_factor: float = 0.20
     enemy_cue_min_interval_seconds: dict[str, float] = field(
         default_factory=lambda: {
             "enemy_shoot": 0.10,

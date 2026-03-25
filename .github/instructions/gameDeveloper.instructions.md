@@ -178,6 +178,7 @@ Resiliência operacional:
 - Presets de modo devem concentrar tuning de política de spawn por categoria
 - Tuning global de dificuldade deve priorizar curva progressiva: frequência de spawn, chance por categoria e desbloqueio de roster
 - Presets de sobrevivência devem concentrar hazards periódicos (ex.: lava): intervalo, aviso, duração ativa e janela de pisca de encerramento
+- Lava deve poder surgir em regiões variadas da arena (não fixa na borda), mantendo o mesmo contrato de aviso, janela ativa e pisca final
 - Presets de sobrevivência devem concentrar eventos ambientais periódicos (neve/água/nuvem de balas/buraco negro): intervalo global, duração e intensidade por evento
 - Lava integra o sistema de eventos ambientais e deve respeitar exclusividade: apenas um evento ativo por vez
 - Presets de sobrevivência devem concentrar progressão de coletáveis especiais e habilidades de pico (ex.: bomba nuclear por limiar de coleta)

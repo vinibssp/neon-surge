@@ -145,23 +145,23 @@ class RaceSpawnStrategy(SpawnStrategy):
         return EnemyFactory.choose_random_enemy_kind_from(self._enemy_pool_for_level(world.level))
 
     def _enemy_pool_for_level(self, level: int) -> list[str]:
-        if level <= 3:
+        if level <= 4:
             return list(EARLY_ENEMY_KINDS)
-        if level <= 7:
+        if level <= 9:
             return list(MID_ENEMY_KINDS)
         return list(LATE_ENEMY_KINDS)
 
     def _miniboss_pool_for_level(self, level: int) -> list[str]:
-        if level <= 6:
+        if level <= 8:
             return list(EARLY_MINIBOSS_KINDS)
-        if level <= 10:
+        if level <= 12:
             return list(MID_MINIBOSS_KINDS)
         return list(LATE_MINIBOSS_KINDS)
 
     def _boss_pool_for_level(self, level: int) -> list[str]:
-        if level <= 10:
+        if level <= 12:
             return list(EARLY_BOSS_KINDS)
-        if level <= 15:
+        if level <= 18:
             return list(MID_BOSS_KINDS)
         return list(LATE_BOSS_KINDS)
 
@@ -172,7 +172,7 @@ class RaceSpawnStrategy(SpawnStrategy):
         if level < self.config.boss_start_level:
             level_offset = level - self.config.miniboss_start_level
             miniboss_chance = min(
-                0.85,
+                0.55,
                 self.config.miniboss_spawn_chance
                 + level_offset * self.config.miniboss_spawn_chance_gain_per_level,
             )
@@ -180,12 +180,12 @@ class RaceSpawnStrategy(SpawnStrategy):
 
         level_offset = level - self.config.boss_start_level
         boss_chance = min(
-            0.45,
+            0.25,
             self.config.boss_spawn_chance
             + level_offset * self.config.boss_spawn_chance_gain_per_level,
         )
         miniboss_chance = min(
-            0.75,
+            0.45,
             self.config.miniboss_spawn_chance
             + level_offset * self.config.miniboss_spawn_chance_gain_per_level,
         )
@@ -230,35 +230,35 @@ class SurvivalSpawnStrategy(SpawnStrategy):
         return EnemyFactory.choose_random_enemy_kind_from(self._enemy_pool_for_time(elapsed_time))
 
     def _enemy_pool_for_time(self, elapsed_time: float) -> list[str]:
-        if elapsed_time < 50.0:
+        if elapsed_time < 70.0:
             return list(EARLY_ENEMY_KINDS)
-        if elapsed_time < 120.0:
+        if elapsed_time < 150.0:
             return list(MID_ENEMY_KINDS)
         return list(LATE_ENEMY_KINDS)
 
     def _miniboss_pool_for_time(self, elapsed_time: float) -> list[str]:
-        if elapsed_time < 100.0:
+        if elapsed_time < 130.0:
             return list(EARLY_MINIBOSS_KINDS)
-        if elapsed_time < 180.0:
+        if elapsed_time < 220.0:
             return list(MID_MINIBOSS_KINDS)
         return list(LATE_MINIBOSS_KINDS)
 
     def _boss_pool_for_time(self, elapsed_time: float) -> list[str]:
-        if elapsed_time < 150.0:
+        if elapsed_time < 190.0:
             return list(EARLY_BOSS_KINDS)
-        if elapsed_time < 240.0:
+        if elapsed_time < 280.0:
             return list(MID_BOSS_KINDS)
         return list(LATE_BOSS_KINDS)
 
     def _choose_spawn_category(self, elapsed_time: float) -> str:
         minute_factor = elapsed_time / 60.0
         miniboss_chance = min(
-            0.85,
+            0.50,
             self.config.miniboss_spawn_chance
             + minute_factor * self.config.miniboss_spawn_chance_gain_per_minute,
         )
         boss_chance = min(
-            0.55,
+            0.22,
             self.config.boss_spawn_chance + minute_factor * self.config.boss_spawn_chance_gain_per_minute,
         )
         if elapsed_time < self.config.miniboss_start_time:

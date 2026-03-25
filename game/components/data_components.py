@@ -54,7 +54,7 @@ class StaggeredComponent(Component):
 class NuclearBombComponent(Component):
     charges: int = 0
     collectibles_progress: int = 0
-    charge_threshold: int = 100
+    charge_threshold: int = 20
     requested: bool = False
 
 
