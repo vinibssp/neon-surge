@@ -43,6 +43,10 @@ class BulletFactory:
                 render_strategy=CircleRenderStrategy(
                     color=BULLET_COLOR if color is None else color,
                     radius=radius,
+                    style="projectile",
+                    pulse_speed=16.0,
+                    projectile_variant="shard",
+                    trail_length=3,
                 )
             )
         )
@@ -83,6 +87,10 @@ class BulletFactory:
                 render_strategy=CircleRenderStrategy(
                     color=BULLET_COLOR if color is None else color,
                     radius=radius,
+                    style="projectile",
+                    pulse_speed=10.0,
+                    projectile_variant="orb",
+                    trail_length=2,
                 )
             )
         )

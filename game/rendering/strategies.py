@@ -11,6 +11,7 @@ from game.components.data_components import (
     DashComponent,
     ExplosiveComponent,
     InvulnerabilityComponent,
+    MovementComponent,
     ShootComponent,
     SniperComponent,
     TurretComponent,
@@ -176,20 +177,118 @@ class CircleRenderStrategy:
         color: tuple[int, int, int],
         radius: float,
         thickness: int = 0,
+        style: str = "default",
+        pulse_speed: float = 14.0,
+        projectile_variant: str = "orb",
+        trail_length: int = 2,
     ) -> None:
         self.color = color
         self.radius = radius
         self.thickness = thickness
+        self.style = style
+        self.pulse_speed = pulse_speed
+        self.projectile_variant = projectile_variant
+        self.trail_length = max(0, trail_length)
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
-        del entity
-        pygame.draw.circle(
-            screen,
-            self.color,
-            transform.position,
-            self.radius,
-            self.thickness,
+        if self.style != "projectile":
+            pygame.draw.circle(
+                screen,
+                self.color,
+                transform.position,
+                self.radius,
+                self.thickness,
+            )
+            return
+
+        movement = entity.get_component(MovementComponent)
+        direction = pygame.Vector2(1, 0)
+        if movement is not None and movement.velocity.length_squared() > 0:
+            direction = movement.velocity.normalize()
+
+        side = pygame.Vector2(-direction.y, direction.x)
+        now = time.time()
+        phase = (entity.id % 13) * 0.27
+        pulse = 0.5 + 0.5 * math.sin(now * self.pulse_speed + phase)
+        center_x = int(transform.position.x)
+        center_y = int(transform.position.y)
+
+        def _dark(color: tuple[int, int, int]) -> tuple[int, int, int]:
+            return (max(0, color[0] - 135), max(0, color[1] - 135), max(0, color[2] - 135))
+
+        def _bright(color: tuple[int, int, int]) -> tuple[int, int, int]:
+            return (
+                min(255, int(color[0] * 1.2) + 28),
+                min(255, int(color[1] * 1.2) + 28),
+                min(255, int(color[2] * 1.2) + 28),
+            )
+
+        base_radius = max(1, int(self.radius + pulse * 2))
+        draw_neon_glow(
+            surface=screen,
+            color=self.color,
+            center_x=center_x,
+            center_y=center_y,
+            radius=base_radius + 2,
+            layers=3,
         )
+
+        if self.projectile_variant == "shard":
+            outline_color = _dark(self.color)
+            bright_color = _bright(self.color)
+
+            for index in range(self.trail_length, 0, -1):
+                trail_pos = transform.position - direction * (index * (self.radius * 1.35))
+                trail_scale = max(0.35, 1.0 - index * 0.22)
+                trail_r = max(1.0, self.radius * trail_scale)
+                head = trail_pos + direction * (trail_r * 1.55)
+                tail = trail_pos - direction * (trail_r * 1.65)
+                wing_a = trail_pos + side * (trail_r * 0.9)
+                wing_b = trail_pos - side * (trail_r * 0.9)
+                pygame.draw.polygon(screen, outline_color, [head, wing_a, tail, wing_b])
+
+            head = transform.position + direction * (self.radius * 1.75)
+            tail = transform.position - direction * (self.radius * 1.95)
+            wing_a = transform.position + side * (self.radius * 1.05)
+            wing_b = transform.position - side * (self.radius * 1.05)
+            pygame.draw.polygon(screen, outline_color, [head, wing_a, tail, wing_b])
+
+            core_head = transform.position + direction * (self.radius * 1.28)
+            core_tail = transform.position - direction * (self.radius * 1.35)
+            core_wing_a = transform.position + side * (self.radius * 0.68)
+            core_wing_b = transform.position - side * (self.radius * 0.68)
+            pygame.draw.polygon(screen, self.color, [core_head, core_wing_a, core_tail, core_wing_b])
+            pygame.draw.polygon(
+                screen,
+                bright_color,
+                [
+                    transform.position + direction * (self.radius * 0.82),
+                    transform.position + side * (self.radius * 0.4),
+                    transform.position - direction * (self.radius * 0.92),
+                    transform.position - side * (self.radius * 0.4),
+                ],
+            )
+            pygame.draw.circle(screen, (245, 245, 245), transform.position, max(1, int(self.radius * 0.32)))
+            return
+
+        pygame.draw.circle(screen, _dark(self.color), transform.position, max(1, base_radius + 1))
+        pygame.draw.circle(screen, self.color, transform.position, base_radius)
+        pygame.draw.circle(screen, (16, 18, 28), transform.position, max(1, base_radius - 2))
+        pygame.draw.circle(screen, _bright(self.color), transform.position, max(1, int(self.radius * 0.72)))
+        pygame.draw.circle(screen, (245, 245, 245), transform.position, max(1, int(self.radius * 0.4)))
+
+        for index in range(self.trail_length, 0, -1):
+            trail_pos = transform.position - direction * (index * (self.radius * 1.2))
+            trail_radius = max(1, int(self.radius * (0.62 - index * 0.11)))
+            pygame.draw.circle(screen, _dark(self.color), trail_pos, trail_radius + 1)
+            pygame.draw.circle(screen, self.color, trail_pos, trail_radius)
+
+        sparkle_orbit = self.radius + 3.0
+        for offset in (0.0, math.pi):
+            angle = (now * 8.0) + phase + offset
+            px = int(center_x + math.cos(angle) * sparkle_orbit)
+            py = int(center_y + math.sin(angle) * sparkle_orbit)
+            pygame.draw.circle(screen, _bright(self.color), (px, py), 1)
 
 
 class RectRenderStrategy:
