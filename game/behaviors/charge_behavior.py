@@ -44,8 +44,6 @@ class ChargeBehavior(Behavior):
         to_player = player_transform.position - transform.position
         distance_to_player = to_player.length()
         chase_direction = normalized(to_player)
-        player_movement = player.get_component(MovementComponent)
-        player_velocity = Vector2() if player_movement is None else Vector2(player_movement.velocity)
 
         charge.timer += dt
         if charge.state == "waiting":
@@ -70,9 +68,7 @@ class ChargeBehavior(Behavior):
             return
 
         if charge.state == "aiming":
-            lock_window = self.AIM_DURATION * 0.7
-            if charge.timer <= lock_window or not charge.is_target_locked:
-                charge.locked_target = player_transform.position + (player_velocity * 0.22)
+            charge.locked_target = Vector2(player_transform.position)
             charge.is_target_locked = True
             aim_direction = normalized(charge.locked_target - transform.position, chase_direction)
             self._apply_steering(
