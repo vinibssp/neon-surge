@@ -89,7 +89,7 @@ class BulletFactory:
                     radius=radius,
                     style="projectile",
                     pulse_speed=10.0,
-                    projectile_variant="orb",
+                    projectile_variant="mortar_shell",
                     trail_length=2,
                 )
             )

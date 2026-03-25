@@ -77,6 +77,9 @@ def _draw_magic_cannon(
     base_radius: float,
     *,
     pulse: float = 0.0,
+    body_color: tuple[int, int, int] | None = None,
+    accent_color: tuple[int, int, int] | None = None,
+    glow_color: tuple[int, int, int] | None = None,
 ) -> None:
     if direction.length_squared() <= 0:
         direction = pygame.Vector2(1, 0)
@@ -84,10 +87,13 @@ def _draw_magic_cannon(
     side = pygame.Vector2(-aim.y, aim.x)
 
     shadow = (10, 8, 18)
-    body = (82, 42, 150)
-    body_high = (132, 78, 220)
-    core = (212, 170, 255)
-    rune = (180, 92, 255)
+    base_body = (82, 42, 150) if body_color is None else body_color
+    base_accent = (212, 170, 255) if accent_color is None else accent_color
+    base_glow = (180, 92, 255) if glow_color is None else glow_color
+    body = _darken(base_body, 28)
+    body_high = _brighten(base_body, gain=1.06, bias=16)
+    core = base_accent
+    rune = base_glow
 
     rear = pygame.Vector2(center) + aim * (base_radius * 0.3)
     neck = pygame.Vector2(center) + aim * (base_radius + 4)
@@ -266,7 +272,16 @@ class ShooterRenderStrategy:
 
         direction = shoot.target_direction.normalize()
         tip = pygame.Vector2(center) + direction * (self.radius + 13)
-        _draw_magic_cannon(screen, center, direction, self.radius, pulse=pulse)
+        _draw_magic_cannon(
+            screen,
+            center,
+            direction,
+            self.radius,
+            pulse=pulse,
+            body_color=self.outer_color,
+            accent_color=_brighten(self.outer_color, gain=1.1, bias=20),
+            glow_color=_brighten(self.outer_color, gain=1.06, bias=16),
+        )
         pygame.draw.circle(screen, (245, 245, 245), tip, 2)
 
 
@@ -388,6 +403,31 @@ class CircleRenderStrategy:
             radius=base_radius + 2,
             layers=3,
         )
+
+        if self.projectile_variant == "mortar_shell":
+            outline_color = _dark(self.color)
+            bright_color = _bright(self.color)
+            fin_rear = transform.position - direction * (self.radius * 1.25)
+            fin_left = fin_rear + side * (self.radius * 0.85)
+            fin_right = fin_rear - side * (self.radius * 0.85)
+            nose = transform.position + direction * (self.radius * 1.18)
+
+            pygame.draw.circle(screen, outline_color, transform.position, max(2, int(self.radius + 2)))
+            pygame.draw.circle(screen, self.color, transform.position, max(2, int(self.radius + 1)))
+            pygame.draw.circle(screen, (18, 20, 26), transform.position, max(1, int(self.radius * 0.58)))
+            pygame.draw.circle(screen, bright_color, nose, max(1, int(self.radius * 0.36)))
+
+            pygame.draw.polygon(screen, outline_color, [fin_rear, fin_left, transform.position])
+            pygame.draw.polygon(screen, outline_color, [fin_rear, fin_right, transform.position])
+            pygame.draw.polygon(screen, self.color, [fin_rear + direction, fin_left, transform.position])
+            pygame.draw.polygon(screen, self.color, [fin_rear + direction, fin_right, transform.position])
+
+            for index in range(max(1, self.trail_length), 0, -1):
+                trail_pos = transform.position - direction * (index * (self.radius * 1.45))
+                trail_r = max(1, int(self.radius * (0.5 - index * 0.1)))
+                pygame.draw.circle(screen, outline_color, trail_pos, trail_r + 1)
+                pygame.draw.circle(screen, bright_color, trail_pos, trail_r)
+            return
 
         if self.projectile_variant == "shard":
             outline_color = _dark(self.color)
@@ -725,12 +765,30 @@ class TurretEnemyRenderStrategy:
             for angle in shot_angles:
                 barrel_direction = pygame.Vector2(1, 0).rotate(angle)
                 tip = transform.position + barrel_direction.normalize() * (self.radius + 14)
-                _draw_magic_cannon(screen, center, barrel_direction, self.radius, pulse=pulse)
+                _draw_magic_cannon(
+                    screen,
+                    center,
+                    barrel_direction,
+                    self.radius,
+                    pulse=pulse,
+                    body_color=self.base_color,
+                    accent_color=_brighten(self.base_color, gain=1.1, bias=18),
+                    glow_color=_brighten(self.base_color, gain=1.06, bias=12),
+                )
                 pygame.draw.circle(screen, core_color, tip, 4)
             return
 
         tip = transform.position + direction.normalize() * (self.radius + 14)
-        _draw_magic_cannon(screen, center, direction, self.radius, pulse=pulse)
+        _draw_magic_cannon(
+            screen,
+            center,
+            direction,
+            self.radius,
+            pulse=pulse,
+            body_color=self.base_color,
+            accent_color=_brighten(self.base_color, gain=1.1, bias=18),
+            glow_color=_brighten(self.base_color, gain=1.06, bias=12),
+        )
         pygame.draw.circle(screen, core_color, tip, 4)
 
 
@@ -740,18 +798,38 @@ class MortarTargetMarkerRenderStrategy:
         self.radius = radius
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
-        pulse = 1.0 + abs(math.sin(time.time() * 8.0)) * 0.2
+        now = time.time()
+        phase = (entity.id % 11) * 0.31
+        pulse = 1.0 + abs(math.sin(now * 8.0 + phase)) * 0.24
         radius = self.radius * pulse
+        center = (int(transform.position.x), int(transform.position.y))
+        dark_color = _darken(self.color, 115)
+        bright_color = _brighten(self.color, gain=1.12, bias=16)
         draw_neon_glow(
             surface=screen,
             color=self.color,
-            center_x=int(transform.position.x),
-            center_y=int(transform.position.y),
+            center_x=center[0],
+            center_y=center[1],
             radius=max(1, int(radius + 2)),
-            layers=2,
+            layers=3,
         )
-        pygame.draw.circle(screen, self.color, transform.position, int(radius), 2)
-        pygame.draw.circle(screen, self.color, transform.position, max(1, int(radius * 0.45)), 1)
+
+        pygame.draw.circle(screen, dark_color, center, int(radius) + 2, 2)
+        pygame.draw.circle(screen, self.color, center, int(radius), 2)
+        pygame.draw.circle(screen, bright_color, center, max(1, int(radius * 0.55)), 1)
+
+        tick_len = max(4, int(radius * 0.34))
+        gap = max(3, int(radius * 0.18))
+        pygame.draw.line(screen, bright_color, (center[0] - tick_len - gap, center[1]), (center[0] - gap, center[1]), 2)
+        pygame.draw.line(screen, bright_color, (center[0] + gap, center[1]), (center[0] + tick_len + gap, center[1]), 2)
+        pygame.draw.line(screen, bright_color, (center[0], center[1] - tick_len - gap), (center[0], center[1] - gap), 2)
+        pygame.draw.line(screen, bright_color, (center[0], center[1] + gap), (center[0], center[1] + tick_len + gap), 2)
+
+        ring_orbit = radius + 2.0
+        angle = now * 5.0 + phase
+        px = int(center[0] + math.cos(angle) * ring_orbit)
+        py = int(center[1] + math.sin(angle) * ring_orbit)
+        pygame.draw.circle(screen, bright_color, (px, py), 2)
 
 
 class ShieldMinibossRenderStrategy:
@@ -906,31 +984,63 @@ class MortarRenderStrategy:
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         del entity
         now = time.time()
-        pulse = abs(math.sin(now * 5.0)) * 2.0
+        pulse = abs(math.sin(now * 4.4)) * 2.0
         center = (int(transform.position.x), int(transform.position.y))
+        angle = now * 1.7
+        body_w = int(self.radius * 1.9)
+        body_h = int(self.radius * 1.4)
+        body = pygame.Rect(center[0] - body_w // 2, center[1] - body_h // 2, body_w, body_h)
+
         draw_neon_glow(
             surface=screen,
             color=self.base_color,
             center_x=center[0],
             center_y=center[1],
             radius=max(1, int(self.radius + pulse)),
-            layers=4,
+            layers=3,
+        )
+        pygame.draw.rect(screen, (10, 10, 14), body.inflate(6, 6))
+        pygame.draw.rect(screen, _darken(self.base_color, 78), body)
+        pygame.draw.rect(screen, self.base_color, body.inflate(-6, -6))
+        pygame.draw.rect(screen, _brighten(self.base_color, gain=1.08, bias=12), body.inflate(-10, -10), 1)
+
+        hatch = pygame.Rect(center[0] - int(self.radius * 0.45), center[1] - int(self.radius * 0.35), int(self.radius * 0.9), int(self.radius * 0.7))
+        pygame.draw.rect(screen, (14, 14, 18), hatch)
+        pygame.draw.rect(screen, _brighten(self.base_color, gain=1.08, bias=18), hatch, 1)
+
+        rivet_r = 2
+        for rx, ry in (
+            (body.left + 6, body.top + 6),
+            (body.right - 6, body.top + 6),
+            (body.left + 6, body.bottom - 6),
+            (body.right - 6, body.bottom - 6),
+        ):
+            pygame.draw.circle(screen, (12, 12, 16), (rx, ry), rivet_r + 1)
+            pygame.draw.circle(screen, _brighten(self.base_color, gain=1.02, bias=8), (rx, ry), rivet_r)
+
+        barrel_len = int(self.radius * 1.28)
+        barrel_tip = pygame.Vector2(
+            center[0] + math.cos(angle) * barrel_len,
+            center[1] + math.sin(angle) * barrel_len,
+        )
+        barrel_dir = barrel_tip - pygame.Vector2(center)
+        _draw_magic_cannon(
+            screen,
+            center,
+            barrel_dir,
+            self.radius * 0.9,
+            pulse=pulse,
+            body_color=self.base_color,
+            accent_color=_brighten(self.base_color, gain=1.12, bias=20),
+            glow_color=_brighten(self.base_color, gain=1.08, bias=14),
         )
 
-        outer_rect = pygame.Rect(0, 0, int(self.radius * 1.7), int(self.radius * 1.3))
-        outer_rect.center = center
-        pygame.draw.rect(screen, _darken(self.base_color), outer_rect.inflate(4, 4))
-        pygame.draw.rect(screen, self.base_color, outer_rect)
-        pygame.draw.rect(screen, (5, 5, 8), outer_rect, 2)
-
-        barrel_len = int(self.radius * 1.2)
-        angle = now * 1.9
-        tip = (
-            int(transform.position.x + math.cos(angle) * barrel_len),
-            int(transform.position.y + math.sin(angle) * barrel_len),
-        )
-        pygame.draw.line(screen, (245, 245, 245), transform.position, tip, 3)
-        pygame.draw.circle(screen, (245, 245, 245), tip, 3)
+        wheel_orbit = self.radius + 6
+        for offset in (0.0, math.pi):
+            wx = int(center[0] + math.cos(angle + offset) * wheel_orbit)
+            wy = int(center[1] + math.sin(angle + offset) * wheel_orbit)
+            pygame.draw.circle(screen, (8, 8, 12), (wx, wy), 4)
+            pygame.draw.circle(screen, _brighten(self.base_color, gain=1.0, bias=8), (wx, wy), 2)
 
 
 class VirusGlitchRenderStrategy:
