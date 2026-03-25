@@ -143,6 +143,8 @@ class CollisionSystem:
                 ghost = entity.get_component(GhostComponent)
                 if ghost is not None and not ghost.is_visible:
                     continue
+                if ghost is not None and ghost.is_visible and ghost.timer < ghost.materialize_grace:
+                    continue
 
                 if not is_player_invulnerable:
                     cause = "Atingido por projetil" if entity.has_tag("bullet") else "Colisao com inimigo"

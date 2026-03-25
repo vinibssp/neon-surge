@@ -917,7 +917,7 @@ class GhostRenderStrategy:
         ghost = entity.get_component(GhostComponent)
         center = (int(transform.position.x), int(transform.position.y))
         visible = ghost is not None and ghost.is_visible
-        alpha = 210 if visible else 85
+        alpha = 230 if visible else 48
         shell_color = self.base_color if visible else _brighten(self.base_color, gain=1.02, bias=6)
 
         size = int((self.radius + 5) * 2)
@@ -930,6 +930,14 @@ class GhostRenderStrategy:
 
         if visible:
             _draw_pixel_eyes(screen, center, (245, 245, 255), spacing=max(4, int(self.radius * 0.28)))
+            if ghost is not None and ghost.timer < ghost.materialize_grace:
+                pulse = 0.5 + 0.5 * math.sin(time.time() * 18.0)
+                ring_radius = int(self.radius + 6 + (1.0 - min(1.0, ghost.timer / max(0.001, ghost.materialize_grace))) * 5)
+                ring_alpha = int(110 + pulse * 90)
+                ring_surface = pygame.Surface((ring_radius * 2 + 8, ring_radius * 2 + 8), pygame.SRCALPHA)
+                local_center = (ring_surface.get_width() // 2, ring_surface.get_height() // 2)
+                pygame.draw.circle(ring_surface, (225, 240, 255, ring_alpha), local_center, ring_radius, 2)
+                screen.blit(ring_surface, (center[0] - local_center[0], center[1] - local_center[1]))
 
 
 class BossRenderStrategy:

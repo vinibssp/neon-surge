@@ -54,7 +54,7 @@ class StaggeredComponent(Component):
 class NuclearBombComponent(Component):
     charges: int = 0
     collectibles_progress: int = 0
-    charge_threshold: int = 20
+    charge_threshold: int = 30
     requested: bool = False
 
 
@@ -192,6 +192,7 @@ class GhostComponent(Component):
     visible_duration: float = 1.0
     reveal_distance: float = 120.0
     hidden_speed: float = 165.0
+    materialize_grace: float = 0.22
 
 
 @dataclass
