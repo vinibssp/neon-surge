@@ -8,6 +8,7 @@ from pygame import Vector2
 from game.components.data_components import (
     LabyrinthVirusComponent,
     MovementComponent,
+    StaggeredComponent,
     TransformComponent,
 )
 from game.core.world import GameWorld
@@ -59,6 +60,11 @@ class LabyrinthAISystem:
             movement = entity.get_component(MovementComponent)
             virus = entity.get_component(LabyrinthVirusComponent)
             if transform is None or movement is None or virus is None:
+                continue
+
+            stagger = entity.get_component(StaggeredComponent)
+            if stagger is not None and stagger.time_left > 0.0:
+                movement.input_direction.update(0, 0)
                 continue
 
             virus.retarget_time_left = max(0.0, virus.retarget_time_left - dt)

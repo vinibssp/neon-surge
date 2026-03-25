@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from game.components.data_components import MovementComponent, StaggeredComponent
 from game.core.world import GameWorld
-from game.systems.world_queries import ENEMY_BEHAVIOR_QUERY
+from game.systems.world_queries import ENEMY_STAGGER_QUERY
 
 
 class StaggerSystem:
@@ -10,7 +10,7 @@ class StaggerSystem:
         self.world = world
 
     def update(self, dt: float) -> None:
-        for enemy in self.world.query(ENEMY_BEHAVIOR_QUERY):
+        for enemy in self.world.query(ENEMY_STAGGER_QUERY):
             stagger = enemy.get_component(StaggeredComponent)
             if stagger is None or stagger.time_left <= 0.0:
                 continue

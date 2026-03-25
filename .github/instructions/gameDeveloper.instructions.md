@@ -87,6 +87,8 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Posicao da chave deve usar criterio de maior distancia Euclidiana em relacao a saida
 - Pathfinding de virus deve ser encapsulado em system dedicado (`LabyrinthAISystem`)
 - Colisao de paredes deve usar indice espacial/localidade; evitar varredura total por frame
+- Parry do player deve funcionar no `LabyrinthMode` e aplicar stagger nos virus com congelamento de movimento
+- Virus em stagger no labirinto devem exibir feedback visual pulsante em preto e branco
 - A cada 5 niveis, usar arena de boss com maquina de estados no comportamento de chefe
 - Progressao do modo deve ser infinita e sem retenção de entidades de niveis anteriores
 
@@ -96,6 +98,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Contratos distintos para gameplay e UI são desejáveis
 - Entrada de dispositivo deve ser traduzida, não acoplada ao fluxo da cena
 - Gameplay deve suportar ação de parry por comando dedicado, desacoplada do input físico
+- Inimigos sob efeito de stagger do parry nao devem causar dano ao player (contato ou projeteis)
 
 ### Sistema de Áudio (Arquitetura)
 

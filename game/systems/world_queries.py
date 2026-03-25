@@ -14,6 +14,7 @@ from game.components.data_components import (
     PortalSpawnComponent,
     RenderComponent,
     ShootComponent,
+    StaggeredComponent,
     TransformComponent,
 )
 from game.ecs.query import WorldQuery
@@ -39,6 +40,11 @@ ENEMY_FOLLOW_QUERY = WorldQuery(
 
 ENEMY_BEHAVIOR_QUERY = WorldQuery(
     component_types=(BehaviorComponent,),
+    tags=("enemy",),
+)
+
+ENEMY_STAGGER_QUERY = WorldQuery(
+    component_types=(StaggeredComponent,),
     tags=("enemy",),
 )
 

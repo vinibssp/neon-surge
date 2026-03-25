@@ -111,6 +111,9 @@ class CollisionSystem:
                     self._apply_stagger(entity, stagger_duration)
                     continue
 
+                if entity.has_tag("enemy") and self._is_enemy_staggered(entity):
+                    continue
+
                 if entity.has_tag("bullet") and is_player_parrying:
                     bullet = entity.get_component(BulletComponent)
                     if bullet is not None and bullet.owner_tag == "enemy":
@@ -123,6 +126,14 @@ class CollisionSystem:
                             parry_radius = 70.0 if player_parry is None else player_parry.radius
                             self._apply_area_stagger(player_transform.position, parry_radius, stagger_duration)
                         continue
+
+                if entity.has_tag("bullet"):
+                    bullet = entity.get_component(BulletComponent)
+                    if bullet is not None and bullet.owner_tag == "enemy":
+                        owner = self._find_entity_by_id(bullet.owner_entity_id)
+                        if owner is not None and self._is_enemy_staggered(owner):
+                            self.world.remove_entity(entity)
+                            continue
 
                 dash_only = entity.get_component(DashOnlyDefeatComponent)
                 if dash_only is not None and dash_only.enabled and is_player_dashing:
@@ -211,6 +222,11 @@ class CollisionSystem:
             if entity.id == entity_id:
                 return entity
         return None
+
+    @staticmethod
+    def _is_enemy_staggered(enemy: Entity) -> bool:
+        stagger = enemy.get_component(StaggeredComponent)
+        return stagger is not None and stagger.time_left > 0.0
 
     def _kill_player(self, cause: str) -> None:
         self.world.runtime_state["last_death_cause"] = cause

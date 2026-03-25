@@ -127,6 +127,7 @@ Sistemas dedicados do modo:
 - `LabyrinthAISystem`: pathfinding em grade para vírus com perfis `chaser` e `interceptor`
 - `LabyrinthCollisionSystem`: colisão com paredes por índice espacial local
 - `LabyrinthObjectiveSystem`: chave/porta e conclusão de boss arena
+- `ParrySystem` + `StaggerSystem`: parry ativo no labirinto; vírus afetados ficam parados com pulso visual preto e branco
 
 Para evitar acoplamento com o `SpawnDirector` global, o modo usa `LabyrinthSpawnStrategy` com ciclos de portal desativados e controla spawns via configuração de nível.
 
@@ -152,6 +153,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), região de água com navios canhoneiros, nuvem de balas e buraco negro móvel com sucção
 - eventos ambientais são mutuamente exclusivos: lava, neve, água, nuvem de balas e buraco negro nunca acontecem juntos
 - player possui parry em `J`; inimigos atingidos no raio do parry ficam desestabilizados temporariamente com pulso visual
+- durante stagger de parry, o inimigo nao causa dano ao player (colisao e projetil)
 - tela de morte estilo resumo de run: causa da morte + estatisticas da sessao (tempo, nivel, dashes, coletaveis, etc.)
 - no sobrevivencia/hardcore ha coletaveis de campo; a cada 100 coletados, ganha 1 carga de bomba nuclear acionada em I para limpar os inimigos atuais
 - explosoes de dominio (`ExplosionTriggered`) exibem animacao de impacto e aplicam screen shake no gameplay
