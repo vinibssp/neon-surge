@@ -4,6 +4,7 @@ import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged, AudioDuckRequested, AudioUnduckRequested
 from game.scenes.menus._base_menu_scene import BaseMenuScene
+from game.scenes.settings_scene import SettingsScene
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 
 
@@ -31,9 +32,9 @@ class PauseScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        restart_button = create_button(
+        settings_button = create_button(
             ButtonConfig(
-                text="Reiniciar",
+                text="Configuracoes",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 350), (280, 56)),
                 variant="primary",
             ),
@@ -49,10 +50,10 @@ class PauseScene(BaseMenuScene):
         )
 
         self.set_navigator(
-            buttons=[resume_button, restart_button, menu_button],
+            buttons=[resume_button, settings_button, menu_button],
             actions={
                 resume_button: self._resume,
-                restart_button: self._restart,
+                settings_button: self._open_settings,
                 menu_button: self._go_main_menu,
             },
             on_cancel=self._resume,
@@ -74,14 +75,8 @@ class PauseScene(BaseMenuScene):
         self.stack.pop()
         self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="pause_resumed"))
 
-    def _restart(self) -> None:
-        from game.scenes.game_scene import GameScene
-
-        self.stack.pop()
-        current_scene = self.stack.top()
-        if not isinstance(current_scene, GameScene):
-            return
-        self.stack.replace(GameScene(self.stack, current_scene.mode.create_retry_strategy()))
+    def _open_settings(self) -> None:
+        self.stack.push(SettingsScene(self.stack))
 
     def _go_main_menu(self) -> None:
         self.stack.pop()

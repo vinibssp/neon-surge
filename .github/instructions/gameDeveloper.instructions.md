@@ -116,6 +116,7 @@ Resiliência operacional:
 - métodos do backend devem isolar exceções e degradar para modo silencioso quando necessário
 - ajustes de volume em runtime devem passar por gerenciador global (`AudioSettingsManager`)
 - persistência de `music_volume` e `sfx_volume` deve ficar fora da camada de UI
+- controles de `music_volume` e `sfx_volume` na UI devem refletir e aplicar valor imediatamente (slider + ajuste incremental)
 
 ---
 
@@ -153,6 +154,7 @@ Resiliência operacional:
 - `Esc` em gameplay abre pausa; `Esc` na pausa/submenu fecha o overlay atual
 - Menu de pausa padrão: retomar, configurações, abandonar partida
 - Configurações de pausa devem aceitar mouse + teclado/gamepad no mesmo contrato de navegação
+- `SettingsScene` deve ser reutilizável entre menu principal e pausa, sem duplicar lógica de áudio por cena
 - `GameOverScene` deve exibir causa da morte e estatisticas da sessao encerrada, sem acoplar coleta de dados ao render
 
 ### Evolução de Menus

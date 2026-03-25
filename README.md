@@ -208,6 +208,8 @@ Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplam
 - `BaseMenuScene` define o ciclo padrão de menu (input/update/render) e evita duplicação
 - cenas de menu registram `controls` e `actions` por controle (`dict[UIControl, Callable]`) no navigator
 - ordem da lista `controls` define ordem de foco/navegação
+- `SettingsScene` é reutilizável por contexto e deve ser aberta tanto no menu principal quanto no overlay de pausa
+- ajustes de `musica` e `sfx` em UI devem usar `AudioSettingsManager` com aplicação imediata e persistência em arquivo
 - overlays compartilham construção via factory de cena (`OverlaySceneFactory`) para consistência de contrato
 - componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
 
@@ -260,7 +262,7 @@ Decisão arquitetural importante:
 
 - `PauseScene` é overlay transparente e pausa gameplay por contrato do `SceneStack` (somente topo atualiza)
 - menu principal da pausa: `Voltar pro Jogo`, `Configuracoes`, `Abandonar Partida`
-- submenu de áudio usa ajuste incremental para `Música` e `SFX` com suporte a mouse e navegação por teclado/gamepad
+- menu de configuração de áudio é compartilhado com o menu principal e controla `Música` e `SFX` por slider e botões de passo (`-`/`+`), com suporte a mouse e navegação por teclado/gamepad
 - fundo da pausa usa overlay semi-transparente com alpha suave para manter legibilidade
 
 
