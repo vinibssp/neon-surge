@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import math
-
 import pygame
-from pygame_gui.elements import UITextBox
-
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
-from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 
@@ -21,7 +16,7 @@ class PauseScene(BaseMenuScene):
         title = create_label(
             LabelConfig(
                 text="PAUSADO",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 120, 170), (240, 56)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 160, 164), (320, 66)),
                 variant="title",
             ),
             manager=self.ui_manager,
@@ -71,11 +66,14 @@ class PauseScene(BaseMenuScene):
     def _resume(self) -> None:
         self.stack.pop()
 
-    def _open_settings(self) -> None:
-        self.stack.push(PauseSettingsScene(self.stack))
+    def _restart(self) -> None:
+        from game.scenes.game_scene import GameScene
 
         self.stack.pop()
-        self.stack.replace(GameScene(self.stack, self.retry_strategy_factory()))
+        current_scene = self.stack.top()
+        if not isinstance(current_scene, GameScene):
+            return
+        self.stack.replace(GameScene(self.stack, current_scene.mode.create_retry_strategy()))
 
     def _go_main_menu(self) -> None:
         self.stack.pop()
