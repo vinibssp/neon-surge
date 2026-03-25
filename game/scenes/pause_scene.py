@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.events import AudioContextChanged, AudioDuckRequested, AudioUnduckRequested
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 
@@ -11,7 +12,6 @@ class PauseScene(BaseMenuScene):
 
     def __init__(self, stack) -> None:
         super().__init__(stack)
-        self._overlay_elapsed_time = 0.0
 
         title = create_label(
             LabelConfig(
@@ -58,6 +58,13 @@ class PauseScene(BaseMenuScene):
             on_cancel=self._resume,
         )
 
+    def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioContextChanged(context="pause", reason="pause_opened"))
+        self.stack.event_bus.publish(AudioDuckRequested(reason="pause_opened"))
+
+    def on_exit(self) -> None:
+        self.stack.event_bus.publish(AudioUnduckRequested(reason="pause_closed"))
+
     def render_menu_background(self, screen: pygame.Surface) -> None:
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 140))
@@ -65,6 +72,7 @@ class PauseScene(BaseMenuScene):
 
     def _resume(self) -> None:
         self.stack.pop()
+        self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="pause_resumed"))
 
     def _restart(self) -> None:
         from game.scenes.game_scene import GameScene

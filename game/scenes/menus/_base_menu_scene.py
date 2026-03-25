@@ -33,9 +33,12 @@ class BaseMenuScene(Scene):
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
-            self.ui_manager.process_events(event)
+            event_consumed = False
             if self.ui_event_adapter is not None:
-                self.ui_event_adapter.process_event(event)
+                event_consumed = self.ui_event_adapter.process_event(event)
+            if event_consumed:
+                continue
+            self.ui_manager.process_events(event)
 
     def update(self, dt: float) -> None:
         self.ui_manager.update(dt)

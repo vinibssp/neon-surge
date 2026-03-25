@@ -5,6 +5,7 @@ from typing import Callable
 import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.events import AudioContextChanged
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
@@ -73,6 +74,9 @@ class GameOverScene(BaseMenuScene):
             },
             on_cancel=self._go_main_menu,
         )
+
+    def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioContextChanged(context="game_over", reason="game_over_entered"))
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene

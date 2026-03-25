@@ -37,6 +37,9 @@ class AudioDirector:
         self.backend.stop()
 
     def _on_domain_event(self, event: DomainEvent) -> None:
+        if isinstance(event, AudioContextChanged):
+            self.state.current_context = event.context
+
         action = self.router.route(event, self.state)
         if action is None:
             return
@@ -54,8 +57,6 @@ class AudioDirector:
 
         if action.group == "music":
             self._apply_music_action(action)
-            if isinstance(event, AudioContextChanged):
-                self.state.current_context = event.context
             return
 
         file_name = self.catalog.get_file_name(action.cue)

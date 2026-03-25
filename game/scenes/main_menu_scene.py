@@ -3,6 +3,7 @@ from __future__ import annotations
 import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.events import AudioContextChanged
 from game.modes.labyrinth_mode import LabyrinthMode
 from game.modes.race_infinite_mode import RaceInfiniteMode
 from game.modes.race_mode import RaceMode
@@ -10,6 +11,7 @@ from game.modes.survival_hardcore_mode import SurvivalHardcoreMode
 from game.modes.survival_mode import SurvivalMode
 from game.scenes.game_scene import GameScene
 from game.scenes.menus._base_menu_scene import BaseMenuScene
+from game.scenes.services import CyberpunkMenuBackgroundRenderer
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 from game.ui.gui_theme import register_custom_element_themes
 
@@ -17,6 +19,8 @@ from game.ui.gui_theme import register_custom_element_themes
 class MainMenuScene(BaseMenuScene):
     def __init__(self, stack) -> None:
         super().__init__(stack)
+        self._elapsed_time = 0.0
+        self._background_renderer = CyberpunkMenuBackgroundRenderer()
         self._register_main_menu_button_themes()
 
         title = create_label(
@@ -166,6 +170,20 @@ class MainMenuScene(BaseMenuScene):
         }
 
         register_custom_element_themes(self.ui_manager, button_themes, rebuild_all=True)
+
+    def on_enter(self) -> None:
+        self.stack.event_bus.publish(AudioContextChanged(context="menu", reason="main_menu_entered"))
+
+    def on_menu_update(self, dt: float) -> None:
+        self._elapsed_time += dt
+
+    def render_menu_background(self, screen: pygame.Surface) -> None:
+        self._background_renderer.render(
+            screen=screen,
+            elapsed_time=self._elapsed_time,
+            width=SCREEN_WIDTH,
+            height=SCREEN_HEIGHT,
+        )
 
     def _quit(self) -> None:
         self.stack.pop()
