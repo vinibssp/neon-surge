@@ -16,22 +16,23 @@ from game.ecs.entity import Entity
 from game.rendering.strategies import (
     LabyrinthExitRenderStrategy,
     LabyrinthKeyRenderStrategy,
-    RectRenderStrategy,
+    LabyrinthWallRenderStrategy,
     VirusGlitchRenderStrategy,
 )
 
 
 class LabyrinthFactory:
     @staticmethod
-    def create_wall_visual(wall_rect: Rect, color: tuple[int, int, int] = (24, 180, 155)) -> Entity:
+    def create_wall_visual(wall_rect: Rect, color: tuple[int, int, int] = (76, 255, 128)) -> Entity:
         wall = Entity()
         wall.add_tag("maze-wall")
         center = Vector2(wall_rect.centerx, wall_rect.centery)
         wall.add_component(TransformComponent(position=center))
         wall.add_component(
             RenderComponent(
-                render_strategy=RectRenderStrategy(
-                    color=color,
+                render_strategy=LabyrinthWallRenderStrategy(
+                    fill_color=color,
+                    edge_color=(28, 180, 96),
                     width=float(wall_rect.width),
                     height=float(wall_rect.height),
                 )
@@ -46,7 +47,7 @@ class LabyrinthFactory:
         key.add_component(TransformComponent(position=Vector2(position)))
         key.add_component(LabyrinthKeyComponent(collected=False))
         key.add_component(CollisionComponent(radius=11.0, layer="maze-objective"))
-        key.add_component(RenderComponent(render_strategy=LabyrinthKeyRenderStrategy(color=(255, 232, 80), radius=10.0)))
+        key.add_component(RenderComponent(render_strategy=LabyrinthKeyRenderStrategy(color=(255, 205, 92), radius=10.0)))
         return key
 
     @staticmethod
@@ -59,8 +60,8 @@ class LabyrinthFactory:
         exit_entity.add_component(
             RenderComponent(
                 render_strategy=LabyrinthExitRenderStrategy(
-                    locked_color=(240, 70, 85),
-                    unlocked_color=(70, 245, 145),
+                    locked_color=(230, 110, 130),
+                    unlocked_color=(92, 232, 194),
                     size=34.0,
                 )
             )
@@ -83,7 +84,7 @@ class LabyrinthFactory:
                 interception_seconds=0.7 if behavior_kind == "interceptor" else 0.45,
             )
         )
-        color = (115, 255, 180) if behavior_kind == "chaser" else (255, 110, 145)
-        core = (235, 245, 255)
+        color = (96, 222, 210) if behavior_kind == "chaser" else (234, 126, 184)
+        core = (226, 235, 250)
         virus.add_component(RenderComponent(render_strategy=VirusGlitchRenderStrategy(color, core, radius=radius)))
         return virus

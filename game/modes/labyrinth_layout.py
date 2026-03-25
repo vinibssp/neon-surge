@@ -124,11 +124,11 @@ class LabyrinthLayout:
     @staticmethod
     def difficulty_for_level(level: int) -> LabyrinthDifficulty:
         normalized_level = max(1, level)
-        tier = min(10, (normalized_level - 1) // 2)
-        grid_width = 11 + tier
-        grid_height = 7 + tier
-        enemy_count = 2 + min(12, normalized_level // 2)
-        speed_multiplier = 1.0 + min(1.5, normalized_level * 0.055)
+        tier = min(8, (normalized_level - 1) // 3)
+        grid_width = 10 + tier
+        grid_height = 6 + tier
+        enemy_count = 1 + min(9, (normalized_level - 1) // 3)
+        speed_multiplier = 0.9 + min(0.75, (normalized_level - 1) * 0.03)
         return LabyrinthDifficulty(
             grid_width=grid_width,
             grid_height=grid_height,
@@ -396,6 +396,8 @@ class LabyrinthRuntimeState:
     is_boss_level: bool
     has_key: bool = False
     exit_unlocked: bool = False
+    boss_keys_required: int = 0
+    boss_keys_collected: int = 0
 
 
 def circle_rect_overlap(circle_position: Vector2, radius: float, rect: Rect) -> tuple[bool, Vector2, float]:

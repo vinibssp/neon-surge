@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import random
 import time
 
 import pygame
@@ -569,7 +568,8 @@ class VirusGlitchRenderStrategy:
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         now = time.time()
-        pulse = 1.0 + 0.15 * math.sin(now * 8.0)
+        phase = (entity.id % 17) * 0.33
+        pulse = 1.0 + 0.06 * math.sin((now * 5.5) + phase)
         radius = self.radius * pulse
         center_x = int(transform.position.x)
         center_y = int(transform.position.y)
@@ -580,21 +580,48 @@ class VirusGlitchRenderStrategy:
             center_x=center_x,
             center_y=center_y,
             radius=max(1, int(radius + 2)),
-            layers=4,
+            layers=3,
         )
-        pygame.draw.circle(screen, self.primary_color, transform.position, max(1, int(radius)))
+        pygame.draw.circle(screen, self.primary_color, transform.position, max(1, int(radius)), width=2)
         pygame.draw.circle(screen, self.secondary_color, transform.position, max(1, int(radius * 0.48)))
 
-        # Raster digital curto para simular ruído visual de "vírus".
-        for _ in range(6):
-            glitch_width = random.randint(6, max(6, int(self.radius * 1.2)))
-            glitch_height = random.randint(1, 3)
-            offset_x = random.randint(-int(self.radius), int(self.radius))
-            offset_y = random.randint(-int(self.radius), int(self.radius))
-            alpha = random.randint(95, 170)
-            glitch_surface = pygame.Surface((glitch_width, glitch_height), pygame.SRCALPHA)
-            glitch_surface.fill((*self.primary_color, alpha))
-            screen.blit(glitch_surface, (center_x + offset_x, center_y + offset_y))
+        # Glitch scanlines determinísticas por entidade para efeito "vírus" sem custo alto de random.
+        for index in range(2):
+            jitter_x = int(math.sin((now * 10.0) + phase + (index * 1.7)) * (self.radius * 0.55))
+            jitter_y = int(math.cos((now * 12.0) + phase + (index * 2.1)) * (self.radius * 0.45))
+            line_width = max(6, int(self.radius * 1.4))
+            line_start = (center_x + jitter_x - line_width // 2, center_y + jitter_y)
+            line_end = (line_start[0] + line_width, line_start[1])
+            pygame.draw.line(screen, self.primary_color, line_start, line_end, 1)
+
+        # Partículas orbitais digitais.
+        particle_radius = max(1, int(self.radius * 0.16))
+        orbit = self.radius + 4.0
+        for index in range(4):
+            angle = (now * 2.4) + phase + (index * (math.pi * 0.5))
+            px = int(center_x + math.cos(angle) * orbit)
+            py = int(center_y + math.sin(angle) * orbit)
+            pygame.draw.circle(screen, self.secondary_color, (px, py), particle_radius)
+
+
+class LabyrinthWallRenderStrategy:
+    def __init__(self, fill_color: tuple[int, int, int], edge_color: tuple[int, int, int], width: float, height: float) -> None:
+        self.fill_color = fill_color
+        self.edge_color = edge_color
+        self.width = width
+        self.height = height
+
+    def render(self, screen: pygame.Surface, entity, transform) -> None:
+        del entity
+        rect = pygame.Rect(
+            int(transform.position.x - self.width * 0.5),
+            int(transform.position.y - self.height * 0.5),
+            int(self.width),
+            int(self.height),
+        )
+        # Bloco contínuo sem riscos internos para leitura visual limpa.
+        rect = rect.inflate(2, 2)
+        pygame.draw.rect(screen, self.fill_color, rect)
 
 
 class LabyrinthKeyRenderStrategy:

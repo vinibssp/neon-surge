@@ -122,11 +122,13 @@ class LabyrinthMode(GameModeStrategy):
             ]
 
         if runtime.is_boss_level:
+            remaining_keys = max(0, runtime.boss_keys_required - runtime.boss_keys_collected)
             return [
                 "Modo: Labirinto",
                 f"Tempo: {scene.elapsed_time:.2f}s",
                 f"Nivel: {scene.world.level} (Boss Arena)",
-                "Objetivo: eliminar o chefe",
+                f"Chaves: {runtime.boss_keys_collected}/{runtime.boss_keys_required}",
+                ("Objetivo: colete todas as chaves" if remaining_keys > 0 else "Objetivo: avancando"),
             ]
 
         key_status = "coletada" if runtime.has_key else "pendente"
@@ -179,6 +181,8 @@ class LabyrinthMode(GameModeStrategy):
             is_boss_level=True,
             has_key=True,
             exit_unlocked=True,
+            boss_keys_required=self.config.boss_keys_required,
+            boss_keys_collected=0,
         )
         self._position_player_in_arena(scene)
 
@@ -186,17 +190,20 @@ class LabyrinthMode(GameModeStrategy):
         boss = EnemyFactory.create_by_kind(boss_kind, Vector2(scene.world.width * 0.5, scene.world.height * 0.5))
         boss_movement = boss.get_component(MovementComponent)
         if boss_movement is not None:
-            boss_movement.max_speed *= 1.0 + (level * self.config.boss_speed_gain_per_level)
+            boss_movement.max_speed *= 0.9 + (level * self.config.boss_speed_gain_per_level)
         scene.world.add_entity(boss)
 
-        support_count = min(4, 1 + level // 8)
+        for key_position in self._build_boss_key_positions(scene):
+            scene.world.add_entity(LabyrinthFactory.create_key(key_position))
+
+        support_count = min(3, 1 + level // 12)
         player_position = Vector2(scene.world.width * 0.8, scene.world.height * 0.8)
         for _ in range(support_count):
             spawn_position = self._choose_arena_enemy_spawn_position(scene, player_position)
             support_enemy = LabyrinthFactory.create_virus(
                 position=spawn_position,
                 behavior_kind=self._rng.choice(("chaser", "interceptor")),
-                speed=self.config.base_enemy_speed * (1.2 + level * 0.03),
+                speed=self.config.base_enemy_speed * (1.05 + level * 0.015),
                 radius=11.0,
             )
             scene.world.add_entity(support_enemy)
@@ -305,3 +312,36 @@ class LabyrinthMode(GameModeStrategy):
             if (candidate - player_position).length_squared() >= min_distance_sq:
                 return candidate
         return Vector2(scene.world.width * 0.2, scene.world.height * 0.2)
+
+    def _build_boss_key_positions(self, scene: "GameScene") -> list[Vector2]:
+        keys: list[Vector2] = []
+        if self.config.boss_keys_required <= 0:
+            return keys
+
+        min_key_distance = 80.0
+        min_player_distance = 160.0
+        player_position = Vector2(scene.world.width * 0.8, scene.world.height * 0.8)
+        min_key_distance_sq = min_key_distance * min_key_distance
+        min_player_distance_sq = min_player_distance * min_player_distance
+
+        for _ in range(self.config.boss_keys_required):
+            selected: Vector2 | None = None
+            for _ in range(120):
+                candidate = Vector2(
+                    self._rng.uniform(scene.world.width * 0.15, scene.world.width * 0.85),
+                    self._rng.uniform(scene.world.height * 0.15, scene.world.height * 0.85),
+                )
+                if (candidate - player_position).length_squared() < min_player_distance_sq:
+                    continue
+                if any((candidate - existing).length_squared() < min_key_distance_sq for existing in keys):
+                    continue
+                selected = candidate
+                break
+
+            if selected is None:
+                selected = Vector2(
+                    self._rng.uniform(scene.world.width * 0.2, scene.world.width * 0.8),
+                    self._rng.uniform(scene.world.height * 0.2, scene.world.height * 0.8),
+                )
+            keys.append(selected)
+        return keys

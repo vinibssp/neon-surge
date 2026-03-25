@@ -55,6 +55,7 @@ class OneVsOneConfig:
 @dataclass(frozen=True)
 class LabyrinthConfig:
     description: str = "Explore labirintos procedurais, pegue a chave e escape por uma saida bloqueada."
-    base_enemy_speed: float = 95.0
+    base_enemy_speed: float = 82.0
     boss_level_interval: int = 5
-    boss_speed_gain_per_level: float = 0.06
+    boss_speed_gain_per_level: float = 0.03
+    boss_keys_required: int = 3

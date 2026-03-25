@@ -78,9 +78,9 @@ class LabyrinthCollisionSystem:
 
         rect_indices = self._rect_indices_near_cell(runtime, current_cell)
         if not rect_indices:
-            rect_indices = list(range(len(runtime.layout.wall_rects)))
+            return False
         collided_with_wall = False
-        for _ in range(6):
+        for _ in range(3):
             resolved = False
             for rect_index in rect_indices:
                 if rect_index < 0 or rect_index >= len(runtime.layout.wall_rects):
@@ -100,20 +100,6 @@ class LabyrinthCollisionSystem:
                         movement.velocity.y = 0.0
             if not resolved:
                 break
-
-        if not collided_with_wall and len(rect_indices) < len(runtime.layout.wall_rects):
-            for rect_index in range(len(runtime.layout.wall_rects)):
-                wall_rect = runtime.layout.wall_rects[rect_index]
-                overlapped, normal, penetration = circle_rect_overlap(transform.position, collision.radius, wall_rect)
-                if not overlapped:
-                    continue
-                collided_with_wall = True
-                transform.position += normal * penetration
-                if movement is not None and normal.length_squared() > 0:
-                    if abs(normal.x) > 0.5:
-                        movement.velocity.x = 0.0
-                    if abs(normal.y) > 0.5:
-                        movement.velocity.y = 0.0
         return collided_with_wall
 
     @staticmethod
