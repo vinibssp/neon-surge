@@ -16,7 +16,7 @@ class InputHandler:
         commands.append(MoveCommand(direction))
 
         for event in events:
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_LSHIFT, pygame.K_RSHIFT):
                 commands.append(DashCommand())
 
         return commands
