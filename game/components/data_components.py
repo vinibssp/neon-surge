@@ -159,6 +159,34 @@ class BossComponent(Component):
 
 
 @dataclass
+class GhostComponent(Component):
+    is_visible: bool = False
+    timer: float = 0.0
+    hidden_duration: float = 1.2
+    visible_duration: float = 1.0
+    reveal_distance: float = 120.0
+    hidden_speed: float = 165.0
+
+
+@dataclass
+class KamehamehaComponent(Component):
+    state: str = "charging"
+    timer: float = 0.0
+    tick_timer: float = 0.0
+    charge_duration: float = 1.2
+    fire_duration: float = 1.1
+    cooldown_duration: float = 1.3
+    fire_tick: float = 0.07
+    beam_color: tuple[int, int, int] = (170, 235, 255)
+    locked_direction: Vector2 = field(default_factory=lambda: Vector2(1, 0))
+
+
+@dataclass
+class DashOnlyDefeatComponent(Component):
+    enabled: bool = True
+
+
+@dataclass
 class LabyrinthVirusComponent(Component):
     behavior_kind: str
     base_speed: float

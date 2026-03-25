@@ -10,6 +10,7 @@ from game.components.data_components import (
     ChargeComponent,
     DashComponent,
     ExplosiveComponent,
+    GhostComponent,
     InvulnerabilityComponent,
     MovementComponent,
     ShootComponent,
@@ -872,6 +873,30 @@ class SniperMinibossRenderStrategy:
         scope_radius = int(self.radius + 6 + abs(math.sin(now * 5.6)) * 1.5)
         pygame.draw.circle(screen, (245, 245, 245), center, scope_radius, 1)
         del sniper
+
+
+class GhostRenderStrategy:
+    def __init__(self, base_color: tuple[int, int, int], radius: float) -> None:
+        self.base_color = base_color
+        self.radius = radius
+
+    def render(self, screen: pygame.Surface, entity, transform) -> None:
+        ghost = entity.get_component(GhostComponent)
+        center = (int(transform.position.x), int(transform.position.y))
+        visible = ghost is not None and ghost.is_visible
+        alpha = 210 if visible else 85
+        shell_color = self.base_color if visible else _brighten(self.base_color, gain=1.02, bias=6)
+
+        size = int((self.radius + 5) * 2)
+        ghost_surface = pygame.Surface((size, size), pygame.SRCALPHA)
+        local = (size // 2, size // 2)
+        pygame.draw.circle(ghost_surface, (*_darken(shell_color, 65), alpha), local, int(self.radius + 2))
+        pygame.draw.circle(ghost_surface, (*shell_color, alpha), local, int(self.radius))
+        pygame.draw.circle(ghost_surface, (245, 245, 255, alpha), local, max(2, int(self.radius * 0.28)))
+        screen.blit(ghost_surface, (center[0] - size // 2, center[1] - size // 2))
+
+        if visible:
+            _draw_pixel_eyes(screen, center, (245, 245, 255), spacing=max(4, int(self.radius * 0.28)))
 
 
 class BossRenderStrategy:

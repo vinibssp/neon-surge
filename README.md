@@ -87,6 +87,7 @@ Criação de entidades centralizada nas factories (`game/factories`):
 - `create_by_kind()` elimina condicionais hardcoded por tipo
 - factories montam componentes, tags, behavior e render strategy
 - roster base de `enemy` inclui arquétipos de perseguição, strafe, shotgun, órbita radial, investida e bombardeio rúnico
+- roster base também inclui arquétipos de projétil especial e suporte (`atirador_laser`, `kamehameha`, `lanca_chamas`, `fantasma`, `buffer`, `sapo`)
 
 ### 6) Strategy Pattern (modos, progressão, spawn, render, IA)
 

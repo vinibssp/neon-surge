@@ -8,11 +8,17 @@ from pygame import Vector2
 
 from game.behaviors.boss_behavior import BossBehavior
 from game.behaviors.bouncer_behavior import BouncerBehavior
+from game.behaviors.buffer_mage_behavior import BufferMageBehavior
 from game.behaviors.charge_behavior import ChargeBehavior
 from game.behaviors.explosive_behavior import ExplosiveBehavior
+from game.behaviors.flamethrower_behavior import FlamethrowerBehavior
 from game.behaviors.follow_behavior import FollowBehavior
+from game.behaviors.frog_acid_behavior import FrogAcidBehavior
+from game.behaviors.ghost_boo_behavior import GhostBooBehavior
 from game.behaviors.hex_orbiter_behavior import HexOrbiterBehavior
 from game.behaviors.hunter_miniboss_behavior import HunterMinibossBehavior
+from game.behaviors.kamehameha_behavior import KamehamehaBehavior
+from game.behaviors.laser_shooter_behavior import LaserShooterBehavior
 from game.behaviors.mortar_behavior import MortarBehavior
 from game.behaviors.arcane_strafer_behavior import ArcaneStraferBehavior
 from game.behaviors.runic_bombardier_behavior import RunicBombardierBehavior
@@ -28,8 +34,11 @@ from game.components.data_components import (
     BossComponent,
     ChargeComponent,
     CollisionComponent,
+    DashOnlyDefeatComponent,
     ExplosiveComponent,
     FollowComponent,
+    GhostComponent,
+    KamehamehaComponent,
     LifetimeComponent,
     MovementComponent,
     OrbitComponent,
@@ -48,13 +57,21 @@ from game.config import (
     ENEMY_CHARGE_COLOR,
     ENEMY_EXPLOSIVE_COLOR,
     ENEMY_EXPLOSIVE_WARNING_COLOR,
+    ENEMY_FLAMETHROWER_COLOR,
+    ENEMY_FROG_COLOR,
     ENEMY_FOLLOWER_COLOR,
     ENEMY_FOLLOWER_CORE_COLOR,
+    ENEMY_GHOST_COLOR,
+    ENEMY_KAMEHAMEHA_COLOR,
+    ENEMY_LASER_SHOOTER_COLOR,
+    ENEMY_LASER_SHOOTER_INNER_COLOR,
     ENEMY_MINIBOSS_HUNTER_COLOR,
     ENEMY_MINIBOSS_HUNTER_CORE_COLOR,
     ENEMY_MINIBOSS_SHIELD_COLOR,
     ENEMY_MINIBOSS_SNIPER_COLOR,
     ENEMY_MORTAR_COLOR,
+        ENEMY_BUFFER_COLOR,
+        ENEMY_BUFFER_CORE_COLOR,
     ENEMY_HEX_ORBITER_COLOR,
     ENEMY_HEX_ORBITER_MIDDLE_COLOR,
     ENEMY_RUNIC_BOMBARDIER_COLOR,
@@ -75,6 +92,7 @@ from game.rendering.strategies import (
     ChargeEnemyRenderStrategy,
     ExplosiveEnemyRenderStrategy,
     FollowerRenderStrategy,
+    GhostRenderStrategy,
     MortarRenderStrategy,
     NeonCoreEnemyRenderStrategy,
     ShieldMinibossRenderStrategy,
@@ -132,6 +150,12 @@ class EnemyFactory:
         cls.register_enemy("orbitador_hex", cls.create_hex_orbiter, weight=0.06)
         cls.register_enemy("sombra_investida", cls.create_shadow_pouncer, weight=0.06)
         cls.register_enemy("bombardeiro_runa", cls.create_runic_bombardier, weight=0.06)
+        cls.register_enemy("atirador_laser", cls.create_laser_shooter, weight=0.06)
+        cls.register_enemy("kamehameha", cls.create_kamehameha, weight=0.05)
+        cls.register_enemy("lanca_chamas", cls.create_flamethrower, weight=0.06)
+        cls.register_enemy("fantasma", cls.create_ghost_boo, weight=0.05)
+        cls.register_enemy("buffer", cls.create_buffer_mage, weight=0.04)
+        cls.register_enemy("sapo", cls.create_frog_acid, weight=0.05)
         cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
         cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
         cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
@@ -595,6 +619,137 @@ class EnemyFactory:
                 render_strategy=MortarRenderStrategy(
                     base_color=ENEMY_RUNIC_BOMBARDIER_COLOR,
                     radius=17.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_laser_shooter(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=0.0))
+        enemy.add_component(
+            ShootComponent(
+                cooldown=0.42,
+                aim_time=0.0,
+                bullet_speed=420.0,
+                bullet_radius=5.0,
+                bullet_color=ENEMY_LASER_SHOOTER_COLOR,
+            )
+        )
+        enemy.add_component(BehaviorComponent(behavior=LaserShooterBehavior()))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=ENEMY_LASER_SHOOTER_COLOR,
+                    inner_color=ENEMY_LASER_SHOOTER_INNER_COLOR,
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_kamehameha(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=0.0))
+        enemy.add_component(KamehamehaComponent(beam_color=ENEMY_KAMEHAMEHA_COLOR))
+        enemy.add_component(BehaviorComponent(behavior=KamehamehaBehavior()))
+        enemy.add_component(CollisionComponent(radius=18.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=ENEMY_KAMEHAMEHA_COLOR,
+                    middle_color=(12, 36, 70),
+                    active_color=(245, 245, 255),
+                    idle_color=ENEMY_KAMEHAMEHA_COLOR,
+                    radius=18.0,
+                    pulse_speed=7.0,
+                    pulse_gain=2.6,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_flamethrower(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=135.0))
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=FlamethrowerBehavior()))
+        enemy.add_component(CollisionComponent(radius=15.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=ENEMY_FLAMETHROWER_COLOR,
+                    radius=15.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_ghost_boo(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=165.0))
+        enemy.add_component(GhostComponent())
+        enemy.add_component(BehaviorComponent(behavior=GhostBooBehavior()))
+        enemy.add_component(CollisionComponent(radius=13.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=GhostRenderStrategy(
+                    base_color=ENEMY_GHOST_COLOR,
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_buffer_mage(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=125.0))
+        enemy.add_component(DashOnlyDefeatComponent(enabled=True))
+        enemy.add_component(BehaviorComponent(behavior=BufferMageBehavior()))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=ENEMY_BUFFER_COLOR,
+                    core_color=ENEMY_BUFFER_CORE_COLOR,
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_frog_acid(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=180.0))
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=FrogAcidBehavior()))
+        enemy.add_component(CollisionComponent(radius=16.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=ENEMY_FROG_COLOR,
+                    core_color=(210, 255, 214),
+                    radius=16.0,
                 )
             )
         )

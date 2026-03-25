@@ -115,3 +115,30 @@ class BulletFactory:
             )
         )
         return marker
+
+    @staticmethod
+    def create_acid_pool(
+        position: Vector2,
+        radius: float,
+        lifetime: float,
+        color: tuple[int, int, int],
+    ) -> Entity:
+        pool = Entity()
+        pool.add_tag("bullet")
+        pool.add_component(TransformComponent(position=Vector2(position)))
+        pool.add_component(MovementComponent(velocity=Vector2(), input_direction=Vector2(), max_speed=0.0))
+        pool.add_component(BulletComponent(owner_tag="enemy", lifetime=lifetime))
+        pool.add_component(CollisionComponent(radius=radius, layer="bullet"))
+        pool.add_component(
+            RenderComponent(
+                render_strategy=CircleRenderStrategy(
+                    color=color,
+                    radius=radius,
+                    style="projectile",
+                    pulse_speed=5.0,
+                    projectile_variant="orb",
+                    trail_length=0,
+                )
+            )
+        )
+        return pool

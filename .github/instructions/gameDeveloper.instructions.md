@@ -72,6 +72,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
 - Evitar comportamento condicional por tipo dentro de systems centrais
+- Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 
 ### Modo Labirinto (Contrato)
 

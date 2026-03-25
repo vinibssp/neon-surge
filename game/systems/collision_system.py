@@ -3,7 +3,9 @@ from __future__ import annotations
 from game.components.data_components import (
     CollectibleComponent,
     CollisionComponent,
+    DashOnlyDefeatComponent,
     DashComponent,
+    GhostComponent,
     InvulnerabilityComponent,
     MovementComponent,
     MortarShellComponent,
@@ -92,6 +94,15 @@ class CollisionSystem:
                 continue
 
             if entity.has_tag("enemy") or entity.has_tag("bullet"):
+                dash_only = entity.get_component(DashOnlyDefeatComponent)
+                if dash_only is not None and dash_only.enabled and is_player_dashing:
+                    self.world.remove_entity(entity)
+                    continue
+
+                ghost = entity.get_component(GhostComponent)
+                if ghost is not None and not ghost.is_visible:
+                    continue
+
                 if not is_player_invulnerable:
                     self.world.event_bus.publish(PlayerDamaged())
                     self.world.event_bus.publish(PlayerDied())
