@@ -11,10 +11,15 @@ from game.behaviors.bouncer_behavior import BouncerBehavior
 from game.behaviors.charge_behavior import ChargeBehavior
 from game.behaviors.explosive_behavior import ExplosiveBehavior
 from game.behaviors.follow_behavior import FollowBehavior
+from game.behaviors.hex_orbiter_behavior import HexOrbiterBehavior
 from game.behaviors.hunter_miniboss_behavior import HunterMinibossBehavior
 from game.behaviors.mortar_behavior import MortarBehavior
+from game.behaviors.arcane_strafer_behavior import ArcaneStraferBehavior
+from game.behaviors.runic_bombardier_behavior import RunicBombardierBehavior
+from game.behaviors.shadow_pouncer_behavior import ShadowPouncerBehavior
 from game.behaviors.shield_miniboss_behavior import ShieldMinibossBehavior
 from game.behaviors.shoot_behavior import ShootBehavior
+from game.behaviors.shotgun_ambusher_behavior import ShotgunAmbusherBehavior
 from game.behaviors.sniper_miniboss_behavior import SniperMinibossBehavior
 from game.behaviors.spiral_turret_behavior import SpiralTurretBehavior
 from game.behaviors.turret_burst_behavior import TurretBurstBehavior
@@ -36,6 +41,8 @@ from game.components.data_components import (
 )
 from game.config import (
     BULLET_RADIUS,
+    ENEMY_ARCANE_STRAFER_COLOR,
+    ENEMY_ARCANE_STRAFER_INNER_COLOR,
     ENEMY_BOUNCER_COLOR,
     ENEMY_BOUNCER_CORE_COLOR,
     ENEMY_CHARGE_COLOR,
@@ -48,8 +55,14 @@ from game.config import (
     ENEMY_MINIBOSS_SHIELD_COLOR,
     ENEMY_MINIBOSS_SNIPER_COLOR,
     ENEMY_MORTAR_COLOR,
+    ENEMY_HEX_ORBITER_COLOR,
+    ENEMY_HEX_ORBITER_MIDDLE_COLOR,
+    ENEMY_RUNIC_BOMBARDIER_COLOR,
+    ENEMY_SHADOW_POUNCER_COLOR,
     ENEMY_SHOOTER_COLOR,
     ENEMY_SHOOTER_INNER_COLOR,
+    ENEMY_SHOTGUN_AMBUSHER_COLOR,
+    ENEMY_SHOTGUN_AMBUSHER_CORE_COLOR,
     ENEMY_TURRET_COLOR,
     ENEMY_TURRET_MIDDLE_COLOR,
     FOLLOWER_RADIUS,
@@ -114,6 +127,11 @@ class EnemyFactory:
         cls.register_enemy("explosivo", cls.create_explosive, weight=0.08)
         cls.register_enemy("metralhadora", cls.create_turret, weight=0.06)
         cls.register_enemy("morteiro", cls.create_mortar, weight=0.05)
+        cls.register_enemy("estrafador_arcano", cls.create_arcane_strafer, weight=0.08)
+        cls.register_enemy("emboscador_escopeta", cls.create_shotgun_ambusher, weight=0.07)
+        cls.register_enemy("orbitador_hex", cls.create_hex_orbiter, weight=0.06)
+        cls.register_enemy("sombra_investida", cls.create_shadow_pouncer, weight=0.06)
+        cls.register_enemy("bombardeiro_runa", cls.create_runic_bombardier, weight=0.06)
         cls.register_miniboss("miniboss_espiral", cls.create_miniboss_spiral, weight=0.04)
         cls.register_miniboss("miniboss_cacador", cls.create_miniboss_hunter, weight=0.04)
         cls.register_miniboss("miniboss_escudo", cls.create_miniboss_shield, weight=0.03)
@@ -466,6 +484,117 @@ class EnemyFactory:
                 render_strategy=MortarRenderStrategy(
                     base_color=ENEMY_MORTAR_COLOR,
                     radius=18.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_arcane_strafer(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=190.0))
+        enemy.add_component(
+            ShootComponent(
+                cooldown=1.05,
+                aim_time=0.3,
+                bullet_speed=290.0,
+                bullet_radius=6.0,
+                bullet_color=ENEMY_ARCANE_STRAFER_COLOR,
+            )
+        )
+        enemy.add_component(BehaviorComponent(behavior=ArcaneStraferBehavior()))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ShooterRenderStrategy(
+                    outer_color=ENEMY_ARCANE_STRAFER_COLOR,
+                    inner_color=ENEMY_ARCANE_STRAFER_INNER_COLOR,
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_shotgun_ambusher(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=145.0))
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=ShotgunAmbusherBehavior()))
+        enemy.add_component(CollisionComponent(radius=14.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=NeonCoreEnemyRenderStrategy(
+                    outer_color=ENEMY_SHOTGUN_AMBUSHER_COLOR,
+                    core_color=ENEMY_SHOTGUN_AMBUSHER_CORE_COLOR,
+                    radius=14.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_hex_orbiter(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=165.0))
+        enemy.add_component(TurretComponent(spiral_angle=random.uniform(0, 360)))
+        enemy.add_component(BehaviorComponent(behavior=HexOrbiterBehavior()))
+        enemy.add_component(CollisionComponent(radius=15.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=TurretEnemyRenderStrategy(
+                    base_color=ENEMY_HEX_ORBITER_COLOR,
+                    middle_color=ENEMY_HEX_ORBITER_MIDDLE_COLOR,
+                    active_color=(245, 245, 245),
+                    idle_color=ENEMY_HEX_ORBITER_COLOR,
+                    radius=15.0,
+                    pulse_speed=6.0,
+                    pulse_gain=2.2,
+                    glow_layers=4,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_shadow_pouncer(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=210.0))
+        enemy.add_component(ChargeComponent(state="stalking", timer=1.2))
+        enemy.add_component(BehaviorComponent(behavior=ShadowPouncerBehavior()))
+        enemy.add_component(CollisionComponent(radius=13.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=ChargeEnemyRenderStrategy(
+                    base_color=ENEMY_SHADOW_POUNCER_COLOR,
+                    radius=13.0,
+                )
+            )
+        )
+        return enemy
+
+    @staticmethod
+    def create_runic_bombardier(position: Vector2) -> Entity:
+        enemy = Entity()
+        enemy.add_tag("enemy")
+        enemy.add_component(TransformComponent(position=position))
+        enemy.add_component(MovementComponent(max_speed=145.0))
+        enemy.add_component(TurretComponent())
+        enemy.add_component(BehaviorComponent(behavior=RunicBombardierBehavior()))
+        enemy.add_component(CollisionComponent(radius=17.0, layer="enemy"))
+        enemy.add_component(
+            RenderComponent(
+                render_strategy=MortarRenderStrategy(
+                    base_color=ENEMY_RUNIC_BOMBARDIER_COLOR,
+                    radius=17.0,
                 )
             )
         )

@@ -86,6 +86,7 @@ Criação de entidades centralizada nas factories (`game/factories`):
 - factory cria por tipo/categoria e não define política de spawn global
 - `create_by_kind()` elimina condicionais hardcoded por tipo
 - factories montam componentes, tags, behavior e render strategy
+- roster base de `enemy` inclui arquétipos de perseguição, strafe, shotgun, órbita radial, investida e bombardeio rúnico
 
 ### 6) Strategy Pattern (modos, progressão, spawn, render, IA)
 
