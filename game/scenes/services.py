@@ -15,12 +15,62 @@ class BackgroundRenderer:
     def __init__(self, grid_color: tuple[int, int, int] = GAME_GRID_COLOR, grid_step: int = GAME_GRID_STEP) -> None:
         self.grid_color = grid_color
         self.grid_step = grid_step
+        self._time = 0.0
 
     def render(self, screen: pygame.Surface, width: int, height: int) -> None:
-        for x in range(0, width, self.grid_step):
-            pygame.draw.line(screen, self.grid_color, (x, 0), (x, height), 1)
-        for y in range(0, height, self.grid_step):
-            pygame.draw.line(screen, self.grid_color, (0, y), (width, y), 1)
+        self._time += 1.0 / 60.0
+        center_x = width * 0.5
+        center_y = height * 0.5
+
+        for y in range(height):
+            t = y / max(1, height)
+            pulse = 0.5 + 0.5 * math.sin(self._time * 0.7 + t * 4.2)
+            red = int(6 + (12 * t) + pulse * 3)
+            green = int(8 + (16 * t) + pulse * 4)
+            blue = int(16 + (34 * t) + pulse * 7)
+            pygame.draw.line(screen, (red, green, blue), (0, y), (width, y))
+
+        scroll_x = int((self._time * 20.0) % self.grid_step)
+        scroll_y = int((self._time * 11.0) % self.grid_step)
+        grid = pygame.Surface((width, height), pygame.SRCALPHA)
+        vertical_color = (self.grid_color[0] + 20, self.grid_color[1] + 42, self.grid_color[2] + 62, 44)
+        horizontal_color = (self.grid_color[0] + 14, self.grid_color[1] + 28, self.grid_color[2] + 44, 36)
+
+        for x in range(-self.grid_step, width + self.grid_step, self.grid_step):
+            line_x = x + scroll_x
+            pygame.draw.line(grid, vertical_color, (line_x, 0), (line_x, height), 1)
+
+        for y in range(-self.grid_step, height + self.grid_step, self.grid_step):
+            line_y = y + scroll_y
+            pygame.draw.line(grid, horizontal_color, (0, line_y), (width, line_y), 1)
+        screen.blit(grid, (0, 0))
+
+        scan = pygame.Surface((width, height), pygame.SRCALPHA)
+        for y in range(0, height, 4):
+            scan_alpha = 12 if (y // 4) % 2 == 0 else 6
+            pygame.draw.line(scan, (8, 16, 28, scan_alpha), (0, y), (width, y), 1)
+        screen.blit(scan, (0, 0))
+
+        stars = 84
+        sky = pygame.Surface((width, height), pygame.SRCALPHA)
+        for i in range(stars):
+            px = int((i * 173 + self._time * (7 + (i % 5) * 2.5)) % width)
+            py = int((i * 97 + (i % 11) * 13) % height)
+            dx = px - center_x
+            dy = py - center_y
+            distance_ratio = min(1.0, math.sqrt(dx * dx + dy * dy) / (min(width, height) * 0.52))
+            center_fade = 0.35 + 0.65 * distance_ratio
+            twinkle = 65 + int(120 * (0.5 + 0.5 * math.sin(self._time * 3.1 + i * 0.63)))
+            alpha = int(min(180, twinkle) * center_fade)
+            sky.set_at((px, py), (132, 208, 245, alpha))
+        screen.blit(sky, (0, 0))
+
+        vignette = pygame.Surface((width, height), pygame.SRCALPHA)
+        margin = int(min(width, height) * 0.09)
+        for i in range(max(1, margin)):
+            alpha = int(110 * (1.0 - i / max(1, margin)))
+            pygame.draw.rect(vignette, (0, 0, 0, alpha), (i, i, width - i * 2, height - i * 2), 1)
+        screen.blit(vignette, (0, 0))
 
 
 class HudRenderer:
