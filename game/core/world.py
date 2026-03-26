@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 
 from pygame import Vector2
 
-from game.components.data_components import CollisionComponent, TransformComponent
+from game.components.data_components import CollisionComponent, StaggeredComponent, TransformComponent
+from game.config import ENEMY_SPAWN_FREEZE_TIME
 from game.core.events import EnemyShotFired, EventBus
 from game.ecs.entity import Entity
 from game.ecs.query import WorldQuery
@@ -23,7 +24,17 @@ class GameWorld:
     runtime_state: dict[str, object] = field(default_factory=dict)
 
     def add_entity(self, entity: Entity) -> None:
+        self._apply_enemy_spawn_freeze(entity)
         self.pending_add.append(entity)
+
+    def _apply_enemy_spawn_freeze(self, entity: Entity) -> None:
+        if not entity.has_tag("enemy"):
+            return
+        stagger = entity.get_component(StaggeredComponent)
+        if stagger is None:
+            entity.add_component(StaggeredComponent(time_left=ENEMY_SPAWN_FREEZE_TIME, pulse_time=0.0))
+            return
+        stagger.time_left = max(stagger.time_left, ENEMY_SPAWN_FREEZE_TIME)
 
     def remove_entity(self, entity: Entity) -> None:
         if entity not in self.pending_remove:
