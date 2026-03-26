@@ -176,7 +176,6 @@ class EnemyFactory:
         cls.register_enemy("mago_hobbit", cls.create_hobbit_mage, weight=0.05)  # caster de tiro pesado
         cls.register_enemy("escorpiao_rainha", cls.create_scorpion_queen, weight=0.05)  # bouncer veloz
         cls.register_enemy("gazer_vazio", cls.create_void_gazer, weight=0.04)  # sniper laser extremo
-        cls.register_enemy("abominacao_limo", cls.create_slime_abomination, weight=0.05)  # explosivo acelerado
         cls.register_enemy("assassino_crepuscular", cls.create_twilight_assassin, weight=0.05)  # emboscador agil
         cls.register_enemy("sentinela_estelar", cls.create_stellar_sentinel, weight=0.04)  # feixe ritmico
         cls.register_enemy("necrolorde_orbital", cls.create_necrolord_orbiter, weight=0.04)  # orbita de elite
@@ -415,7 +414,7 @@ class EnemyFactory:
         enemy.add_tag("enemy")
         enemy.add_component(TransformComponent(position=position))
         enemy.add_component(MovementComponent(max_speed=185.0))
-        enemy.add_component(ExplosiveComponent())
+        enemy.add_component(ExplosiveComponent(chase_time=3.7, detonate_time=5.1, blast_radius=80.0))
         enemy.add_component(BehaviorComponent(behavior=ExplosiveBehavior()))
         enemy.add_component(CollisionComponent(radius=12.0, layer="enemy"))
         enemy.add_component(
@@ -1096,30 +1095,6 @@ class EnemyFactory:
                     outer_color=(88, 206, 255),
                     inner_color=(212, 250, 255),
                     radius=14.0,
-                )
-            )
-        )
-        return enemy
-
-    @staticmethod
-    def create_slime_abomination(position: Vector2) -> Entity:
-        enemy = EnemyFactory.create_explosive(position)
-        movement = enemy.get_component(MovementComponent)
-        explosive = enemy.get_component(ExplosiveComponent)
-        collision = enemy.get_component(CollisionComponent)
-        if movement is not None:
-            movement.max_speed = 170.0
-        if explosive is not None:
-            explosive.chase_time = 2.9
-            explosive.detonate_time = 3.8
-        if collision is not None:
-            collision.radius = 13.0
-        enemy.add_component(
-            RenderComponent(
-                render_strategy=ExplosiveEnemyRenderStrategy(
-                    base_color=(126, 238, 118),
-                    warning_color=(243, 255, 154),
-                    radius=13.0,
                 )
             )
         )

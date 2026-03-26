@@ -6,11 +6,14 @@ from pygame import Vector2
 
 from game.behaviors.advanced_helpers import normalized
 from game.behaviors.behavior import Behavior
-from game.components.data_components import MovementComponent, TransformComponent
+from game.components.data_components import MovementComponent, StaggeredComponent, TransformComponent
 from game.ecs.entity import Entity
 
 
 class BlinkStrikerBehavior(Behavior):
+    POST_BLINK_GRACE = 0.32
+    POST_BLINK_MIN_DISTANCE = 86.0
+
     def __init__(self, blink_interval: float = 2.4, blink_distance: float = 180.0) -> None:
         self.blink_interval = blink_interval
         self.blink_distance = blink_distance
@@ -40,7 +43,21 @@ class BlinkStrikerBehavior(Behavior):
         self._timer[entity_id] = 0.0
         angle = random.uniform(0.0, 360.0)
         target_position = player_transform.position + Vector2(self.blink_distance, 0.0).rotate(angle)
-        transform.position = world.clamp_to_bounds(target_position, radius=16.0)
+        target_position = world.clamp_to_bounds(target_position, radius=16.0)
+        to_player_after_blink = target_position - player_transform.position
+        if to_player_after_blink.length_squared() < self.POST_BLINK_MIN_DISTANCE * self.POST_BLINK_MIN_DISTANCE:
+            push_dir = normalized(to_player_after_blink, Vector2(1, 0).rotate(random.uniform(0.0, 360.0)))
+            target_position = world.clamp_to_bounds(
+                player_transform.position + (push_dir * self.POST_BLINK_MIN_DISTANCE),
+                radius=16.0,
+            )
+        transform.position = target_position
+
+        stagger = entity.get_component(StaggeredComponent)
+        if stagger is None:
+            entity.add_component(StaggeredComponent(time_left=self.POST_BLINK_GRACE, pulse_time=0.0))
+        else:
+            stagger.time_left = max(stagger.time_left, self.POST_BLINK_GRACE)
 
         shot_dir = normalized(player_transform.position - transform.position)
         for offset in (-28.0, 0.0, 28.0):

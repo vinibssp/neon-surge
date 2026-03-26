@@ -68,7 +68,6 @@ ENEMY_DESCRIPTIONS: dict[str, str] = {
     "mago_hobbit": "Caster de tiro pesado.",
     "escorpiao_rainha": "Movimento rapido e agressivo.",
     "gazer_vazio": "Sniper laser de alto risco.",
-    "abominacao_limo": "Explosivo com ritmo acelerado.",
     "assassino_crepuscular": "Emboscador muito movel.",
     "sentinela_estelar": "Feixes ritmicos em cadencia.",
     "necrolorde_orbital": "Controle espacial por orbita.",

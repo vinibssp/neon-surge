@@ -199,26 +199,39 @@ class GameScene(Scene):
         now: float,
         region_index: int,
     ) -> None:
-        pulse = 0.5 + 0.5 * math.sin((now * 5.8) + (region_index * 0.9))
+        pulse = 0.5 + 0.5 * math.sin((now * 6.2) + (region_index * 0.9))
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        overlay.fill((56, 16, 10, int(92 + (22 * pulse))))
+        overlay.fill((38, 10, 8, int(104 + (24 * pulse))))
 
-        tile = 16
+        tile = 12
+        palette = (
+            (120, 26, 10),
+            (164, 38, 12),
+            (212, 58, 14),
+            (255, 96, 18),
+            (255, 154, 42),
+        )
         for y in range(0, rect.height, tile):
             for x in range(0, rect.width, tile):
-                wave = math.sin((x * 0.09) + (y * 0.07) + (now * 7.4) + (region_index * 0.7))
-                heat = 0.5 + 0.5 * wave
-                color = (
-                    int(188 + (64 * heat)),
-                    int(52 + (68 * heat)),
-                    int(14 + (32 * heat)),
-                    int(74 + (72 * heat)),
-                )
-                inset = 1 if ((x // tile) + (y // tile)) % 2 == 0 else 2
+                heat_wave = 0.5 + 0.5 * math.sin((x * 0.11) + (y * 0.09) + (now * 8.1) + (region_index * 0.8))
+                palette_index = min(len(palette) - 1, int(heat_wave * len(palette)))
+                base_r, base_g, base_b = palette[palette_index]
+                alpha = int(72 + (96 * heat_wave))
+                inset = 1 if ((x // tile) + (y // tile) + region_index) % 2 == 0 else 2
                 cell_w = min(tile - inset, rect.width - x)
                 cell_h = min(tile - inset, rect.height - y)
                 if cell_w > 1 and cell_h > 1:
-                    pygame.draw.rect(overlay, color, pygame.Rect(x, y, cell_w, cell_h), border_radius=2)
+                    pygame.draw.rect(
+                        overlay,
+                        (base_r, base_g, base_b, alpha),
+                        pygame.Rect(x, y, cell_w, cell_h),
+                        border_radius=2,
+                    )
+
+        for y in range(0, rect.height, 18):
+            shimmer = 0.5 + 0.5 * math.sin((now * 5.0) + (y * 0.18) + region_index)
+            line_alpha = int(34 + 66 * shimmer)
+            pygame.draw.line(overlay, (255, 182, 86, line_alpha), (0, y), (rect.width, y), 1)
 
         fissure_count = 5 if pattern in ("cross", "fork", "checker") else 3
         for fissure_index in range(fissure_count):
@@ -227,26 +240,66 @@ class GameScene(Scene):
             y0 = int(rect.height * (0.12 + 0.12 * math.sin((now * 1.8) + seed)))
             x1 = int(x0 + (rect.width * 0.06 * math.sin((now * 3.7) + seed)))
             y1 = int(rect.height * (0.84 + 0.1 * math.cos((now * 1.2) + seed)))
-            pygame.draw.line(overlay, (255, 212, 122, 132), (x0, y0), (x1, y1), 1)
+            pygame.draw.line(overlay, (255, 236, 144, 160), (x0, y0), (x1, y1), 1)
+            pygame.draw.circle(overlay, (255, 252, 192, 132), (x0, y0), 1)
 
-        ember_count = 6 + (region_index % 4)
+        ember_count = 10 + (region_index % 5)
         for ember_index in range(ember_count):
             px = int((rect.width * (ember_index + 1)) / (ember_count + 1))
-            py = int(rect.height * (0.2 + 0.6 * (0.5 + 0.5 * math.sin((now * 6.6) + ember_index * 1.4 + region_index))))
-            radius = 1 + (ember_index % 3)
-            pygame.draw.circle(overlay, (255, 246, 176, 164), (px, py), radius)
+            py = int(
+                rect.height
+                * (0.12 + 0.74 * (0.5 + 0.5 * math.sin((now * 7.6) + ember_index * 1.22 + region_index)))
+            )
+            radius = 1 + (ember_index % 2)
+            pygame.draw.circle(overlay, (255, 252, 206, 180), (px, py), radius)
+
+        glyph_count = 5 if pattern in ("ring", "checker") else 3
+        for glyph_index in range(glyph_count):
+            gx = int((rect.width * (glyph_index + 1)) / (glyph_count + 1))
+            gy = int(rect.height * (0.35 + 0.22 * math.sin((now * 3.1) + glyph_index + (region_index * 0.4))))
+            size = 3
+            pygame.draw.line(overlay, (255, 206, 120, 170), (gx - size, gy), (gx + size, gy), 1)
+            pygame.draw.line(overlay, (255, 206, 120, 170), (gx, gy - size), (gx, gy + size), 1)
 
         screen.blit(overlay, rect.topleft)
 
-        border_color = (255, 232, 120)
+        border_color = (255, 238, 134)
         if pattern in ("ring", "checker"):
-            border_color = (255, 244, 146)
+            border_color = (255, 248, 170)
         elif pattern in ("cross", "fork"):
-            border_color = (255, 220, 108)
+            border_color = (255, 226, 122)
         pygame.draw.rect(screen, border_color, rect, 3)
 
         rim_glow = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(rim_glow, (255, 164, 62, int(82 + 42 * pulse)), rim_glow.get_rect(), 1)
+        pygame.draw.rect(rim_glow, (255, 164, 62, int(90 + 48 * pulse)), rim_glow.get_rect(), 1)
+
+        segment = 9
+        for x in range(0, rect.width, segment):
+            glow = 0.5 + 0.5 * math.sin((now * 10.0) + (x * 0.22) + region_index)
+            alpha = int(92 + 100 * glow)
+            pygame.draw.rect(
+                rim_glow,
+                (255, 236, 156, alpha),
+                pygame.Rect(x, 0, min(4, rect.width - x), 2),
+            )
+            pygame.draw.rect(
+                rim_glow,
+                (255, 236, 156, alpha),
+                pygame.Rect(x, max(0, rect.height - 2), min(4, rect.width - x), 2),
+            )
+        for y in range(0, rect.height, segment):
+            glow = 0.5 + 0.5 * math.sin((now * 10.0) + (y * 0.22) + region_index + 1.7)
+            alpha = int(92 + 100 * glow)
+            pygame.draw.rect(
+                rim_glow,
+                (255, 236, 156, alpha),
+                pygame.Rect(0, y, 2, min(4, rect.height - y)),
+            )
+            pygame.draw.rect(
+                rim_glow,
+                (255, 236, 156, alpha),
+                pygame.Rect(max(0, rect.width - 2), y, 2, min(4, rect.height - y)),
+            )
         screen.blit(rim_glow, rect.topleft)
 
     def _render_lava_warning_region(
@@ -258,21 +311,34 @@ class GameScene(Scene):
         region_index: int,
         alpha_ratio: float,
     ) -> None:
-        pulse = 0.5 + 0.5 * math.sin((now * 11.0) + (region_index * 0.7))
-        alpha = int(34 + 82 * alpha_ratio + 24 * pulse)
+        pulse = 0.5 + 0.5 * math.sin((now * 12.5) + (region_index * 0.7))
+        alpha = int(38 + 88 * alpha_ratio + 28 * pulse)
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        overlay.fill((255, 176, 42, alpha))
+        overlay.fill((255, 168, 34, alpha))
 
-        stripe_step = 14
+        stripe_step = 12
         for x in range(-rect.height, rect.width, stripe_step):
-            x0 = x + int(10 * math.sin((now * 4.2) + (region_index * 0.8)))
+            x0 = x + int(12 * math.sin((now * 4.8) + (region_index * 0.8)))
             pygame.draw.line(
                 overlay,
-                (255, 228, 144, int(50 + (70 * alpha_ratio))),
+                (255, 234, 150, int(54 + (72 * alpha_ratio))),
                 (x0, 0),
                 (x0 + rect.height, rect.height),
                 2,
             )
+
+        tile = 18
+        for y in range(0, rect.height, tile):
+            for x in range(0, rect.width, tile):
+                beat = 0.5 + 0.5 * math.sin((now * 9.8) + (x * 0.2) + (y * 0.17))
+                if beat < 0.72:
+                    continue
+                pygame.draw.rect(
+                    overlay,
+                    (255, 248, 184, int(38 + 80 * beat)),
+                    pygame.Rect(x + 2, y + 2, min(6, rect.width - x), min(6, rect.height - y)),
+                    border_radius=1,
+                )
         screen.blit(overlay, rect.topleft)
 
         border_alpha = int(128 + (96 * pulse))
@@ -280,12 +346,12 @@ class GameScene(Scene):
         pygame.draw.rect(border_surface, (255, 244, 162, border_alpha), border_surface.get_rect(), 2)
         screen.blit(border_surface, rect.topleft)
 
-        rune_count = 7 if pattern in ("lanes", "checker") else 5
+        rune_count = 9 if pattern in ("lanes", "checker", "ring") else 6
         for rune_index in range(rune_count):
-            marker_phase = (now * 5.6) + (rune_index * 1.0) + (region_index * 0.6)
+            marker_phase = (now * 6.2) + (rune_index * 0.9) + (region_index * 0.6)
             marker_x = int((rect.width * (rune_index + 1)) / (rune_count + 1))
             marker_y = int((rect.height * 0.5) + (rect.height * 0.24 * math.sin(marker_phase)))
-            size = 4 if rune_index % 2 == 0 else 3
+            size = 5 if rune_index % 2 == 0 else 3
             pygame.draw.line(
                 screen,
                 (255, 248, 188),
@@ -300,31 +366,23 @@ class GameScene(Scene):
                 (rect.left + marker_x, rect.top + marker_y + size),
                 1,
             )
+            pygame.draw.circle(screen, (255, 254, 214), (rect.left + marker_x, rect.top + marker_y), 1)
 
     def _render_environment_event_overlay(self, screen: pygame.Surface) -> None:
         event_state = self.world.runtime_state.get("environment_event")
         if not isinstance(event_state, dict):
             return
 
+        now = pygame.time.get_ticks() * 0.001
+        self._render_survival_water_overlay(screen, now)
         event_name = event_state.get("name")
         region = event_state.get("region")
         if isinstance(event_name, str) and isinstance(region, tuple) and len(region) == 4:
             rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
             if event_name == "snow_drift":
-                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-                surface.fill((180, 220, 255, 70))
-                screen.blit(surface, rect.topleft)
-                pygame.draw.rect(screen, (220, 245, 255), rect, 2)
-            elif event_name == "water_region":
-                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-                surface.fill((60, 145, 220, 85))
-                screen.blit(surface, rect.topleft)
-                pygame.draw.rect(screen, (115, 200, 255), rect, 2)
+                self._render_event_snow_overlay(screen, rect, now)
             elif event_name == "bullet_cloud":
-                surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-                surface.fill((255, 220, 120, 75))
-                screen.blit(surface, rect.topleft)
-                pygame.draw.rect(screen, (255, 236, 150), rect, 2)
+                self._render_event_bullet_cloud_overlay(screen, rect, now)
 
         black_hole = event_state.get("black_hole")
         if not isinstance(black_hole, dict):
@@ -336,34 +394,165 @@ class GameScene(Scene):
         if pull_radius <= 0 or consume_radius <= 0:
             return
 
-        now = pygame.time.get_ticks() * 0.001
-        pulse = 0.5 + 0.5 * math.sin(now * 2.6)
+        self._render_event_black_hole_overlay(screen, x, y, pull_radius, consume_radius, now)
 
-        aura = pygame.Surface((pull_radius * 2 + 8, pull_radius * 2 + 8), pygame.SRCALPHA)
+    def _render_event_snow_overlay(self, screen: pygame.Surface, rect: pygame.Rect, now: float) -> None:
+        if rect.width <= 0 or rect.height <= 0:
+            return
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        overlay.fill((126, 168, 214, 72))
+
+        for y in range(0, rect.height, 12):
+            drift = int(5 * math.sin((now * 3.4) + (y * 0.09)))
+            pygame.draw.line(
+                overlay,
+                (214, 240, 255, 58),
+                (max(0, drift), y),
+                (min(rect.width, rect.width + drift), y),
+                1,
+            )
+
+        flake_count = max(10, (rect.width * rect.height) // 12000)
+        for index in range(flake_count):
+            fx = int((index * 37 + now * 42) % max(1, rect.width))
+            fy = int((index * 53 + now * 28 + index * 9) % max(1, rect.height))
+            pygame.draw.circle(overlay, (236, 250, 255, 135), (fx, fy), 1)
+
+        screen.blit(overlay, rect.topleft)
+        pygame.draw.rect(screen, (214, 244, 255), rect, 2)
+
+    def _render_event_water_overlay(self, screen: pygame.Surface, rect: pygame.Rect, now: float) -> None:
+        if rect.width <= 0 or rect.height <= 0:
+            return
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        overlay.fill((36, 94, 168, 84))
+
+        stripe_step = 16
+        for y in range(0, rect.height, stripe_step):
+            wave = int(8 * math.sin((now * 3.0) + (y * 0.15)))
+            pygame.draw.line(
+                overlay,
+                (94, 182, 255, 94),
+                (max(0, wave), y),
+                (min(rect.width, rect.width + wave), y),
+                2,
+            )
+
+        foam_count = max(8, rect.width // 40)
+        for index in range(foam_count):
+            px = int((rect.width * (index + 1)) / (foam_count + 1))
+            py = int(rect.height * (0.2 + 0.6 * (0.5 + 0.5 * math.sin((now * 2.6) + (index * 0.9)))))
+            pygame.draw.circle(overlay, (198, 236, 255, 120), (px, py), 2)
+
+        screen.blit(overlay, rect.topleft)
+        pygame.draw.rect(screen, (120, 210, 255), rect, 2)
+
+    def _render_survival_water_overlay(self, screen: pygame.Surface, now: float) -> None:
+        water_state = self.world.runtime_state.get("survival_water")
+        if not isinstance(water_state, dict):
+            return
+
+        state = str(water_state.get("state", "idle"))
+        region = water_state.get("region")
+        if not isinstance(region, tuple) or len(region) != 4:
+            return
+
+        rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+        if rect.width <= 0 or rect.height <= 0:
+            return
+
+        if state != "active":
+            return
+        blink_visible = bool(water_state.get("blink_visible", True))
+        if not blink_visible:
+            return
+        self._render_event_water_overlay(screen, rect, now)
+
+    def _render_event_bullet_cloud_overlay(self, screen: pygame.Surface, rect: pygame.Rect, now: float) -> None:
+        if rect.width <= 0 or rect.height <= 0:
+            return
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        overlay.fill((120, 56, 12, 76))
+
+        grid = 14
+        for y in range(0, rect.height, grid):
+            for x in range(0, rect.width, grid):
+                flash = 0.5 + 0.5 * math.sin((now * 8.0) + (x * 0.19) + (y * 0.13))
+                if flash < 0.64:
+                    continue
+                pygame.draw.rect(
+                    overlay,
+                    (255, 202, 108, int(34 + 90 * flash)),
+                    pygame.Rect(x, y, 5, 5),
+                    border_radius=1,
+                )
+
+        column_count = max(5, rect.width // 80)
+        for index in range(column_count):
+            cx = int((rect.width * (index + 1)) / (column_count + 1))
+            travel = 0.5 + 0.5 * math.sin((now * 4.8) + index)
+            cy = int(rect.height * (0.12 + (0.76 * travel)))
+            pygame.draw.line(overlay, (255, 236, 154, 170), (cx, max(0, cy - 18)), (cx, min(rect.height, cy + 18)), 1)
+            pygame.draw.circle(overlay, (255, 246, 194, 190), (cx, cy), 2)
+
+        screen.blit(overlay, rect.topleft)
+        pygame.draw.rect(screen, (255, 228, 140), rect, 2)
+
+    def _render_event_black_hole_overlay(
+        self,
+        screen: pygame.Surface,
+        x: int,
+        y: int,
+        pull_radius: int,
+        consume_radius: int,
+        now: float,
+    ) -> None:
+        pulse = 0.5 + 0.5 * math.sin(now * 2.8)
+
+        aura = pygame.Surface((pull_radius * 2 + 10, pull_radius * 2 + 10), pygame.SRCALPHA)
         aura_center = (aura.get_width() // 2, aura.get_height() // 2)
-        outer_alpha = int(34 + pulse * 26)
-        inner_alpha = int(55 + pulse * 42)
-        pygame.draw.circle(aura, (72, 20, 130, outer_alpha), aura_center, pull_radius + 2)
-        pygame.draw.circle(aura, (120, 46, 205, inner_alpha), aura_center, max(2, int(pull_radius * 0.66)))
+        pygame.draw.circle(aura, (58, 18, 114, int(40 + pulse * 32)), aura_center, pull_radius + 3)
+        pygame.draw.circle(aura, (110, 40, 188, int(58 + pulse * 42)), aura_center, max(2, int(pull_radius * 0.64)))
+
+        tile = 10
+        for ty in range(0, aura.get_height(), tile):
+            for tx in range(0, aura.get_width(), tile):
+                ox = tx - aura_center[0]
+                oy = ty - aura_center[1]
+                dist = math.sqrt((ox * ox) + (oy * oy))
+                if dist > pull_radius:
+                    continue
+                swirl = 0.5 + 0.5 * math.sin((dist * 0.13) - (now * 7.0) + (tx * 0.08))
+                if swirl < 0.7:
+                    continue
+                pygame.draw.rect(
+                    aura,
+                    (188, 138, 255, int(20 + 76 * swirl)),
+                    pygame.Rect(tx, ty, 3, 3),
+                )
+
         screen.blit(aura, (x - aura_center[0], y - aura_center[1]))
 
-        ring_a = consume_radius + 10 + int(3 * math.sin(now * 3.7))
-        ring_b = consume_radius + 20 + int(4 * math.cos(now * 2.4 + 0.8))
-        pygame.draw.circle(screen, (196, 128, 255), (x, y), max(2, ring_a), 2)
-        pygame.draw.circle(screen, (124, 214, 255), (x, y), max(2, ring_b), 1)
+        ring_a = consume_radius + 10 + int(4 * math.sin(now * 3.8))
+        ring_b = consume_radius + 22 + int(5 * math.cos(now * 2.5 + 0.8))
+        pygame.draw.circle(screen, (202, 146, 255), (x, y), max(2, ring_a), 2)
+        pygame.draw.circle(screen, (130, 222, 255), (x, y), max(2, ring_b), 1)
 
-        for index in range(12):
-            phase = (index / 12.0) * (math.pi * 2.0)
-            angle = (now * (1.8 + 0.12 * index)) + phase
-            orbit = consume_radius + 7 + (index % 3) * 5
+        glyph_count = 14
+        for index in range(glyph_count):
+            phase = (index / glyph_count) * (math.pi * 2.0)
+            angle = (now * (1.9 + 0.08 * index)) + phase
+            orbit = consume_radius + 8 + (index % 4) * 4
             px = int(x + math.cos(angle) * orbit)
             py = int(y + math.sin(angle) * orbit)
-            color = (235, 200, 255) if index % 2 == 0 else (150, 230, 255)
-            pygame.draw.circle(screen, color, (px, py), 1)
+            size = 2 if index % 2 == 0 else 1
+            color = (242, 214, 255) if index % 2 == 0 else (160, 236, 255)
+            pygame.draw.line(screen, color, (px - size, py), (px + size, py), 1)
+            pygame.draw.line(screen, color, (px, py - size), (px, py + size), 1)
 
-        core_radius = max(2, int(consume_radius * (0.92 + 0.08 * math.sin(now * 6.4))))
+        core_radius = max(2, int(consume_radius * (0.9 + 0.1 * math.sin(now * 6.6))))
         pygame.draw.circle(screen, (10, 6, 18), (x, y), core_radius)
-        pygame.draw.circle(screen, (240, 188, 255), (x, y), consume_radius + 2, 2)
+        pygame.draw.circle(screen, (246, 196, 255), (x, y), consume_radius + 2, 2)
 
     def setup_level(self, level: int) -> None:
         self.world.level = level

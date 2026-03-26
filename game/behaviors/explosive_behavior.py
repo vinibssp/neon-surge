@@ -10,6 +10,7 @@ from game.components.data_components import (
     MovementComponent,
     TransformComponent,
 )
+from game.core.events import ExplosionTriggered, PlayerDamaged, PlayerDied
 from game.ecs.entity import Entity
 
 
@@ -18,8 +19,6 @@ class ExplosiveBehavior(Behavior):
     DIRECT_CHASE_SPEED = 168.0
     CHASE_RESPONSIVENESS = 0.18
     ARMING_DISTANCE = 110.0
-    BLAST_MAX_RADIUS = 96.0
-    BLAST_GROWTH_RATE = 130.0
 
     def update(self, entity: Entity, world: "GameWorld", dt: float) -> None:
         player = world.player
@@ -39,6 +38,12 @@ class ExplosiveBehavior(Behavior):
             or player_transform is None
         ):
             return
+        if explosive.exploded:
+            return
+
+        player_collision = player.get_component(CollisionComponent)
+        if player_collision is None:
+            return
 
         explosive.timer += dt
         to_player = player_transform.position - transform.position
@@ -53,7 +58,6 @@ class ExplosiveBehavior(Behavior):
             )
             movement.input_direction = desired_direction
             movement.max_speed = self.DIRECT_CHASE_SPEED
-            collision.radius = self.BASE_RADIUS
             return
 
         slowdown = 0.82 if distance_to_player <= self.ARMING_DISTANCE else 0.9
@@ -62,17 +66,17 @@ class ExplosiveBehavior(Behavior):
 
         arm_time_boost = 0.0
         if distance_to_player <= self.ARMING_DISTANCE:
-            arm_time_boost += dt * 1.35
+            arm_time_boost += dt * 0.42
         if distance_to_player <= self.ARMING_DISTANCE * 0.6:
-            arm_time_boost += dt * 1.15
+            arm_time_boost += dt * 0.38
         explosive.timer += arm_time_boost
 
-        arm_start_time = min(explosive.chase_time, explosive.detonate_time * 0.68)
-        if explosive.timer >= arm_start_time:
-            growth_time = explosive.timer - arm_start_time
-            collision.radius = min(self.BLAST_MAX_RADIUS, self.BASE_RADIUS + growth_time * self.BLAST_GROWTH_RATE)
-
         if explosive.timer >= explosive.detonate_time:
+            blast_radius = max(18.0, explosive.blast_radius)
+            world.event_bus.publish(ExplosionTriggered(position=Vector2(transform.position)))
+            if self._collides(player_transform.position, player_collision.radius, transform.position, blast_radius):
+                self._kill_player(world, "Explosao de inimigo")
+
             for angle in range(0, 360, 45):
                 world.spawn_enemy_bullet(
                     transform.position,
@@ -83,6 +87,21 @@ class ExplosiveBehavior(Behavior):
                 )
             explosive.exploded = True
             world.remove_entity(entity)
+
+    @staticmethod
+    def _collides(a_pos: Vector2, a_radius: float, b_pos: Vector2, b_radius: float) -> bool:
+        distance_sq = (a_pos - b_pos).length_squared()
+        radius_sum = a_radius + b_radius
+        return distance_sq <= radius_sum * radius_sum
+
+    @staticmethod
+    def _kill_player(world: "GameWorld", cause: str) -> None:
+        if world.runtime_state.get("death_transition"):
+            return
+        world.runtime_state["death_transition"] = True
+        world.runtime_state["last_death_cause"] = cause
+        world.event_bus.publish(PlayerDamaged())
+        world.event_bus.publish(PlayerDied())
 
 
 from game.core.world import GameWorld

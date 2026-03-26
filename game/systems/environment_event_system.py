@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import random
 
 from pygame import Rect, Vector2
@@ -7,8 +8,7 @@ from pygame import Rect, Vector2
 from game.components.data_components import CollisionComponent, InvulnerabilityComponent, MovementComponent, TransformComponent
 from game.core.events import PlayerDamaged, PlayerDied
 from game.core.world import GameWorld
-from game.ecs.entity import Entity
-from game.factories.enemy_factory import EnemyFactory
+from game.systems.world_queries import COLLIDABLE_QUERY
 
 
 class EnvironmentEventSystem:
@@ -72,6 +72,11 @@ class EnvironmentEventSystem:
         self._lava_phase_time_left = 0.0
         self._lava_regions: list[Rect] = []
         self._lava_pattern = "pool"
+        self._water_phase = "warning"
+        self._water_phase_time_left = 0.0
+        self._water_warning_duration = 0.0
+        self._water_active_duration = max(2.4, self.duration)
+        self._water_blink_duration = min(1.2, self._water_active_duration * 0.35)
 
     def update(self, dt: float) -> None:
         self._restore_player_speed()
@@ -112,7 +117,10 @@ class EnvironmentEventSystem:
             self._event_region = Rect(0, 0, self.world.width, self.world.height)
 
         if self._active_event == self.EVENT_WATER:
-            self._spawn_water_pirates()
+            self._event_region = Rect(0, 0, self.world.width, self.world.height)
+            self._event_time_left = self._water_active_duration
+            self._water_phase = "active"
+            self._water_phase_time_left = self._water_active_duration
 
         if self._active_event == self.EVENT_BLACK_HOLE:
             self._black_hole_position = self._random_point_with_margin(120.0)
@@ -127,16 +135,16 @@ class EnvironmentEventSystem:
             self._lava_phase_time_left = self.lava_warning_duration
 
     def _finish_event(self) -> None:
-        if self._active_event == self.EVENT_WATER:
-            self._cleanup_water_pirates()
-
         self._active_event = None
         self._event_region = None
         self._lava_regions = []
+        self._water_phase = "warning"
+        self._water_phase_time_left = 0.0
         self._event_time_left = 0.0
         self._cooldown_left = self.interval
         self.world.runtime_state.pop("environment_event", None)
         self.world.runtime_state.pop("survival_lava", None)
+        self.world.runtime_state.pop("survival_water", None)
 
     def _update_snow_drift(self, dt: float) -> None:
         player = self.world.player
@@ -175,7 +183,10 @@ class EnvironmentEventSystem:
         self.world.runtime_state["snow_last_dir"] = Vector2(blended)
 
     def _update_water_region(self, dt: float) -> None:
-        del dt
+        self._water_phase_time_left = max(0.0, self._water_phase_time_left - dt)
+
+        self._apply_water_drag(dt)
+        self._publish_water_state()
 
     def _update_bullet_cloud(self, dt: float) -> None:
         region = self._event_region
@@ -335,27 +346,71 @@ class EnvironmentEventSystem:
             "blink_duration": self.lava_blink_duration,
         }
 
-    def _spawn_water_pirates(self) -> None:
+    def _water_blink_visible(self) -> bool:
+        if self._water_phase != "active":
+            return False
+        if self._water_phase_time_left > self._water_blink_duration:
+            return True
+        progress = (self._water_blink_duration - self._water_phase_time_left) * 8.0
+        return int(progress) % 2 == 0
+
+    def _publish_water_state(self) -> None:
+        state = "warning" if self._water_phase == "warning" else "active"
+        warning_left = self._water_phase_time_left if state == "warning" else 0.0
+        active_left = self._water_phase_time_left if state == "active" else 0.0
+        region = self._event_region
+        region_payload = None
+        if region is not None:
+            region_payload = (
+                float(region.left),
+                float(region.top),
+                float(region.width),
+                float(region.height),
+            )
+        self.world.runtime_state["survival_water"] = {
+            "state": state,
+            "time_to_water": warning_left,
+            "active_time_left": active_left,
+            "blink_visible": self._water_blink_visible(),
+            "region": region_payload,
+            "warning_duration": self._water_warning_duration,
+            "blink_duration": self._water_blink_duration,
+        }
+
+    def _apply_water_drag(self, dt: float) -> None:
         region = self._event_region
         if region is None:
             return
 
-        for _ in range(self.water_pirate_count):
-            position = Vector2(
-                random.uniform(region.left + 30.0, region.right - 30.0),
-                random.uniform(region.top + 30.0, region.bottom - 30.0),
-            )
-            pirate = EnemyFactory.create_by_kind("metralhadora", position)
-            pirate.add_tag("env_water_pirate")
-            self.world.add_entity(pirate)
+        player = self.world.player
+        for entity in self.world.query(COLLIDABLE_QUERY):
+            if not (entity.has_tag("player") or entity.has_tag("enemy")):
+                continue
+            transform = entity.get_component(TransformComponent)
+            movement = entity.get_component(MovementComponent)
+            if transform is None or movement is None:
+                continue
+            if not region.collidepoint(transform.position.x, transform.position.y):
+                continue
 
-    def _cleanup_water_pirates(self) -> None:
-        for entity in tuple(self.world.entities):
-            if entity.has_tag("env_water_pirate"):
-                self.world.remove_entity(entity)
-        self.world.pending_add = [
-            entity for entity in self.world.pending_add if not entity.has_tag("env_water_pirate")
-        ]
+            drag_multiplier = 0.62 if entity is player else 0.74
+            if entity is player:
+                base_speed = self._player_base_speed(movement)
+                movement.max_speed = base_speed * drag_multiplier
+            else:
+                movement.max_speed *= drag_multiplier
+            movement.velocity *= max(0.0, 1.0 - (dt * 2.6))
+
+            current_input = Vector2(movement.input_direction)
+            if current_input.length_squared() <= 0.0:
+                continue
+            desired = current_input.normalize()
+            sway = Vector2(-desired.y, desired.x) * (
+                0.22 * math.sin((self._event_time_left * 4.2) + transform.position.x * 0.01)
+            )
+            mixed = desired + sway
+            if mixed.length_squared() > 0.0:
+                movement.input_direction = mixed.normalize()
 
     def _player_base_speed(self, movement: MovementComponent) -> float:
         base = self.world.runtime_state.get("player_base_speed")
@@ -398,6 +453,9 @@ class EnvironmentEventSystem:
                 "pull_radius": self.black_hole_pull_radius,
                 "consume_radius": self.black_hole_consume_radius,
             }
+        elif self._active_event == self.EVENT_WATER:
+            payload["water_phase"] = self._water_phase
+            payload["water_time_left"] = self._water_phase_time_left
         elif self._active_event == self.EVENT_LAVA:
             payload["lava_phase"] = self._lava_phase
             payload["lava_time_left"] = self._lava_phase_time_left

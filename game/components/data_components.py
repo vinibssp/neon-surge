@@ -148,6 +148,7 @@ class ExplosiveComponent(Component):
     exploded: bool = False
     chase_time: float = 3.5
     detonate_time: float = 4.5
+    blast_radius: float = 84.0
 
 
 @dataclass

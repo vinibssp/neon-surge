@@ -23,7 +23,6 @@ MID_ENEMY_KINDS: tuple[str, ...] = (
     "bandido_arcano",
     "mago_hobbit",
     "escorpiao_rainha",
-    "abominacao_limo",
     "olho_orbitante",
     "vigia_supressor",
     "xama_mineiro",

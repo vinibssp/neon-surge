@@ -61,6 +61,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Não usar flags globais para transições de estado
 - Evitar roteamento espalhado baseado em `isinstance`
 - Eventos de explosão de domínio (`ExplosionTriggered`) devem acionar feedback visual (animação + tremor de tela) na orquestração de cena/render, sem acoplamento da regra de dano
+- Eventos ambientais devem manter telegraph visual de alto contraste (camadas/pulsos/particulas) na orquestração de cena/render, sem acoplamento com regra de dano
 - Spawns de `boss` fora do `SpawnDirector` também devem publicar `EnemySpawned(enemy_kind=...)` para manter contratos transversais
 - Aparição de `boss` deve acionar card temporário no HUD com nome amigável, via handler de evento no `GameScene`
 
@@ -87,6 +88,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 - Novos padrões de combate devem priorizar behaviors dedicados e reutilizáveis (composição), evitando ramificações por tipo em systems globais
+- Arquétipos de burst letal (explosivos/teleporte/emboscada) devem manter telegraph legivel e janela curta de grace para evitar mortes instantaneas injustas
 
 
 ### Command Pattern
@@ -184,7 +186,9 @@ Resiliência operacional:
 - Tuning global de dificuldade deve priorizar curva progressiva: frequência de spawn, chance por categoria e desbloqueio de roster
 - Presets de sobrevivência devem concentrar hazards periódicos (ex.: lava): intervalo, aviso, duração ativa e janela de pisca de encerramento
 - Lava deve poder surgir em regiões variadas da arena (não fixa na borda), com padrões múltiplos por evento (pool, cross, lanes, ring, fork, checker), mantendo o mesmo contrato de aviso, janela ativa e pisca final
+- Lava deve manter telegraph visual de alto contraste em linguagem pixel-art arcade (camadas de calor, bordas energizadas e runas pulsantes), sem acoplamento com regra de dano
 - Presets de sobrevivência devem concentrar eventos ambientais periódicos (neve/água/nuvem de balas/buraco negro): intervalo global, duração e intensidade por evento
+- Evento de água deve ativar imediatamente (sem fase de aviso), mantendo fase ativa/pisca, sem spawn de torretas, cobrindo a arena e aplicando arrasto de movimentação em player/inimigos durante a fase ativa
 - Lava integra o sistema de eventos ambientais e deve respeitar exclusividade: apenas um evento ativo por vez
 - Presets de sobrevivência devem concentrar progressão de coletáveis especiais e habilidades de pico (ex.: bomba nuclear por limiar de coleta)
 

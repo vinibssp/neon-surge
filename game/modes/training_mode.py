@@ -102,7 +102,7 @@ class TrainingMode(GameModeStrategy):
                     forced_event=self.config.forced_environment_event,
                 ),
                 phase=PipelinePhase.PRE_UPDATE,
-                priority=25,
+                priority=45,
             ),
             SystemSpec(system=FollowSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=30),
             SystemSpec(system=ShootSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=40),

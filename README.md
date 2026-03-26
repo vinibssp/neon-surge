@@ -153,7 +153,9 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - pools de roster são liberados por fase (nível/tempo) para evitar picos injustos no early game
 - sobrevivência/hardcore incluem hazard periódico de lava com fases de aviso, ativo e pisca no encerramento, surgindo em padrões variados por evento (pool, cross, lanes, ring, fork e checker)
 - visual da lava usa camadas de calor, crosta escura, fissuras, runas e brasas animadas para leitura de risco mais forte em combate intenso
-- sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), região de água com navios canhoneiros, nuvem de balas e buraco negro móvel com sucção
+- visual da lava enfatiza linguagem pixel-art de alto contraste (mosaico magmatico, borda energizada segmentada, runas pulsantes e telegraph agressivo)
+- sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), evento de água em tela cheia com ativação imediata (ativo/pisca) e arrasto de movimento em player/inimigos, nuvem de balas e buraco negro móvel com sucção
+- overlays de eventos ambientais usam telegraph de alto contraste e camadas animadas (grelha, runas, pulsos e particulas) para leitura estilo arcade bullet-hell
 - frequência dos eventos ambientais em sobrevivência/hardcore foi elevada via presets para manter pressão contínua sem quebrar exclusividade de evento ativo
 - eventos ambientais são mutuamente exclusivos: lava, neve, água, nuvem de balas e buraco negro nunca acontecem juntos
 - player possui parry em `J`; inimigos atingidos no raio do parry ficam desestabilizados temporariamente com pulso visual
@@ -165,6 +167,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo
 - inimigos recem-spawnados entram com janela curta de inatividade (0.3s) para evitar instakill no frame de surgimento
+- inimigos de burst letal (explosivos/teleporte) mantem janela minima de telegraph e grace curta apos reposicionamento para reduzir mortes inesperadas
 
 #### Render desacoplado
 

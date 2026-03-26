@@ -23,7 +23,6 @@ from game.systems.survival_collectible_system import SurvivalCollectibleSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
-    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -38,9 +37,6 @@ class SurvivalMode(GameModeStrategy):
             player.add_component(NuclearBombComponent())
 
     def on_player_death(self, scene: "GameScene") -> None:
-        elapsed_time = float(scene.elapsed_time)
-        reached_level = int(scene.world.level)
-        score = self.calcular_ranking(elapsed_time, reached_level, scene.session_stats)
         death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Game Over",
@@ -48,29 +44,7 @@ class SurvivalMode(GameModeStrategy):
             retry_strategy_factory=self.create_retry_strategy,
             death_cause=death_cause if isinstance(death_cause, str) else None,
             include_session_summary=True,
-            final_score=score,
         )
-
-    def mode_key(self) -> str:
-        return "Survival"
-
-    def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
-        return round(sum(points for _, points in self.score_breakdown(elapsed_time, reached_level, session_stats)), 2)
-
-    def score_breakdown(
-        self,
-        elapsed_time: float,
-        reached_level: int,
-        session_stats: "GameSessionStats",
-    ) -> list[tuple[str, float]]:
-        del reached_level
-        collectible_count = session_stats.collectible_collected_total
-        portal_count = session_stats.spawn_portal_destroyed_total
-        return [
-            (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
-            (f"Coletaveis ({collectible_count}x5)", collectible_count * 5.0),
-            (f"Portais ({portal_count}x5)", portal_count * 5.0),
-        ]
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         del scene, level
@@ -123,7 +97,7 @@ class SurvivalMode(GameModeStrategy):
                     lava_height_ratio=self.config.lava_height_ratio,
                 ),
                 phase=PipelinePhase.PRE_UPDATE,
-                priority=25,
+                priority=45,
             ),
             SystemSpec(
                 system=SurvivalCollectibleSystem(
