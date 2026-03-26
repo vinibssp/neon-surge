@@ -51,6 +51,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - `SystemPipeline` com fases explícitas: `pre_update`, `simulation`, `post_update`
 - Ordem determinada por prioridade explícita
 - Mudanças de cena disparadas durante handlers/eventos devem ser aplicadas fora do loop crítico de systems para evitar hitch na simulação
+- Entidades hostis recem-spawnadas devem ter janela curta de inatividade (`stagger`) para evitar contato/ataque instantaneo injusto no frame de surgimento
 
 ### Event Bus de Domínio
 

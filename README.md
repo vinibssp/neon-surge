@@ -160,6 +160,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - escala de spawn por modo:
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo
+- inimigos recem-spawnados entram com janela curta de inatividade (0.3s) para evitar instakill no frame de surgimento
 
 #### Render desacoplado
 
