@@ -16,7 +16,6 @@ from game.scenes.settings_scene import SettingsScene
 from game.scenes.training_setup_scene import TrainingSetupScene
 from game.scenes.services import CyberpunkMenuBackgroundRenderer
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
-from game.ui.gui_theme import register_custom_element_themes
 
 
 class MainMenuScene(BaseMenuScene):
@@ -24,258 +23,107 @@ class MainMenuScene(BaseMenuScene):
         super().__init__(stack)
         self._elapsed_time = 0.0
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
-        self._register_main_menu_button_themes()
 
-        title = create_label(
+        create_label(
             LabelConfig(
                 text="NEON SURGE",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 430, 108), (860, 120)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 430, 100), (860, 120)),
                 variant="title",
-                object_id="main_menu_title",
             ),
             manager=self.ui_manager,
         )
-        del title
 
-        button_width = 188
-        button_height = 58
-        horizontal_gap = 14
-        vertical_gap = 18
+        button_width, button_height = 180, 50
+        gap = 15
         columns = 6
-        rows = 1
-        grid_width = columns * button_width + (columns - 1) * horizontal_gap
-        grid_height = rows * button_height + (rows - 1) * vertical_gap
-        start_x = (SCREEN_WIDTH - grid_width) // 2
-        start_y = max(360, (SCREEN_HEIGHT - grid_height) // 2)
+        total_grid_w = columns * button_width + (columns - 1) * gap
+        start_x = (SCREEN_WIDTH - total_grid_w) // 2
+        start_y = 380
 
-        button_specs = [
-            ("Corrida", "race_button", 0, 0),
-            ("Corrida Infinita", "race_infinite_button", 1, 0),
-            ("Sobrevivencia", "survival_button", 2, 0),
-            ("Hardcore", "hardcore_button", 3, 0),
-            ("Labirinto", "labyrinth_button", 4, 0),
-            ("Treino", "training_button", 5, 0),
-        ]
+        # Game Modes Row
+        self._race_btn = create_button(
+            ButtonConfig(text="CORRIDA", rect=pygame.Rect((start_x, start_y), (button_width, button_height)), variant="race"),
+            manager=self.ui_manager
+        )
+        self._race_inf_btn = create_button(
+            ButtonConfig(text="INFINITA", rect=pygame.Rect((start_x + (button_width + gap), start_y), (button_width, button_height)), variant="race_infinite"),
+            manager=self.ui_manager
+        )
+        self._survival_btn = create_button(
+            ButtonConfig(text="SOBREVIVÊNCIA", rect=pygame.Rect((start_x + 2 * (button_width + gap), start_y), (button_width, button_height)), variant="survival"),
+            manager=self.ui_manager
+        )
+        self._hardcore_btn = create_button(
+            ButtonConfig(text="HARDCORE", rect=pygame.Rect((start_x + 3 * (button_width + gap), start_y), (button_width, button_height)), variant="hardcore"),
+            manager=self.ui_manager
+        )
+        self._labyrinth_btn = create_button(
+            ButtonConfig(text="LABIRINTO", rect=pygame.Rect((start_x + 4 * (button_width + gap), start_y), (button_width, button_height)), variant="labyrinth"),
+            manager=self.ui_manager
+        )
+        self._training_btn = create_button(
+            ButtonConfig(text="TREINO", rect=pygame.Rect((start_x + 5 * (button_width + gap), start_y), (button_width, button_height)), variant="training"),
+            manager=self.ui_manager
+        )
 
-        menu_buttons = {}
-        for text, object_id, column, row in button_specs:
-            rect = pygame.Rect(
-                (start_x + column * (button_width + horizontal_gap), start_y + row * (button_height + vertical_gap)),
-                (button_width, button_height),
-            )
-            menu_buttons[object_id] = create_button(
-                ButtonConfig(
-                    text=text,
-                    rect=rect,
-                    variant="primary",
-                    object_id=object_id,
-                ),
-                manager=self.ui_manager,
-            )
-
-        race_button = menu_buttons["race_button"]
-        race_infinite_button = menu_buttons["race_infinite_button"]
-        survival_button = menu_buttons["survival_button"]
-        hardcore_button = menu_buttons["hardcore_button"]
-        labyrinth_button = menu_buttons["labyrinth_button"]
-        training_button = menu_buttons["training_button"]
-
+        # Utils Buttons
         from game.scenes.leaderboard_scene import LeaderboardScene
-        ranking_button = create_button(
+        self._ranking_btn = create_button(
             ButtonConfig(
                 text="RANKING",
-                rect=pygame.Rect(20, -80, 180, 52),
-                anchors={"left": "left", "bottom": "bottom"},
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 250, 500), (240, 50)),
                 variant="primary",
             ),
             manager=self.ui_manager,
         )
-        guide_button = create_button(
+        self._guide_btn = create_button(
             ButtonConfig(
-                text="?",
-                rect=pygame.Rect(-150, -80, 58, 58),
-                anchors={"right": "right", "bottom": "bottom"},
+                text="MANUAL",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 500), (240, 50)),
                 variant="primary",
             ),
             manager=self.ui_manager,
         )
-        settings_button = create_button(
+        
+        self._settings_btn = create_button(
             ButtonConfig(
-                text="*",
-                rect=pygame.Rect(-80, -80, 58, 58),
-                anchors={"right": "right", "bottom": "bottom"},
-                variant="primary",
+                text="CONFIGURAÇÕES",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 120, 570), (240, 50)),
+                variant="ghost",
             ),
             manager=self.ui_manager,
         )
 
-        close_button = create_button(
+        self._exit_btn = create_button(
             ButtonConfig(
-                text="X",
-                rect=pygame.Rect(-80, 20, 58, 45),
-                anchors={"right": "right", "top": "top"},
+                text="SAIR DO SISTEMA",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 120, 640), (240, 50)),
                 variant="danger",
             ),
             manager=self.ui_manager,
         )
 
         self.set_navigator(
-            buttons=[
-                race_button,
-                race_infinite_button,
-                survival_button,
-                hardcore_button,
-                labyrinth_button,
-                training_button,
-                ranking_button,
-                guide_button,
-                settings_button,
-                close_button,
+            controls=[
+                self._race_btn, self._race_inf_btn, self._survival_btn,
+                self._hardcore_btn, self._labyrinth_btn, self._training_btn,
+                self._ranking_btn, self._guide_btn,
+                self._settings_btn, self._exit_btn
             ],
             actions={
-                race_button: lambda: self.stack.replace(GameScene(self.stack, RaceMode())),
-                race_infinite_button: lambda: self.stack.replace(GameScene(self.stack, RaceInfiniteMode())),
-                survival_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalMode())),
-                hardcore_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalHardcoreMode())),
-                labyrinth_button: lambda: self.stack.replace(GameScene(self.stack, LabyrinthMode())),
-                training_button: lambda: self.stack.push(TrainingSetupScene(self.stack)),
-                guide_button: lambda: self.stack.push(GuideScene(self.stack)),
-                settings_button: lambda: self.stack.push(SettingsScene(self.stack)),
-                ranking_button: lambda: self.stack.push(LeaderboardScene(self.stack)),
-                close_button: self._quit,
+                self._race_btn: lambda: self.stack.replace(GameScene(self.stack, RaceMode())),
+                self._race_inf_btn: lambda: self.stack.replace(GameScene(self.stack, RaceInfiniteMode())),
+                self._survival_btn: lambda: self.stack.replace(GameScene(self.stack, SurvivalMode())),
+                self._hardcore_btn: lambda: self.stack.replace(GameScene(self.stack, SurvivalHardcoreMode())),
+                self._labyrinth_btn: lambda: self.stack.replace(GameScene(self.stack, LabyrinthMode())),
+                self._training_btn: lambda: self.stack.push(TrainingSetupScene(self.stack)),
+                self._ranking_btn: lambda: self.stack.push(LeaderboardScene(self.stack)),
+                self._guide_btn: lambda: self.stack.push(GuideScene(self.stack)),
+                self._settings_btn: lambda: self.stack.push(SettingsScene(self.stack)),
+                self._exit_btn: self._quit,
             },
             on_cancel=self._quit,
         )
-
-    def _register_main_menu_button_themes(self) -> None:
-        button_themes: dict[str, dict] = {
-            "main_menu_title": {
-                "colours": {
-                    "normal_text": "#3aa8ff",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "72",
-                    "bold": "1",
-                },
-            },
-            "race_button": {
-                "colours": {
-                    "normal_bg": "#0a1f3e",
-                    "hovered_bg": "#0f2f5c",
-                    "selected_bg": "#154078",
-                    "active_bg": "#1a4f92",
-                    "normal_text": "#8fd6ff",
-                    "hovered_text": "#e0f5ff",
-                    "selected_text": "#e0f5ff",
-                    "normal_border": "#2f9dff",
-                    "hovered_border": "#66b9ff",
-                    "selected_border": "#99d1ff",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "race_infinite_button": {
-                "colours": {
-                    "normal_bg": "#201044",
-                    "hovered_bg": "#2f1964",
-                    "selected_bg": "#3d2382",
-                    "active_bg": "#4b2da0",
-                    "normal_text": "#c9a8ff",
-                    "hovered_text": "#f0e6ff",
-                    "selected_text": "#f0e6ff",
-                    "normal_border": "#9f6bff",
-                    "hovered_border": "#bb96ff",
-                    "selected_border": "#d5c0ff",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "survival_button": {
-                "colours": {
-                    "normal_bg": "#3c1030",
-                    "hovered_bg": "#561848",
-                    "selected_bg": "#711f60",
-                    "active_bg": "#8b2878",
-                    "normal_text": "#ff95dd",
-                    "hovered_text": "#ffe4f8",
-                    "selected_text": "#ffe4f8",
-                    "normal_border": "#ff5ec8",
-                    "hovered_border": "#ff95dd",
-                    "selected_border": "#ffc3ec",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "hardcore_button": {
-                "colours": {
-                    "normal_bg": "#3f1b04",
-                    "hovered_bg": "#5b2808",
-                    "selected_bg": "#75350b",
-                    "active_bg": "#8f410f",
-                    "normal_text": "#ffbd85",
-                    "hovered_text": "#ffeddc",
-                    "selected_text": "#ffeddc",
-                    "normal_border": "#ff8e3a",
-                    "hovered_border": "#ffad6b",
-                    "selected_border": "#ffc89b",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "labyrinth_button": {
-                "colours": {
-                    "normal_bg": "#112f15",
-                    "hovered_bg": "#19461f",
-                    "selected_bg": "#215f2a",
-                    "active_bg": "#2a7834",
-                    "normal_text": "#92f5a0",
-                    "hovered_text": "#ddffe3",
-                    "selected_text": "#ddffe3",
-                    "normal_border": "#4ee06a",
-                    "hovered_border": "#7ff08e",
-                    "selected_border": "#b4f7bf",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "training_button": {
-                "colours": {
-                    "normal_bg": "#0b3140",
-                    "hovered_bg": "#11495d",
-                    "selected_bg": "#17627a",
-                    "active_bg": "#1d7a96",
-                    "normal_text": "#91ebff",
-                    "hovered_text": "#ddf8ff",
-                    "selected_text": "#ddf8ff",
-                    "normal_border": "#49d4ff",
-                    "hovered_border": "#86e5ff",
-                    "selected_border": "#b6efff",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-        }
-
-        register_custom_element_themes(self.ui_manager, button_themes, rebuild_all=True)
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="menu", reason="main_menu_entered"))
