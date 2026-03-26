@@ -7,6 +7,7 @@ import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.factories.enemy_factory import EnemyFactory
+from game.modes.mode_config import TrainingConfig
 from game.modes.training_mode import TrainingMode
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.scenes.services import CyberpunkMenuBackgroundRenderer
@@ -14,12 +15,33 @@ from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_bu
 from game.ui.gui_theme import register_custom_element_themes
 
 EnemyCategory = Literal["enemy", "miniboss", "boss"]
+TrainingTab = Literal["enemy", "miniboss", "boss", "event"]
 
 
 ENEMY_CATEGORY_LABELS: dict[EnemyCategory, str] = {
     "enemy": "Inimigos",
     "miniboss": "Minibosses",
     "boss": "Bosses",
+}
+
+
+EVENT_LABELS: dict[str, str] = {
+    "random": "Aleatorio",
+    "lava": "Lava",
+    "snow_drift": "Neve",
+    "water_region": "Agua",
+    "bullet_cloud": "Nuvem de Balas",
+    "black_hole": "Buraco Negro",
+}
+
+
+EVENT_DESCRIPTIONS: dict[str, str] = {
+    "random": "Sorteia qualquer evento ambiental disponivel.",
+    "lava": "Hazard de lava com aviso e fase ativa.",
+    "snow_drift": "Reduz controle e velocidade em area de neve.",
+    "water_region": "Invoca piratas em uma regiao de agua.",
+    "bullet_cloud": "Chuva de projeteis em area delimitada.",
+    "black_hole": "Puxa entidades e pode consumir o player.",
 }
 
 
@@ -89,15 +111,15 @@ class TrainingSetupScene(BaseMenuScene):
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
         self._register_themes()
 
-        self._tab_order: tuple[EnemyCategory, ...] = ("enemy", "miniboss", "boss")
-        self._active_tab: EnemyCategory = "enemy"
+        self._tab_order: tuple[TrainingTab, ...] = ("enemy", "miniboss", "boss", "event")
+        self._active_tab: TrainingTab = "enemy"
         self._rows_per_page = 6
         self._max_count_by_tab: dict[EnemyCategory, int] = {
             "enemy": 30,
             "miniboss": 12,
             "boss": 8,
         }
-        self._page_index_by_tab: dict[EnemyCategory, int] = {category: 0 for category in self._tab_order}
+        self._page_index_by_tab: dict[TrainingTab, int] = {category: 0 for category in self._tab_order}
 
         self._kinds_by_tab: dict[EnemyCategory, list[str]] = {
             "enemy": EnemyFactory.registered_enemy_kinds(),
@@ -107,9 +129,22 @@ class TrainingSetupScene(BaseMenuScene):
 
         self._selected_counts: dict[str, int] = {
             kind: 0
-            for category in self._tab_order
+            for category in self._kinds_by_tab
             for kind in self._kinds_by_tab[category]
         }
+        self._event_options: tuple[str, ...] = (
+            "random",
+            "lava",
+            "snow_drift",
+            "water_region",
+            "bullet_cloud",
+            "black_hole",
+        )
+        self._selected_event = "random"
+        self._event_interval_min = 6.0
+        self._event_interval_max = 60.0
+        self._event_interval_step = 1.0
+        self._selected_event_interval = 22.0
         self._slot_kinds: list[str | None] = [None] * self._rows_per_page
         self._row_minus_index_by_control: dict[object, int] = {}
         self._row_plus_index_by_control: dict[object, int] = {}
@@ -124,7 +159,7 @@ class TrainingSetupScene(BaseMenuScene):
         )
         subtitle = create_label(
             LabelConfig(
-                text="Escolha o que praticar: abas por categoria, quantidade por inimigo.",
+                text="Escolha o que praticar: categorias de inimigos e aba de evento ambiental.",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 360, 126), (720, 36)),
                 object_id="training_subtitle_label",
             ),
@@ -132,7 +167,7 @@ class TrainingSetupScene(BaseMenuScene):
         )
         del title, subtitle
 
-        self._tab_buttons: dict[EnemyCategory, object] = {
+        self._tab_buttons: dict[TrainingTab, object] = {
             "enemy": create_button(
                 ButtonConfig(
                     text="Inimigos",
@@ -152,8 +187,16 @@ class TrainingSetupScene(BaseMenuScene):
             "boss": create_button(
                 ButtonConfig(
                     text="Bosses",
-                    rect=pygame.Rect((SCREEN_WIDTH // 2 + 115, 170), (200, 44)),
+                    rect=pygame.Rect((SCREEN_WIDTH // 2 + 100, 170), (170, 44)),
                     object_id="training_tab_boss_button",
+                ),
+                manager=self.ui_manager,
+            ),
+            "event": create_button(
+                ButtonConfig(
+                    text="Eventos",
+                    rect=pygame.Rect((SCREEN_WIDTH // 2 + 285, 170), (170, 44)),
+                    object_id="training_tab_event_button",
                 ),
                 manager=self.ui_manager,
             ),
@@ -284,6 +327,42 @@ class TrainingSetupScene(BaseMenuScene):
             manager=self.ui_manager,
             container=self._content_panel,
         )
+        self._event_interval_title_label = create_label(
+            LabelConfig(
+                text="Intervalo do Evento",
+                rect=pygame.Rect((300, 268), (230, 28)),
+                object_id="training_event_interval_title_label",
+            ),
+            manager=self.ui_manager,
+            container=self._content_panel,
+        )
+        self._event_interval_minus_button = create_button(
+            ButtonConfig(
+                text="-",
+                rect=pygame.Rect((540, 268), (42, 30)),
+                object_id="training_event_interval_minus_button",
+            ),
+            manager=self.ui_manager,
+            container=self._content_panel,
+        )
+        self._event_interval_value_label = create_label(
+            LabelConfig(
+                text="22s",
+                rect=pygame.Rect((592, 268), (96, 28)),
+                object_id="training_event_interval_value_label",
+            ),
+            manager=self.ui_manager,
+            container=self._content_panel,
+        )
+        self._event_interval_plus_button = create_button(
+            ButtonConfig(
+                text="+",
+                rect=pygame.Rect((698, 268), (42, 30)),
+                object_id="training_event_interval_plus_button",
+            ),
+            manager=self.ui_manager,
+            container=self._content_panel,
+        )
 
         self._summary_label = create_label(
             LabelConfig(
@@ -295,7 +374,7 @@ class TrainingSetupScene(BaseMenuScene):
         )
         self._keyboard_hint_label = create_label(
             LabelConfig(
-                text="Atalhos: 1/2/3 abas | Q/E alterna abas | PgUp/PgDn pagina | <-/-> ou A/D e +/- ajustam linha focada",
+                text="Atalhos: 1/2/3/4 abas | Q/E alterna abas | PgUp/PgDn pagina | <-/-> ou A/D e +/- ajustam foco",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 592), (1000, 24)),
                 object_id="training_keyboard_hint_label",
             ),
@@ -323,15 +402,21 @@ class TrainingSetupScene(BaseMenuScene):
             self._tab_buttons["enemy"],
             self._tab_buttons["miniboss"],
             self._tab_buttons["boss"],
+            self._tab_buttons["event"],
             self._page_prev_button,
             self._page_next_button,
+            self._event_interval_minus_button,
+            self._event_interval_plus_button,
         ]
         actions = {
             self._tab_buttons["enemy"]: lambda: self._switch_tab("enemy"),
             self._tab_buttons["miniboss"]: lambda: self._switch_tab("miniboss"),
             self._tab_buttons["boss"]: lambda: self._switch_tab("boss"),
+            self._tab_buttons["event"]: lambda: self._switch_tab("event"),
             self._page_prev_button: lambda: self._change_page(-1),
             self._page_next_button: lambda: self._change_page(1),
+            self._event_interval_minus_button: lambda: self._adjust_event_interval(-self._event_interval_step),
+            self._event_interval_plus_button: lambda: self._adjust_event_interval(self._event_interval_step),
         }
 
         for index, (minus_button, plus_button) in enumerate(zip(self._row_minus_buttons, self._row_plus_buttons)):
@@ -496,6 +581,83 @@ class TrainingSetupScene(BaseMenuScene):
                         "bold": "1",
                     },
                 },
+                "training_tab_event_button": {
+                    "colours": {
+                        "normal_bg": "#0b2d33",
+                        "hovered_bg": "#11424b",
+                        "selected_bg": "#175761",
+                        "active_bg": "#1f6c77",
+                        "normal_text": "#9bf7ff",
+                        "hovered_text": "#e6fdff",
+                        "selected_text": "#e6fdff",
+                        "normal_border": "#5de3f2",
+                        "hovered_border": "#8aedf7",
+                        "selected_border": "#bbf5fb",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "16",
+                        "bold": "1",
+                    },
+                },
+                "training_event_interval_title_label": {
+                    "colours": {
+                        "normal_text": "#8de8f2",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "15",
+                        "bold": "1",
+                    },
+                },
+                "training_event_interval_value_label": {
+                    "colours": {
+                        "normal_text": "#dffcff",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "16",
+                        "bold": "1",
+                    },
+                },
+                "training_event_interval_minus_button": {
+                    "colours": {
+                        "normal_bg": "#10323a",
+                        "hovered_bg": "#184955",
+                        "selected_bg": "#1f6270",
+                        "active_bg": "#287886",
+                        "normal_text": "#c6f8ff",
+                        "hovered_text": "#ecfdff",
+                        "selected_text": "#ecfdff",
+                        "normal_border": "#6ee8f6",
+                        "hovered_border": "#97eff8",
+                        "selected_border": "#c2f6fb",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "18",
+                        "bold": "1",
+                    },
+                },
+                "training_event_interval_plus_button": {
+                    "colours": {
+                        "normal_bg": "#10323a",
+                        "hovered_bg": "#184955",
+                        "selected_bg": "#1f6270",
+                        "active_bg": "#287886",
+                        "normal_text": "#c6f8ff",
+                        "hovered_text": "#ecfdff",
+                        "selected_text": "#ecfdff",
+                        "normal_border": "#6ee8f6",
+                        "hovered_border": "#97eff8",
+                        "selected_border": "#c2f6fb",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "18",
+                        "bold": "1",
+                    },
+                },
                 "training_page_prev_button": {
                     "colours": {
                         "normal_bg": "#1b2f3c",
@@ -576,7 +738,7 @@ class TrainingSetupScene(BaseMenuScene):
             rebuild_all=True,
         )
 
-    def _switch_tab(self, category: EnemyCategory) -> None:
+    def _switch_tab(self, category: TrainingTab) -> None:
         self._active_tab = category
         self._refresh_tab_view()
 
@@ -586,7 +748,10 @@ class TrainingSetupScene(BaseMenuScene):
         self._switch_tab(self._tab_order[target_index])
 
     def _change_page(self, delta: int) -> None:
-        kinds = self._kinds_by_tab[self._active_tab]
+        if self._active_tab == "event":
+            kinds = list(self._event_options)
+        else:
+            kinds = self._kinds_by_tab[self._active_tab]
         max_page = max(0, math.ceil(len(kinds) / self._rows_per_page) - 1)
         current = self._page_index_by_tab[self._active_tab]
         self._page_index_by_tab[self._active_tab] = max(0, min(max_page, current + delta))
@@ -597,6 +762,13 @@ class TrainingSetupScene(BaseMenuScene):
             return
         kind = self._slot_kinds[slot_index]
         if kind is None:
+            return
+
+        if self._active_tab == "event":
+            if self._selected_event == kind:
+                return
+            self._selected_event = kind
+            self._refresh_tab_view()
             return
 
         category = self._category_for_kind(kind)
@@ -610,7 +782,10 @@ class TrainingSetupScene(BaseMenuScene):
         self._refresh_tab_view()
 
     def _refresh_tab_view(self) -> None:
-        kinds = self._kinds_by_tab[self._active_tab]
+        if self._active_tab == "event":
+            kinds = list(self._event_options)
+        else:
+            kinds = self._kinds_by_tab[self._active_tab]
         max_page = max(0, math.ceil(len(kinds) / self._rows_per_page) - 1)
         current_page = min(self._page_index_by_tab[self._active_tab], max_page)
         self._page_index_by_tab[self._active_tab] = current_page
@@ -634,6 +809,24 @@ class TrainingSetupScene(BaseMenuScene):
                 minus_button.disable()
                 plus_button.disable()
                 continue
+
+            if self._active_tab == "event":
+                name_label.set_text(EVENT_LABELS.get(kind, _display_name(kind)))
+                desc_label.set_text(EVENT_DESCRIPTIONS.get(kind, "Evento ambiental para treino."))
+                is_selected = self._selected_event == kind
+                count_label.set_text("ATIVO" if is_selected else "-")
+                minus_button.set_text("Sel")
+                plus_button.set_text("Sel")
+                if is_selected:
+                    minus_button.disable()
+                    plus_button.disable()
+                else:
+                    minus_button.enable()
+                    plus_button.enable()
+                continue
+
+            minus_button.set_text("-")
+            plus_button.set_text("+")
 
             count_value = self._selected_counts.get(kind, 0)
             name_label.set_text(_display_name(kind))
@@ -662,6 +855,28 @@ class TrainingSetupScene(BaseMenuScene):
         else:
             self._page_next_button.enable()
 
+        self._event_interval_value_label.set_text(f"{self._selected_event_interval:.0f}s")
+        if self._active_tab == "event":
+            self._event_interval_title_label.show()
+            self._event_interval_value_label.show()
+            self._event_interval_minus_button.show()
+            self._event_interval_plus_button.show()
+            if self._selected_event_interval <= self._event_interval_min:
+                self._event_interval_minus_button.disable()
+            else:
+                self._event_interval_minus_button.enable()
+            if self._selected_event_interval >= self._event_interval_max:
+                self._event_interval_plus_button.disable()
+            else:
+                self._event_interval_plus_button.enable()
+        else:
+            self._event_interval_title_label.hide()
+            self._event_interval_value_label.hide()
+            self._event_interval_minus_button.hide()
+            self._event_interval_plus_button.hide()
+            self._event_interval_minus_button.disable()
+            self._event_interval_plus_button.disable()
+
         self._update_tab_titles()
         self._update_summary()
 
@@ -679,6 +894,9 @@ class TrainingSetupScene(BaseMenuScene):
             return True
         if key in (pygame.K_3, pygame.K_KP3):
             self._switch_tab("boss")
+            return True
+        if key in (pygame.K_4, pygame.K_KP4):
+            self._switch_tab("event")
             return True
         if key == pygame.K_q:
             self._switch_tab_by_offset(-1)
@@ -711,21 +929,45 @@ class TrainingSetupScene(BaseMenuScene):
         elif selected_control in self._row_plus_index_by_control:
             slot_index = self._row_plus_index_by_control[selected_control]
 
+        if selected_control is self._event_interval_minus_button:
+            self._adjust_event_interval(-self._event_interval_step)
+            return True
+        if selected_control is self._event_interval_plus_button:
+            self._adjust_event_interval(self._event_interval_step)
+            return True
+
         if slot_index is None:
             return False
 
         self._adjust_slot_count(slot_index, delta)
         return True
 
+    def _adjust_event_interval(self, delta: float) -> None:
+        if self._active_tab != "event":
+            return
+        updated = self._selected_event_interval + delta
+        clamped = max(self._event_interval_min, min(self._event_interval_max, updated))
+        if abs(clamped - self._selected_event_interval) <= 0.001:
+            return
+        self._selected_event_interval = clamped
+        self._refresh_tab_view()
+
     def _update_tab_titles(self) -> None:
         for category in self._tab_order:
-            total = sum(self._selected_counts[kind] for kind in self._kinds_by_tab[category])
             marker = "> " if category == self._active_tab else ""
+            if category == "event":
+                event_label = EVENT_LABELS.get(self._selected_event, "Aleatorio")
+                self._tab_buttons[category].set_text(f"{marker}Eventos ({event_label})")
+                continue
+            total = sum(self._selected_counts[kind] for kind in self._kinds_by_tab[category])
             self._tab_buttons[category].set_text(f"{marker}{ENEMY_CATEGORY_LABELS[category]} ({total})")
 
     def _update_summary(self) -> None:
         total_selected = sum(self._selected_counts.values())
-        self._summary_label.set_text(f"Selecionados: {total_selected}")
+        event_label = EVENT_LABELS.get(self._selected_event, "Aleatorio")
+        self._summary_label.set_text(
+            f"Selecionados: {total_selected} | Evento: {event_label} | Intervalo: {self._selected_event_interval:.0f}s"
+        )
         if total_selected <= 0:
             self._start_button.disable()
         else:
@@ -744,7 +986,19 @@ class TrainingSetupScene(BaseMenuScene):
             return
         from game.scenes.game_scene import GameScene
 
-        self.stack.replace(GameScene(self.stack, TrainingMode(spawn_plan=spawn_plan)))
+        forced_event = None if self._selected_event == "random" else self._selected_event
+        self.stack.replace(
+            GameScene(
+                self.stack,
+                TrainingMode(
+                    spawn_plan=spawn_plan,
+                    config=TrainingConfig(
+                        forced_environment_event=forced_event,
+                        env_event_interval=self._selected_event_interval,
+                    ),
+                ),
+            )
+        )
 
     def _close(self) -> None:
         self.stack.pop()

@@ -81,6 +81,8 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
 - `TrainingMode` deve receber plano declarativo de spawn (tipo -> quantidade) vindo da UI de treino com abas por categoria
+- `TrainingMode` deve concentrar tuning de eventos ambientais no preset (`TrainingConfig`) e integrar hazards periodicos no pipeline sem lógica em cena
+- UI de treino deve expor aba de eventos para selecionar evento ambiental especifico (ou aleatorio), persistindo selecao e intervalo do evento no `TrainingConfig`
 - Estratégias de spawn devem aplicar progressão de roster por fase (nível/tempo), liberando arquétipos de maior pressão de forma gradual
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
@@ -181,7 +183,7 @@ Resiliência operacional:
 - Presets de modo devem concentrar tuning de política de spawn por categoria
 - Tuning global de dificuldade deve priorizar curva progressiva: frequência de spawn, chance por categoria e desbloqueio de roster
 - Presets de sobrevivência devem concentrar hazards periódicos (ex.: lava): intervalo, aviso, duração ativa e janela de pisca de encerramento
-- Lava deve poder surgir em regiões variadas da arena (não fixa na borda), mantendo o mesmo contrato de aviso, janela ativa e pisca final
+- Lava deve poder surgir em regiões variadas da arena (não fixa na borda), com padrões múltiplos por evento (pool, cross, lanes, ring, fork, checker), mantendo o mesmo contrato de aviso, janela ativa e pisca final
 - Presets de sobrevivência devem concentrar eventos ambientais periódicos (neve/água/nuvem de balas/buraco negro): intervalo global, duração e intensidade por evento
 - Lava integra o sistema de eventos ambientais e deve respeitar exclusividade: apenas um evento ativo por vez
 - Presets de sobrevivência devem concentrar progressão de coletáveis especiais e habilidades de pico (ex.: bomba nuclear por limiar de coleta)

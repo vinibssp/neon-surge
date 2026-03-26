@@ -83,7 +83,7 @@ class SurvivalConfig:
     lava_height_ratio: float = 0.16
     collectible_spawn_interval: float = 2.8
     collectible_spawn_cap: int = 12
-    env_event_interval: float = 40.0
+    env_event_interval: float = 28.0
     env_event_duration: float = 11.0
     snow_drag_multiplier: float = 0.78
     snow_turn_response: float = 0.16
@@ -121,7 +121,7 @@ class SurvivalHardcoreConfig(SurvivalConfig):
     lava_height_ratio: float = 0.23
     collectible_spawn_interval: float = 2.5
     collectible_spawn_cap: int = 14
-    env_event_interval: float = 24.0
+    env_event_interval: float = 16.0
     env_event_duration: float = 14.0
     snow_drag_multiplier: float = 0.72
     snow_turn_response: float = 0.12
@@ -144,6 +144,21 @@ class TrainingConfig:
     spawn_interval: float = 1.0
     initial_spawn_cap: float = 0.8
     max_portals_per_cycle: int = 3
+    forced_environment_event: str | None = None
+    lava_warning_duration: float = 3.0
+    lava_active_duration: float = 5.5
+    lava_blink_duration: float = 1.2
+    lava_height_ratio: float = 0.15
+    env_event_interval: float = 22.0
+    env_event_duration: float = 9.0
+    snow_drag_multiplier: float = 0.82
+    snow_turn_response: float = 0.18
+    water_pirate_count: int = 2
+    bullet_cloud_fire_interval: float = 0.13
+    black_hole_pull_radius: float = 150.0
+    black_hole_pull_strength: float = 180.0
+    black_hole_speed: float = 34.0
+    black_hole_consume_radius: float = 20.0
 
 
 @dataclass(frozen=True)

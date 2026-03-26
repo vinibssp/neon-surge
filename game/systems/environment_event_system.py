@@ -35,6 +35,7 @@ class EnvironmentEventSystem:
         lava_active_duration: float,
         lava_blink_duration: float,
         lava_height_ratio: float,
+        forced_event: str | None = None,
     ) -> None:
         self.world = world
         self.interval = max(6.0, interval)
@@ -51,6 +52,14 @@ class EnvironmentEventSystem:
         self.lava_active_duration = max(0.6, lava_active_duration)
         self.lava_blink_duration = max(0.2, min(lava_blink_duration, self.lava_active_duration))
         self.lava_height_ratio = max(0.08, min(0.45, lava_height_ratio))
+        available_events = {
+            self.EVENT_SNOW,
+            self.EVENT_WATER,
+            self.EVENT_BULLET_CLOUD,
+            self.EVENT_BLACK_HOLE,
+            self.EVENT_LAVA,
+        }
+        self._forced_event = forced_event if forced_event in available_events else None
 
         self._cooldown_left = self.interval
         self._event_time_left = 0.0
@@ -61,6 +70,8 @@ class EnvironmentEventSystem:
         self._black_hole_velocity = Vector2()
         self._lava_phase = "warning"
         self._lava_phase_time_left = 0.0
+        self._lava_regions: list[Rect] = []
+        self._lava_pattern = "pool"
 
     def update(self, dt: float) -> None:
         self._restore_player_speed()
@@ -91,9 +102,8 @@ class EnvironmentEventSystem:
         self._publish_runtime_state()
 
     def _start_random_event(self) -> None:
-        self._active_event = random.choice(
-            [self.EVENT_SNOW, self.EVENT_WATER, self.EVENT_BULLET_CLOUD, self.EVENT_BLACK_HOLE, self.EVENT_LAVA]
-        )
+        event_options = [self.EVENT_SNOW, self.EVENT_WATER, self.EVENT_BULLET_CLOUD, self.EVENT_BLACK_HOLE, self.EVENT_LAVA]
+        self._active_event = self._forced_event if self._forced_event is not None else random.choice(event_options)
         self._event_time_left = self.duration
         self._event_region = self._random_region(0.34, 0.46)
         self._bullet_timer = 0.0
@@ -110,10 +120,8 @@ class EnvironmentEventSystem:
             self._black_hole_velocity = heading * self.black_hole_speed
 
         if self._active_event == self.EVENT_LAVA:
-            lava_height_ratio = max(0.08, min(0.45, self.lava_height_ratio))
-            width_ratio = max(0.28, min(0.55, 0.22 + (lava_height_ratio * 1.2)))
-            height_ratio = max(0.14, min(0.42, lava_height_ratio * 1.35))
-            self._event_region = self._random_region(width_ratio, height_ratio)
+            self._lava_pattern, self._lava_regions = self._build_lava_regions()
+            self._event_region = self._lava_regions[0] if self._lava_regions else None
             self._event_time_left = self.lava_warning_duration + self.lava_active_duration
             self._lava_phase = "warning"
             self._lava_phase_time_left = self.lava_warning_duration
@@ -124,6 +132,7 @@ class EnvironmentEventSystem:
 
         self._active_event = None
         self._event_region = None
+        self._lava_regions = []
         self._event_time_left = 0.0
         self._cooldown_left = self.interval
         self.world.runtime_state.pop("environment_event", None)
@@ -271,11 +280,14 @@ class EnvironmentEventSystem:
         if invulnerability is not None and invulnerability.time_left > 0.0:
             return
 
-        region = self._event_region
-        if region is None:
+        if not self._lava_regions:
             return
 
-        if not self._circle_overlaps_rect(transform.position, collision.radius, region):
+        in_lava = any(
+            self._circle_overlaps_rect(transform.position, collision.radius, lava_region)
+            for lava_region in self._lava_regions
+        )
+        if not in_lava:
             return
 
         self._kill_player("Queimado na lava")
@@ -301,6 +313,15 @@ class EnvironmentEventSystem:
                 float(region.width),
                 float(region.height),
             )
+        regions_payload: tuple[tuple[float, float, float, float], ...] = tuple(
+            (
+                float(lava_region.left),
+                float(lava_region.top),
+                float(lava_region.width),
+                float(lava_region.height),
+            )
+            for lava_region in self._lava_regions
+        )
         self.world.runtime_state["survival_lava"] = {
             "state": state,
             "time_to_lava": warning_left,
@@ -308,6 +329,8 @@ class EnvironmentEventSystem:
             "blink_visible": self._lava_blink_visible(),
             "height": 0.0 if region is None else float(region.height),
             "region": region_payload,
+            "regions": regions_payload,
+            "pattern": self._lava_pattern,
             "warning_duration": self.lava_warning_duration,
             "blink_duration": self.lava_blink_duration,
         }
@@ -378,6 +401,7 @@ class EnvironmentEventSystem:
         elif self._active_event == self.EVENT_LAVA:
             payload["lava_phase"] = self._lava_phase
             payload["lava_time_left"] = self._lava_phase_time_left
+            payload["lava_pattern"] = self._lava_pattern
 
         self.world.runtime_state["environment_event"] = payload
 
@@ -388,6 +412,104 @@ class EnvironmentEventSystem:
         left = random.randint(margin, max(margin, self.world.width - width - margin))
         top = random.randint(margin, max(margin, self.world.height - height - margin))
         return Rect(left, top, width, height)
+
+    def _build_lava_regions(self) -> tuple[str, list[Rect]]:
+        lava_height_ratio = max(0.08, min(0.45, self.lava_height_ratio))
+        pattern = random.choice(("pool", "cross", "lanes", "ring", "fork", "checker"))
+        margin = 54
+
+        if pattern == "pool":
+            width_ratio = max(0.28, min(0.55, 0.22 + (lava_height_ratio * 1.2)))
+            height_ratio = max(0.14, min(0.42, lava_height_ratio * 1.35))
+            return pattern, [self._random_region(width_ratio, height_ratio)]
+
+        if pattern == "cross":
+            stripe_thickness = int(self.world.height * max(0.08, min(0.2, lava_height_ratio * 0.72)))
+            vertical_width = int(self.world.width * max(0.08, min(0.18, lava_height_ratio * 0.66)))
+            cross_x = random.randint(
+                margin + vertical_width,
+                max(margin + vertical_width, self.world.width - margin - vertical_width),
+            )
+            cross_y = random.randint(
+                margin + stripe_thickness,
+                max(margin + stripe_thickness, self.world.height - margin - stripe_thickness),
+            )
+            horizontal = Rect(margin, cross_y - stripe_thickness // 2, self.world.width - (margin * 2), stripe_thickness)
+            vertical = Rect(cross_x - vertical_width // 2, margin, vertical_width, self.world.height - (margin * 2))
+            return pattern, [horizontal, vertical]
+
+        if pattern == "ring":
+            arena_w = self.world.width - (margin * 2)
+            arena_h = self.world.height - (margin * 2)
+            ring_thickness = int(min(arena_w, arena_h) * max(0.07, min(0.16, lava_height_ratio * 0.72)))
+            center_box_w = int(arena_w * random.uniform(0.28, 0.42))
+            center_box_h = int(arena_h * random.uniform(0.26, 0.4))
+            center_left = (self.world.width // 2) - (center_box_w // 2)
+            center_top = (self.world.height // 2) - (center_box_h // 2)
+            top_band = Rect(margin, margin, arena_w, ring_thickness)
+            bottom_band = Rect(margin, self.world.height - margin - ring_thickness, arena_w, ring_thickness)
+            left_band = Rect(margin, margin + ring_thickness, ring_thickness, arena_h - (ring_thickness * 2))
+            right_band = Rect(
+                self.world.width - margin - ring_thickness,
+                margin + ring_thickness,
+                ring_thickness,
+                arena_h - (ring_thickness * 2),
+            )
+            center_horizontal = Rect(center_left, center_top, center_box_w, max(12, ring_thickness // 2))
+            center_vertical = Rect(
+                center_left + (center_box_w // 2) - (max(12, ring_thickness // 2) // 2),
+                center_top,
+                max(12, ring_thickness // 2),
+                center_box_h,
+            )
+            return pattern, [top_band, bottom_band, left_band, right_band, center_horizontal, center_vertical]
+
+        if pattern == "fork":
+            base_thickness = int(self.world.height * max(0.07, min(0.16, lava_height_ratio * 0.62)))
+            center_x = random.randint(margin + 120, max(margin + 120, self.world.width - margin - 120))
+            stem = Rect(center_x - (base_thickness // 2), margin, base_thickness, self.world.height - (margin * 2))
+            branch_w = int(self.world.width * random.uniform(0.22, 0.34))
+            branch_h = max(12, int(base_thickness * 0.9))
+            split_y = random.randint(margin + 140, max(margin + 140, self.world.height - margin - 140))
+            left_branch = Rect(max(margin, center_x - branch_w), split_y - (branch_h // 2), branch_w, branch_h)
+            right_branch = Rect(center_x, split_y + 50 - (branch_h // 2), branch_w, branch_h)
+            return pattern, [stem, left_branch, right_branch]
+
+        if pattern == "checker":
+            cell_w = int(self.world.width * random.uniform(0.12, 0.18))
+            cell_h = int(self.world.height * random.uniform(0.1, 0.16))
+            cols = 4
+            rows = 3
+            gap_x = int((self.world.width - (margin * 2) - (cell_w * cols)) / max(1, cols - 1))
+            gap_y = int((self.world.height - (margin * 2) - (cell_h * rows)) / max(1, rows - 1))
+            regions: list[Rect] = []
+            for row in range(rows):
+                for col in range(cols):
+                    if (row + col) % 2 != 0:
+                        continue
+                    left = margin + (col * (cell_w + gap_x))
+                    top = margin + (row * (cell_h + gap_y))
+                    regions.append(Rect(left, top, cell_w, cell_h))
+            return pattern, regions
+
+        lane_thickness = int(self.world.height * max(0.08, min(0.17, lava_height_ratio * 0.6)))
+        if random.random() < 0.5:
+            lane_gap = int(self.world.height * random.uniform(0.14, 0.24))
+            center = random.randint(margin + lane_thickness, max(margin + lane_thickness, self.world.height - margin - lane_thickness))
+            top_lane_y = max(margin, center - lane_gap // 2 - lane_thickness)
+            bottom_lane_y = min(self.world.height - margin - lane_thickness, center + lane_gap // 2)
+            top_lane = Rect(margin, top_lane_y, self.world.width - (margin * 2), lane_thickness)
+            bottom_lane = Rect(margin, bottom_lane_y, self.world.width - (margin * 2), lane_thickness)
+            return pattern, [top_lane, bottom_lane]
+
+        lane_width = int(self.world.width * max(0.08, min(0.17, lava_height_ratio * 0.6)))
+        lane_gap = int(self.world.width * random.uniform(0.14, 0.24))
+        center = random.randint(margin + lane_width, max(margin + lane_width, self.world.width - margin - lane_width))
+        left_lane_x = max(margin, center - lane_gap // 2 - lane_width)
+        right_lane_x = min(self.world.width - margin - lane_width, center + lane_gap // 2)
+        left_lane = Rect(left_lane_x, margin, lane_width, self.world.height - (margin * 2))
+        right_lane = Rect(right_lane_x, margin, lane_width, self.world.height - (margin * 2))
+        return pattern, [left_lane, right_lane]
 
     def _random_point_with_margin(self, margin: float) -> Vector2:
         return Vector2(

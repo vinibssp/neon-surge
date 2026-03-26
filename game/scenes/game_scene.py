@@ -153,21 +153,33 @@ class GameScene(Scene):
             return
 
         state = str(lava_state.get("state", "idle"))
-        region = lava_state.get("region")
-        if not isinstance(region, tuple) or len(region) != 4:
+        raw_regions = lava_state.get("regions")
+        regions: list[pygame.Rect] = []
+        if isinstance(raw_regions, tuple):
+            for raw_region in raw_regions:
+                if not isinstance(raw_region, tuple) or len(raw_region) != 4:
+                    continue
+                rect = pygame.Rect(int(raw_region[0]), int(raw_region[1]), int(raw_region[2]), int(raw_region[3]))
+                if rect.width > 0 and rect.height > 0:
+                    regions.append(rect)
+        if not regions:
+            region = lava_state.get("region")
+            if isinstance(region, tuple) and len(region) == 4:
+                rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+                if rect.width > 0 and rect.height > 0:
+                    regions.append(rect)
+        if not regions:
             return
-        rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
-        if rect.width <= 0 or rect.height <= 0:
-            return
+
+        now = pygame.time.get_ticks() * 0.001
+        pattern = str(lava_state.get("pattern", "pool"))
 
         if state == "active":
             blink_visible = bool(lava_state.get("blink_visible", True))
             if not blink_visible:
                 return
-            overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-            overlay.fill((255, 80, 35, 112))
-            screen.blit(overlay, rect.topleft)
-            pygame.draw.rect(screen, (255, 206, 94), rect, 3)
+            for index, rect in enumerate(regions):
+                self._render_lava_active_region(screen, rect, pattern, now, index)
             return
 
         warning_left = float(lava_state.get("time_to_lava", 0.0))
@@ -176,11 +188,118 @@ class GameScene(Scene):
             return
 
         alpha_ratio = max(0.2, min(1.0, 1.0 - (warning_left / warning_duration)))
-        alpha = int(40 + 90 * alpha_ratio)
+        for index, rect in enumerate(regions):
+            self._render_lava_warning_region(screen, rect, pattern, now, index, alpha_ratio)
+
+    def _render_lava_active_region(
+        self,
+        screen: pygame.Surface,
+        rect: pygame.Rect,
+        pattern: str,
+        now: float,
+        region_index: int,
+    ) -> None:
+        pulse = 0.5 + 0.5 * math.sin((now * 5.8) + (region_index * 0.9))
         overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        overlay.fill((255, 185, 42, alpha))
+        overlay.fill((56, 16, 10, int(92 + (22 * pulse))))
+
+        tile = 16
+        for y in range(0, rect.height, tile):
+            for x in range(0, rect.width, tile):
+                wave = math.sin((x * 0.09) + (y * 0.07) + (now * 7.4) + (region_index * 0.7))
+                heat = 0.5 + 0.5 * wave
+                color = (
+                    int(188 + (64 * heat)),
+                    int(52 + (68 * heat)),
+                    int(14 + (32 * heat)),
+                    int(74 + (72 * heat)),
+                )
+                inset = 1 if ((x // tile) + (y // tile)) % 2 == 0 else 2
+                cell_w = min(tile - inset, rect.width - x)
+                cell_h = min(tile - inset, rect.height - y)
+                if cell_w > 1 and cell_h > 1:
+                    pygame.draw.rect(overlay, color, pygame.Rect(x, y, cell_w, cell_h), border_radius=2)
+
+        fissure_count = 5 if pattern in ("cross", "fork", "checker") else 3
+        for fissure_index in range(fissure_count):
+            seed = (fissure_index + 1) * 0.73 + (region_index * 0.51)
+            x0 = int((rect.width * (fissure_index + 1)) / (fissure_count + 1))
+            y0 = int(rect.height * (0.12 + 0.12 * math.sin((now * 1.8) + seed)))
+            x1 = int(x0 + (rect.width * 0.06 * math.sin((now * 3.7) + seed)))
+            y1 = int(rect.height * (0.84 + 0.1 * math.cos((now * 1.2) + seed)))
+            pygame.draw.line(overlay, (255, 212, 122, 132), (x0, y0), (x1, y1), 1)
+
+        ember_count = 6 + (region_index % 4)
+        for ember_index in range(ember_count):
+            px = int((rect.width * (ember_index + 1)) / (ember_count + 1))
+            py = int(rect.height * (0.2 + 0.6 * (0.5 + 0.5 * math.sin((now * 6.6) + ember_index * 1.4 + region_index))))
+            radius = 1 + (ember_index % 3)
+            pygame.draw.circle(overlay, (255, 246, 176, 164), (px, py), radius)
+
         screen.blit(overlay, rect.topleft)
-        pygame.draw.rect(screen, (255, 230, 120), rect, 2)
+
+        border_color = (255, 232, 120)
+        if pattern in ("ring", "checker"):
+            border_color = (255, 244, 146)
+        elif pattern in ("cross", "fork"):
+            border_color = (255, 220, 108)
+        pygame.draw.rect(screen, border_color, rect, 3)
+
+        rim_glow = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(rim_glow, (255, 164, 62, int(82 + 42 * pulse)), rim_glow.get_rect(), 1)
+        screen.blit(rim_glow, rect.topleft)
+
+    def _render_lava_warning_region(
+        self,
+        screen: pygame.Surface,
+        rect: pygame.Rect,
+        pattern: str,
+        now: float,
+        region_index: int,
+        alpha_ratio: float,
+    ) -> None:
+        pulse = 0.5 + 0.5 * math.sin((now * 11.0) + (region_index * 0.7))
+        alpha = int(34 + 82 * alpha_ratio + 24 * pulse)
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        overlay.fill((255, 176, 42, alpha))
+
+        stripe_step = 14
+        for x in range(-rect.height, rect.width, stripe_step):
+            x0 = x + int(10 * math.sin((now * 4.2) + (region_index * 0.8)))
+            pygame.draw.line(
+                overlay,
+                (255, 228, 144, int(50 + (70 * alpha_ratio))),
+                (x0, 0),
+                (x0 + rect.height, rect.height),
+                2,
+            )
+        screen.blit(overlay, rect.topleft)
+
+        border_alpha = int(128 + (96 * pulse))
+        border_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(border_surface, (255, 244, 162, border_alpha), border_surface.get_rect(), 2)
+        screen.blit(border_surface, rect.topleft)
+
+        rune_count = 7 if pattern in ("lanes", "checker") else 5
+        for rune_index in range(rune_count):
+            marker_phase = (now * 5.6) + (rune_index * 1.0) + (region_index * 0.6)
+            marker_x = int((rect.width * (rune_index + 1)) / (rune_count + 1))
+            marker_y = int((rect.height * 0.5) + (rect.height * 0.24 * math.sin(marker_phase)))
+            size = 4 if rune_index % 2 == 0 else 3
+            pygame.draw.line(
+                screen,
+                (255, 248, 188),
+                (rect.left + marker_x - size, rect.top + marker_y),
+                (rect.left + marker_x + size, rect.top + marker_y),
+                1,
+            )
+            pygame.draw.line(
+                screen,
+                (255, 248, 188),
+                (rect.left + marker_x, rect.top + marker_y - size),
+                (rect.left + marker_x, rect.top + marker_y + size),
+                1,
+            )
 
     def _render_environment_event_overlay(self, screen: pygame.Surface) -> None:
         event_state = self.world.runtime_state.get("environment_event")
