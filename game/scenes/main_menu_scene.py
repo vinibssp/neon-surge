@@ -19,12 +19,36 @@ from game.scenes.services import CyberpunkMenuBackgroundRenderer
 from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_button, create_label, create_panel
 
 MODE_INFO = {
-    "race": ("MÓDULO DE CORRIDA", "Navegação em alta velocidade. Colete núcleos de energia e alcance os portais de salto antes do tempo esgotar."),
-    "race_infinite": ("INFINITO", "Teste de resistência sistêmica. O ambiente se torna progressivamente mais instável e hostil a cada salto."),
-    "survival": ("SOBREVIVÊNCIA", "Protocolo de combate intenso. Sobreviva a ondas de inimigos enquanto lida com anomalias ambientais severas."),
-    "hardcore": ("ERRO FATAL", "Simulação sem salvaguardas. Um único dano crítico resulta no encerramento imediato do processo de piloto."),
-    "labyrinth": ("LABIRINTO", "Infiltração tática. Localize e neutralize as torres de controle em corredores protegidos por sistemas de segurança."),
-    "training": ("TREINAMENTO", "Ambiente de simulação controlada. Configure livremente os parâmetros de combate para refinar suas habilidades."),
+    "race": (
+        "MÓDULO DE CORRIDA",
+        "Navegação em alta velocidade por portais de salto.",
+        "Objetivo: coletar núcleos e escapar antes do cronômetro.",
+    ),
+    "race_infinite": (
+        "INFINITO",
+        "Resistência contínua com pressão progressiva.",
+        "Objetivo: sobreviver o máximo possível em escalada sem fim.",
+    ),
+    "survival": (
+        "SOBREVIVÊNCIA",
+        "Combate intenso contra ondas e eventos ambientais.",
+        "Objetivo: manter-se vivo enquanto a arena se torna mais hostil.",
+    ),
+    "hardcore": (
+        "ERRO FATAL",
+        "Execução extrema sem margem para falhas.",
+        "Objetivo: avançar sem sofrer dano crítico único.",
+    ),
+    "labyrinth": (
+        "LABIRINTO",
+        "Infiltração tática em corredores de alta ameaça.",
+        "Objetivo: localizar e neutralizar torres de controle.",
+    ),
+    "training": (
+        "TREINAMENTO",
+        "Simulação configurável para prática de builds e reflexo.",
+        "Objetivo: ajustar parâmetros e testar cenários específicos.",
+    ),
 }
 
 class MainMenuScene(BaseMenuScene):
@@ -32,6 +56,8 @@ class MainMenuScene(BaseMenuScene):
         super().__init__(stack)
         self._elapsed_time = 0.0
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
+        self._selected_mode_tag: str | None = None
+        self._btn_to_mode_tag: dict[object, str] = {}
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -95,6 +121,7 @@ class MainMenuScene(BaseMenuScene):
                 manager=self.ui_manager
             )
             self._mode_btns.append((btn, mode_obj, tag))
+            self._btn_to_mode_tag[btn] = tag
 
         # 4. Info Card (Below Grid)
         self._info_panel = create_panel(
@@ -110,6 +137,14 @@ class MainMenuScene(BaseMenuScene):
                 text="Navegue pelos módulos acima para ver os detalhes técnicos da simulação.",
                 rect=pygame.Rect((20, 50), (860, 70)),
                 variant="guide_body"
+            ),
+            manager=self.ui_manager, container=self._info_panel
+        )
+        self._info_meta = create_label(
+            LabelConfig(
+                text="Selecione um módulo para iniciar.",
+                rect=pygame.Rect((20, 105), (860, 24)),
+                variant="guide_accent"
             ),
             manager=self.ui_manager, container=self._info_panel
         )
@@ -141,33 +176,38 @@ class MainMenuScene(BaseMenuScene):
                 actions[btn] = lambda m=mode_obj: self.stack.replace(GameScene(self.stack, m))
 
         self.set_navigator(controls=controls, actions=actions, on_cancel=self._quit)
+        self._sync_info_card_with_navigator()
 
     def _update_info_card(self, tag: str | None) -> None:
+        if tag == self._selected_mode_tag:
+            return
         if tag in MODE_INFO:
-            title, desc = MODE_INFO[tag]
+            title, desc, meta = MODE_INFO[tag]
             self._info_title.set_text(title)
             self._info_desc.set_text(desc)
+            self._info_meta.set_text(meta)
+            self._selected_mode_tag = tag
         else:
             self._info_title.set_text("SISTEMA DE INTERFACE")
             self._info_desc.set_text("Pronto para iniciar. Selecione um módulo de simulação para prosseguir.")
+            self._info_meta.set_text("Use mouse, teclado ou gamepad para navegar.")
+            self._selected_mode_tag = None
+
+    def _sync_info_card_with_navigator(self) -> None:
+        if self.navigator is None:
+            return
+        selected_control = self.navigator.selected_control
+        selected_tag = self._btn_to_mode_tag.get(selected_control)
+        self._update_info_card(selected_tag)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
             # Update on Hover
             if event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_BUTTON_ON_HOVERED:
-                for btn, _, tag in self._mode_btns:
-                    if event.ui_element is btn:
-                        self._update_info_card(tag)
-                        break
-            
-            # Update on Keyboard Focus
-            if self.navigator and self.navigator.selected_control:
-                for btn, _, tag in self._mode_btns:
-                    if self.navigator.selected_control is btn:
-                        self._update_info_card(tag)
-                        break
+                self._update_info_card(self._btn_to_mode_tag.get(event.ui_element))
 
         super().handle_input(events)
+        self._sync_info_card_with_navigator()
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="menu", reason="main_menu_entered"))
