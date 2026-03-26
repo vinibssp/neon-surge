@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import random
 
 import pygame
 from game.config import (
@@ -112,8 +113,69 @@ class HudRenderer:
 class CyberpunkMenuBackgroundRenderer:
     def __init__(self, neon_color: tuple[int, int, int] = ENEMY_BOUNCER_COLOR) -> None:
         self.neon_color = neon_color
+        self._rng = random.Random()
+        self._star_layout_size: tuple[int, int] | None = None
+        self._stars: list[tuple[int, int, float, float, int]] = []
+        self._shooting_stars: list[dict[str, float]] = []
+        self._next_shooting_star_time = 0.0
+        self._last_elapsed_time = 0.0
 
-    def render(self, screen: pygame.Surface, elapsed_time: float, width: int, height: int) -> None:
+    def _ensure_star_layout(self, width: int, sky_height: int) -> None:
+        target_size = (width, sky_height)
+        if self._star_layout_size == target_size and self._stars:
+            return
+
+        self._star_layout_size = target_size
+        self._stars = []
+        cell_size = max(44, int(min(width, sky_height) * 0.06))
+        columns = max(1, width // cell_size)
+        rows = max(1, sky_height // cell_size)
+        for row in range(rows):
+            for column in range(columns):
+                if self._rng.random() > 0.82:
+                    continue
+                origin_x = column * cell_size
+                origin_y = row * cell_size
+                jitter_x = self._rng.randint(int(cell_size * 0.18), int(cell_size * 0.82))
+                jitter_y = self._rng.randint(int(cell_size * 0.18), int(cell_size * 0.82))
+                star_x = min(width - 1, max(0, origin_x + jitter_x))
+                star_y = min(sky_height - 1, max(0, origin_y + jitter_y))
+                twinkle_phase = self._rng.uniform(0.0, math.tau)
+                twinkle_speed = self._rng.uniform(1.2, 2.9)
+                radius = 2 if self._rng.random() < 0.2 else 1
+                self._stars.append((star_x, star_y, twinkle_phase, twinkle_speed, radius))
+
+    def _spawn_shooting_star(self, elapsed_time: float, width: int, sky_height: int) -> None:
+        start_x = self._rng.uniform(-0.12 * width, 0.72 * width)
+        start_y = self._rng.uniform(0.03 * sky_height, 0.46 * sky_height)
+        angle = self._rng.uniform(math.radians(20), math.radians(34))
+        speed = self._rng.uniform(460.0, 760.0)
+        lifetime = self._rng.uniform(0.42, 0.9)
+        self._shooting_stars.append(
+            {
+                "start_time": elapsed_time,
+                "start_x": start_x,
+                "start_y": start_y,
+                "velocity_x": math.cos(angle) * speed,
+                "velocity_y": math.sin(angle) * speed,
+                "lifetime": lifetime,
+            }
+        )
+
+    def render(
+        self,
+        screen: pygame.Surface,
+        elapsed_time: float,
+        width: int,
+        height: int,
+        sun_rise_progress: float | None = None,
+        sun_center_text: str | None = None,
+    ) -> None:
+        if elapsed_time < self._last_elapsed_time:
+            self._shooting_stars.clear()
+            self._next_shooting_star_time = elapsed_time + self._rng.uniform(1.8, 4.6)
+        self._last_elapsed_time = elapsed_time
+
         horizon_y = int(height * 0.6)
         center_x = width // 2
 
@@ -130,17 +192,73 @@ class CyberpunkMenuBackgroundRenderer:
                 blue = int(30 + (56 * t2))
             pygame.draw.line(screen, (red, green, blue), (0, y), (width, y))
 
-        stars = 85
         sky_height = max(1, int(horizon_y * 0.9))
-        for index in range(stars):
-            x = int((index * 179 + (elapsed_time * (4 + (index % 5)))) % width)
-            y = int((index * 97) % sky_height)
-            brightness = 140 + int(100 * (0.5 + 0.5 * math.sin((elapsed_time * 2.4) + index)))
-            screen.set_at((x, y), (min(255, brightness), min(255, brightness - 15), 255))
+        self._ensure_star_layout(width, sky_height)
+        for star_x, star_y, twinkle_phase, twinkle_speed, radius in self._stars:
+            twinkle = 0.45 + 0.55 * (0.5 + 0.5 * math.sin(elapsed_time * twinkle_speed + twinkle_phase))
+            base = int(110 + 135 * twinkle)
+            color = (min(255, base), min(255, base + 12), 255)
+            if radius <= 1:
+                screen.set_at((star_x, star_y), color)
+            else:
+                pygame.draw.circle(screen, color, (star_x, star_y), radius)
+
+        if self._next_shooting_star_time <= 0.0:
+            self._next_shooting_star_time = elapsed_time + self._rng.uniform(2.4, 6.8)
+        if elapsed_time >= self._next_shooting_star_time:
+            self._spawn_shooting_star(elapsed_time, width, sky_height)
+            self._next_shooting_star_time = elapsed_time + self._rng.uniform(3.0, 8.2)
+
+        active_shooting_stars: list[dict[str, float]] = []
+        for shooting_star in self._shooting_stars:
+            age = elapsed_time - shooting_star["start_time"]
+            lifetime = shooting_star["lifetime"]
+            if age < 0.0 or age > lifetime:
+                continue
+            fade = 1.0 - (age / lifetime)
+            head_x = shooting_star["start_x"] + shooting_star["velocity_x"] * age
+            head_y = shooting_star["start_y"] + shooting_star["velocity_y"] * age
+            trail_length = 80.0 + (shooting_star["velocity_x"] * 0.11)
+            direction_length = max(
+                1.0,
+                math.sqrt(
+                    shooting_star["velocity_x"] * shooting_star["velocity_x"]
+                    + shooting_star["velocity_y"] * shooting_star["velocity_y"]
+                ),
+            )
+            direction_x = shooting_star["velocity_x"] / direction_length
+            direction_y = shooting_star["velocity_y"] / direction_length
+            tail_x = head_x - direction_x * trail_length
+            tail_y = head_y - direction_y * trail_length
+            if head_x < -120 or head_y > sky_height + 120 or head_x > width + 120:
+                continue
+
+            alpha = int(170 * fade)
+            trail_color = (150, 220, 255, alpha)
+            head_color = (235, 250, 255, min(255, int(240 * fade + 15)))
+            shooting_surface = pygame.Surface((width, sky_height), pygame.SRCALPHA)
+            pygame.draw.line(
+                shooting_surface,
+                trail_color,
+                (int(tail_x), int(tail_y)),
+                (int(head_x), int(head_y)),
+                2,
+            )
+            pygame.draw.circle(shooting_surface, head_color, (int(head_x), int(head_y)), 2)
+            screen.blit(shooting_surface, (0, 0))
+            active_shooting_stars.append(shooting_star)
+
+        self._shooting_stars = active_shooting_stars
 
         sun_center_x = center_x
-        sun_center_y = int(horizon_y * 0.66)
         sun_radius = int(min(width, height) * 0.12)
+        if sun_rise_progress is None:
+            rise_progress = 1.0
+        else:
+            rise_progress = max(0.0, min(1.0, sun_rise_progress))
+        sun_start_y = int(horizon_y + sun_radius * 0.95)
+        sun_end_y = int(horizon_y * 0.66)
+        sun_center_y = int(sun_start_y + (sun_end_y - sun_start_y) * rise_progress)
 
         sun_glow = pygame.Surface((width, height), pygame.SRCALPHA)
         pulse = 0.86 + 0.14 * math.sin(elapsed_time * 1.6)
@@ -156,10 +274,11 @@ class CyberpunkMenuBackgroundRenderer:
         pygame.draw.circle(screen, (255, 110, 70), (sun_center_x, sun_center_y), sun_radius)
         pygame.draw.circle(screen, (255, 185, 90), (sun_center_x, sun_center_y - 2), int(sun_radius * 0.72))
 
-        for index in range(8):
-            stripe_height = 5 + index * 2
-            stripe_y = sun_center_y - sun_radius + 12 + index * int(sun_radius * 0.22)
-            pygame.draw.rect(screen, (255, 70, 160), (sun_center_x - sun_radius, stripe_y, sun_radius * 2, stripe_height))
+        if sun_center_text is not None and sun_center_text.strip() != "":
+            glyph_font = pygame.font.Font(None, max(24, int(sun_radius * 1.65)))
+            glyph_surface = glyph_font.render(sun_center_text, True, (255, 92, 204))
+            glyph_rect = glyph_surface.get_rect(center=(sun_center_x, sun_center_y - 2))
+            screen.blit(glyph_surface, glyph_rect)
 
         mountain_points: list[tuple[int, int]] = []
         for x in range(-80, width + 81, 45):
@@ -169,20 +288,10 @@ class CyberpunkMenuBackgroundRenderer:
             mountain_points.append((x, y))
 
         mountain_fill_color = MENU_MOUNTAIN_FILL_COLOR
-        mountain_base_y = horizon_y + 10
-        for index in range(1, len(mountain_points)):
-            x1, y1 = mountain_points[index - 1]
-            x2, y2 = mountain_points[index]
-            if x1 == x2:
-                continue
-            start_x = max(0, min(x1, x2))
-            end_x = min(width - 1, max(x1, x2))
-            if start_x > end_x:
-                continue
-            for x in range(start_x, end_x + 1):
-                t = (x - x1) / (x2 - x1)
-                ridge_y = int(y1 + (y2 - y1) * t)
-                pygame.draw.line(screen, mountain_fill_color, (x, mountain_base_y), (x, ridge_y), 1)
+        mountain_polygon = list(mountain_points)
+        mountain_polygon.append((width + 90, height + 20))
+        mountain_polygon.append((-90, height + 20))
+        pygame.draw.polygon(screen, mountain_fill_color, mountain_polygon)
 
         for index in range(1, len(mountain_points)):
             pygame.draw.line(screen, self.neon_color, mountain_points[index - 1], mountain_points[index], 2)

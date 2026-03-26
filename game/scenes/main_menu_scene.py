@@ -26,15 +26,6 @@ class MainMenuScene(BaseMenuScene):
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
         self._register_main_menu_button_themes()
 
-        subtitle = create_label(
-            LabelConfig(
-                text="2",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 1100, 55), (2200, 210)),
-                variant="subtitle",
-                object_id="main_menu_subtitle",
-            ),
-            manager=self.ui_manager,
-        )
         title = create_label(
             LabelConfig(
                 text="NEON SURGE",
@@ -44,7 +35,7 @@ class MainMenuScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        del title, subtitle
+        del title
 
         button_width = 188
         button_height = 58
@@ -165,16 +156,6 @@ class MainMenuScene(BaseMenuScene):
                 "font": {
                     "name": "noto_sans",
                     "size": "72",
-                    "bold": "1",
-                },
-            },
-            "main_menu_subtitle": {
-                "colours": {
-                    "normal_text": "#ff4fcf",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "148",
                     "bold": "1",
                 },
             },
@@ -303,11 +284,14 @@ class MainMenuScene(BaseMenuScene):
         self._elapsed_time += dt
 
     def render_menu_background(self, screen: pygame.Surface) -> None:
+        sunrise_progress = min(1.0, self._elapsed_time / 3.8)
         self._background_renderer.render(
             screen=screen,
             elapsed_time=self._elapsed_time,
             width=SCREEN_WIDTH,
             height=SCREEN_HEIGHT,
+            sun_rise_progress=sunrise_progress,
+            sun_center_text="2",
         )
 
     def _quit(self) -> None:
