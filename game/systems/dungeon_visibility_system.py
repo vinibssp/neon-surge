@@ -23,21 +23,13 @@ class DungeonVisibilitySystem:
         world: GameWorld,
         runtime_provider: Callable[[], DungeonRuntimeState | None],
         vision_radius: float,
-        update_interval: float = 0.0,
     ) -> None:
         self.world = world
         self.runtime_provider = runtime_provider
         self.vision_radius = vision_radius
-        self.update_interval = max(0.0, update_interval)
-        self._time_since_update = 0.0
-        self._last_player_cell: CellCoord | None = None
 
     def update(self, dt: float) -> None:
-        if self.update_interval > 0.0:
-            self._time_since_update += dt
-            if self._time_since_update < self.update_interval:
-                return
-            self._time_since_update = 0.0
+        del dt
         runtime = self.runtime_provider()
         if runtime is None:
             return
@@ -55,18 +47,9 @@ class DungeonVisibilitySystem:
         if player_cell is None:
             return
 
-        if self._last_player_cell == player_cell and runtime.visible_cells:
-            if self.update_interval > 0.0 and self._time_since_update > 0.0:
-                return
-
         visible_cells = self._compute_visible_cells(layout, player_cell, player_transform.position)
         runtime.visible_cells = visible_cells
-        revealed_before = len(runtime.revealed_cells)
         runtime.revealed_cells |= visible_cells
-        if len(runtime.revealed_cells) != revealed_before:
-            runtime.minimap_dirty = True
-        runtime.fog_dirty = True
-        self._last_player_cell = player_cell
 
         for enemy in self.world.query(DUNGEON_ENEMY_QUERY):
             dormant = enemy.get_component(DormantComponent)

@@ -5,7 +5,6 @@ import math
 import random
 from typing import Iterable
 
-import pygame
 from pygame import Rect
 from pygame import Vector2
 
@@ -55,27 +54,11 @@ class DungeonLayout:
         room_min_size: int,
         room_max_size: int,
         corridor_width: int,
-        boss_spawn_min_distance: int,
-        min_rooms_before_boss: int,
     ) -> "DungeonLayout":
         grid = [[False for _ in range(width)] for _ in range(height)]
         rooms: list[DungeonRoom] = []
 
         for _ in range(room_attempts):
-            room_width = rng.randint(room_min_size, room_max_size)
-            room_height = rng.randint(room_min_size, room_max_size)
-            x = rng.randint(1, max(1, width - room_width - 1))
-            y = rng.randint(1, max(1, height - room_height - 1))
-            candidate = DungeonRoom(x=x, y=y, width=room_width, height=room_height)
-            if cls._overlaps_existing(candidate, rooms, padding=1):
-                continue
-            rooms.append(candidate)
-            cls._carve_room(grid, candidate)
-
-        min_total_rooms = max(2, int(min_rooms_before_boss) + 2)
-        extra_attempts = max(0, room_attempts * 2)
-        while len(rooms) < min_total_rooms and extra_attempts > 0:
-            extra_attempts -= 1
             room_width = rng.randint(room_min_size, room_max_size)
             room_height = rng.randint(room_min_size, room_max_size)
             x = rng.randint(1, max(1, width - room_width - 1))
@@ -96,28 +79,11 @@ class DungeonLayout:
             rooms.append(fallback)
             cls._carve_room(grid, fallback)
 
-        boss_room_min_size = max(room_min_size * 2, room_max_size * 2)
-        boss_room_index = cls._try_place_boss_room(
-            width=width,
-            height=height,
-            rng=rng,
-            rooms=rooms,
-            grid=grid,
-            min_size=boss_room_min_size,
-            max_size=min(min(width, height) - 2, room_max_size * 2 + 6),
-        )
-
         cls._connect_rooms(grid, rooms, rng, corridor_width)
         cls._ensure_connectivity(grid, rooms, rng, corridor_width)
 
-        if boss_room_index is None:
-            boss_room_index = cls._choose_largest_room(rooms)
-            cls._ensure_min_boss_room(grid, rooms, boss_room_index, boss_room_min_size, width, height)
-        spawn_room_index = cls._choose_farthest_room_with_min_distance(
-            rooms,
-            boss_room_index,
-            max(0, int(boss_spawn_min_distance)),
-        )
+        spawn_room_index = rng.randrange(len(rooms))
+        boss_room_index = cls._choose_farthest_room(rooms, spawn_room_index)
 
         geometry = DungeonGeometry(origin=Vector2(0, 0), cell_size=cell_size)
         wall_rects = cls._build_wall_rects(grid, geometry)
@@ -132,69 +98,6 @@ class DungeonLayout:
             boss_room_index=boss_room_index,
             wall_rects=wall_rects,
         )
-
-    @classmethod
-    def _try_place_boss_room(
-        cls,
-        width: int,
-        height: int,
-        rng: random.Random,
-        rooms: list[DungeonRoom],
-        grid: list[list[bool]],
-        min_size: int,
-        max_size: int,
-    ) -> int | None:
-        attempts = 22
-        min_size = max(4, min_size)
-        max_size = max(min_size, max_size)
-        for _ in range(attempts):
-            room_width = rng.randint(min_size, max_size)
-            room_height = rng.randint(min_size, max_size)
-            if room_width >= width - 2 or room_height >= height - 2:
-                continue
-            x = rng.randint(1, max(1, width - room_width - 1))
-            y = rng.randint(1, max(1, height - room_height - 1))
-            candidate = DungeonRoom(x=x, y=y, width=room_width, height=room_height)
-            if cls._overlaps_existing(candidate, rooms, padding=2):
-                continue
-            rooms.append(candidate)
-            cls._carve_room(grid, candidate)
-            return len(rooms) - 1
-        return None
-
-    @staticmethod
-    def _choose_largest_room(rooms: list[DungeonRoom]) -> int:
-        best_index = 0
-        best_area = -1
-        for index, room in enumerate(rooms):
-            area = room.width * room.height
-            if area > best_area:
-                best_area = area
-                best_index = index
-        return best_index
-
-    @classmethod
-    def _ensure_min_boss_room(
-        cls,
-        grid: list[list[bool]],
-        rooms: list[DungeonRoom],
-        index: int,
-        min_size: int,
-        width: int,
-        height: int,
-    ) -> None:
-        room = rooms[index]
-        target_width = min(max(room.width, min_size), width - 2)
-        target_height = min(max(room.height, min_size), height - 2)
-        if target_width == room.width and target_height == room.height:
-            return
-
-        center_x, center_y = room.center_cell()
-        x = max(1, min(center_x - target_width // 2, width - target_width - 1))
-        y = max(1, min(center_y - target_height // 2, height - target_height - 1))
-        expanded = DungeonRoom(x=x, y=y, width=target_width, height=target_height)
-        rooms[index] = expanded
-        cls._carve_room(grid, expanded)
 
     @staticmethod
     def _overlaps_existing(room: DungeonRoom, rooms: list[DungeonRoom], padding: int) -> bool:
@@ -348,36 +251,6 @@ class DungeonLayout:
                 best_index = index
         return best_index
 
-    @staticmethod
-    def _choose_farthest_room_with_min_distance(
-        rooms: list[DungeonRoom],
-        from_index: int,
-        min_distance: int,
-    ) -> int:
-        if not rooms:
-            return 0
-
-        sx, sy = rooms[from_index].center_cell()
-        min_distance_sq = float(min_distance * min_distance)
-        best_index = from_index
-        best_distance = -1.0
-        for index, room in enumerate(rooms):
-            if index == from_index:
-                continue
-            cx, cy = room.center_cell()
-            dx = cx - sx
-            dy = cy - sy
-            distance = float(dx * dx + dy * dy)
-            if min_distance > 0 and distance < min_distance_sq:
-                continue
-            if distance > best_distance:
-                best_distance = distance
-                best_index = index
-
-        if best_distance >= 0.0:
-            return best_index
-        return DungeonLayout._choose_farthest_room(rooms, from_index)
-
     @classmethod
     def _build_wall_rects(cls, grid: list[list[bool]], geometry: DungeonGeometry) -> list[Rect]:
         wall_rects: list[Rect] = []
@@ -418,11 +291,6 @@ class DungeonLayout:
 
     def room(self, index: int) -> DungeonRoom:
         return self.rooms[index]
-
-    def room_contains_cell(self, index: int, cell: CellCoord) -> bool:
-        room = self.room(index)
-        x, y = cell
-        return room.x <= x < room.x + room.width and room.y <= y < room.y + room.height
 
     def room_center(self, index: int) -> Vector2:
         return self.cell_center(self.room(index).center_cell())
@@ -466,10 +334,3 @@ class DungeonRuntimeState:
     visible_cells: set[CellCoord]
     boss_defeated: bool = False
     exit_portal_spawned: bool = False
-    minimap_surface: pygame.Surface | None = None
-    minimap_size: tuple[int, int] | None = None
-    minimap_dirty: bool = True
-    wall_surface: pygame.Surface | None = None
-    fog_surface: pygame.Surface | None = None
-    fog_size: tuple[int, int] | None = None
-    fog_dirty: bool = True

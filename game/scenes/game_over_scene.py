@@ -103,14 +103,14 @@ class GameOverScene(BaseMenuScene):
             create_label(
                 LabelConfig(
                     text=title,
-                    rect=pygame.Rect((8, 16), (424, 64)),
+                    rect=pygame.Rect((10, 20), (420, 56)),
                     variant=title_variant,
                 ),
                 manager=self.ui_manager,
                 container=self.summary_panel,
             )
         )
-        next_row = 84
+        next_row = 72
         if subtitle_text != "" and not subtitle_is_redundant:
             _labels.append(
                 create_label(

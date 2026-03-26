@@ -139,13 +139,9 @@ Para evitar acoplamento com o `SpawnDirector` global, o modo usa `LabyrinthSpawn
 - layout gerado com rooms + corridors, garantindo navegabilidade total
 - sala de spawn segura (sem inimigos instanciados)
 - boss dedicado por dungeon, liberando portal de progresso ao ser derrotado
-- spawn inicial sempre distante do boss para forcar exploracao
-- minimo de 13 salas antes do boss
-- cada sala usa um unico tipo de inimigo
 - inimigos com ativacao por visao: permanecem inativos ate serem revelados na fog of war
 - camera sempre centralizada no player, sem clamp nas bordas
 - fog of war totalmente escura fora do campo de visao
-- minimapa com revelacao progressiva da dungeon
 
 Sistemas dedicados do modo:
 
