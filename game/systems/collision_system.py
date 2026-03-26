@@ -5,11 +5,9 @@ from game.components.data_components import (
     BulletComponent,
     CollisionComponent,
     DormantComponent,
-    DamageComponent,
     DashOnlyDefeatComponent,
     DashComponent,
     GhostComponent,
-    HealthComponent,
     InvulnerabilityComponent,
     NuclearBombComponent,
     ParryComponent,
@@ -28,7 +26,6 @@ from game.core.events import (
     PortalEntered,
     SpawnPortalDestroyed,
 )
-from game.config import ENEMY_CONTACT_DAMAGE, PLAYER_HIT_INVULN_TIME
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.systems.world_queries import COLLIDABLE_QUERY, MORTAR_SHELL_QUERY
@@ -158,19 +155,8 @@ class CollisionSystem:
                     continue
 
                 if not is_player_invulnerable:
-                    if entity.has_tag("bullet"):
-                        bullet = entity.get_component(BulletComponent)
-                        damage = entity.get_component(DamageComponent)
-                        if bullet is not None and bullet.owner_tag == "enemy":
-                            amount = 1.0 if damage is None else float(damage.amount)
-                            self.world.remove_entity(entity)
-                            if self._apply_player_damage(amount, "Atingido por projetil"):
-                                return
-                            continue
-
-                    amount = ENEMY_CONTACT_DAMAGE
-                    if self._apply_player_damage(amount, "Colisao com inimigo"):
-                        return
+                    cause = "Atingido por projetil" if entity.has_tag("bullet") else "Colisao com inimigo"
+                    self._kill_player(cause)
                     return
 
     def _update_mortar_shells(
@@ -207,9 +193,8 @@ class CollisionSystem:
             if is_player_invulnerable:
                 continue
             if self._collides(player_position, player_radius, shell.target_position, shell.explosion_radius):
-                damage = shell_entity.get_component(DamageComponent)
-                amount = 1.0 if damage is None else float(damage.amount)
-                return self._apply_player_damage(amount, "Explosao de morteiro")
+                self._kill_player("Explosao de morteiro")
+                return True
         return False
 
     @staticmethod
@@ -252,26 +237,6 @@ class CollisionSystem:
     def _is_enemy_staggered(enemy: Entity) -> bool:
         stagger = enemy.get_component(StaggeredComponent)
         return stagger is not None and stagger.time_left > 0.0
-
-    def _apply_player_damage(self, amount: float, cause: str) -> bool:
-        player = self.world.player
-        if player is None:
-            return False
-        health = player.get_component(HealthComponent)
-        invulnerability = player.get_component(InvulnerabilityComponent)
-        if health is None:
-            self._kill_player(cause)
-            return True
-
-        health.current = max(0.0, health.current - max(0.0, amount))
-        if invulnerability is not None:
-            invulnerability.time_left = max(invulnerability.time_left, PLAYER_HIT_INVULN_TIME)
-        self.world.runtime_state["last_death_cause"] = cause
-        self.world.event_bus.publish(PlayerDamaged())
-        if health.current <= 0.0:
-            self.world.event_bus.publish(PlayerDied())
-            return True
-        return False
 
     def _kill_player(self, cause: str) -> None:
         self.world.runtime_state["last_death_cause"] = cause

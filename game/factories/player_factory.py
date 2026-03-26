@@ -5,7 +5,6 @@ from pygame import Vector2
 from game.components.data_components import (
     CollisionComponent,
     DashComponent,
-    HealthComponent,
     InvulnerabilityComponent,
     MovementComponent,
     ParryComponent,
@@ -13,7 +12,6 @@ from game.components.data_components import (
     TransformComponent,
 )
 from game.config import (
-    PLAYER_MAX_HEALTH,
     PLAYER_COLOR,
     PLAYER_CORE_COLOR,
     PLAYER_DASH_COOLDOWN,
@@ -55,7 +53,6 @@ class PlayerFactory:
                 stagger_duration=PLAYER_PARRY_STAGGER_DURATION,
             )
         )
-        player.add_component(HealthComponent(current=PLAYER_MAX_HEALTH, maximum=PLAYER_MAX_HEALTH))
         player.add_component(CollisionComponent(radius=PLAYER_RADIUS, layer="player"))
         player.add_component(
             RenderComponent(

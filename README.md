@@ -180,7 +180,6 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - escala de spawn por modo:
   - corrida: mais portais por ciclo conforme avanço
   - sobrevivência: mais portais por ciclo conforme tempo
-- player e inimigos usam `HealthComponent`; dano aplicado por contato/projetil e barras de vida renderizadas
 
 #### Render desacoplado
 

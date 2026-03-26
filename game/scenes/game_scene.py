@@ -86,7 +86,6 @@ class GameScene(Scene):
         self._shake_intensity = 0.0
         self._world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self._pending_game_over_transition: PendingGameOverTransition | None = None
-        self.world.runtime_state.setdefault("show_health_bars", True)
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="game_scene_entered"))

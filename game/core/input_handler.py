@@ -3,15 +3,7 @@ from __future__ import annotations
 import pygame
 from pygame import Vector2
 
-from game.core.command import (
-    Command,
-    DashCommand,
-    MoveCommand,
-    NuclearBombCommand,
-    ParryCommand,
-    ShootCommand,
-    ToggleHealthBarsCommand,
-)
+from game.core.command import Command, DashCommand, MoveCommand, NuclearBombCommand, ParryCommand, ShootCommand
 
 
 class InputHandler:
@@ -34,7 +26,5 @@ class InputHandler:
                 commands.append(ParryCommand())
             if event.type == pygame.KEYDOWN and event.key == pygame.K_i:
                 commands.append(NuclearBombCommand())
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
-                commands.append(ToggleHealthBarsCommand())
 
         return commands

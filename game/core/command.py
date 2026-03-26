@@ -83,11 +83,4 @@ class ShootCommand(Command):
         shoot.requested = True
 
 
-class ToggleHealthBarsCommand(Command):
-    def execute(self, entity: Entity, world: "GameWorld") -> None:
-        del entity
-        current = world.runtime_state.get("show_health_bars")
-        world.runtime_state["show_health_bars"] = not bool(current)
-
-
 from game.core.world import GameWorld

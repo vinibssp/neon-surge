@@ -4,9 +4,8 @@ import random
 
 from pygame import Rect, Vector2
 
-from game.components.data_components import CollisionComponent, HealthComponent, InvulnerabilityComponent, MovementComponent, TransformComponent
+from game.components.data_components import CollisionComponent, InvulnerabilityComponent, MovementComponent, TransformComponent
 from game.core.events import PlayerDamaged, PlayerDied
-from game.config import BLACK_HOLE_DAMAGE, LAVA_DAMAGE, PLAYER_HIT_INVULN_TIME
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.factories.enemy_factory import EnemyFactory
@@ -231,7 +230,9 @@ class EnvironmentEventSystem:
                 invulnerability = entity.get_component(InvulnerabilityComponent)
                 if invulnerability is not None and invulnerability.time_left > 0.0:
                     continue
-                self._apply_player_damage(BLACK_HOLE_DAMAGE, "Consumido pelo buraco negro")
+                self.world.runtime_state["last_death_cause"] = "Consumido pelo buraco negro"
+                self.world.event_bus.publish(PlayerDamaged())
+                self.world.event_bus.publish(PlayerDied())
                 return
 
             if entity.has_tag("enemy"):
@@ -271,7 +272,9 @@ class EnvironmentEventSystem:
         if not self._circle_overlaps_rect(transform.position, collision.radius, region):
             return
 
-        self._apply_player_damage(LAVA_DAMAGE, "Queimado na lava")
+        self.world.runtime_state["last_death_cause"] = "Queimado na lava"
+        self.world.event_bus.publish(PlayerDamaged())
+        self.world.event_bus.publish(PlayerDied())
 
     def _lava_blink_visible(self) -> bool:
         if self._lava_phase != "active":
@@ -345,26 +348,6 @@ class EnvironmentEventSystem:
         base = self.world.runtime_state.get("player_base_speed")
         if isinstance(base, (float, int)):
             movement.max_speed = float(base)
-
-    def _apply_player_damage(self, amount: float, cause: str) -> None:
-        player = self.world.player
-        if player is None:
-            return
-        health = player.get_component(HealthComponent)
-        invulnerability = player.get_component(InvulnerabilityComponent)
-        if health is None:
-            self.world.runtime_state["last_death_cause"] = cause
-            self.world.event_bus.publish(PlayerDamaged())
-            self.world.event_bus.publish(PlayerDied())
-            return
-
-        health.current = max(0.0, health.current - max(0.0, amount))
-        if invulnerability is not None:
-            invulnerability.time_left = max(invulnerability.time_left, PLAYER_HIT_INVULN_TIME)
-        self.world.runtime_state["last_death_cause"] = cause
-        self.world.event_bus.publish(PlayerDamaged())
-        if health.current <= 0.0:
-            self.world.event_bus.publish(PlayerDied())
 
     def _publish_runtime_state(self) -> None:
         payload: dict[str, object] = {

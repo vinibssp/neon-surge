@@ -1198,15 +1198,15 @@ class LabyrinthWallRenderStrategy:
             int(self.width),
             int(self.height),
         )
-        pygame.draw.rect(screen, self.fill_color, rect)
+        if rect.width >= rect.height:
+            start = (rect.left, rect.centery)
+            end = (rect.right, rect.centery)
+        else:
+            start = (rect.centerx, rect.top)
+            end = (rect.centerx, rect.bottom)
 
-        outer = self.edge_color
-        inner = _brighten(self.edge_color, gain=1.08, bias=18)
-        pygame.draw.rect(screen, outer, rect, width=max(2, self.line_thickness))
-
-        inset = rect.inflate(-max(2, self.line_thickness), -max(2, self.line_thickness))
-        if inset.width > 2 and inset.height > 2:
-            pygame.draw.rect(screen, inner, inset, width=1)
+        pygame.draw.line(screen, self.edge_color, start, end, self.line_thickness + 2)
+        pygame.draw.line(screen, self.fill_color, start, end, self.line_thickness)
 
 
 class LabyrinthKeyRenderStrategy:
