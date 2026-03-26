@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING
 from game.core.events import PortalActivated
 from game.factories.portal_factory import PortalFactory
 from game.factories.enemy_factory import EnemyFactory
+from game.modes.spawn_strategy import TrainingSpawnStrategy
 from game.modes.mode_config import RaceConfig, SurvivalConfig
+from game.systems.world_queries import PORTAL_SPAWN_QUERY
 
 if TYPE_CHECKING:
     from game.scenes.game_scene import GameScene
@@ -139,4 +141,32 @@ class LabyrinthLevelProgressionStrategy(LevelProgressionStrategy):
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:
         scene.setup_level(scene.world.level + 1)
+
+
+class TrainingLevelProgressionStrategy(LevelProgressionStrategy):
+    def __init__(self, spawn_strategy: TrainingSpawnStrategy) -> None:
+        self._spawn_strategy = spawn_strategy
+        self._completed = False
+
+    def update(self, scene: "GameScene", dt: float) -> None:
+        del dt
+        if self._completed:
+            return
+        if self._spawn_strategy.remaining_to_spawn > 0:
+            return
+        if scene.world.count_by_tag("enemy") > 0:
+            return
+        if scene.world.query(PORTAL_SPAWN_QUERY):
+            return
+
+        self._completed = True
+        scene.open_game_over(
+            title="Treino Completo",
+            subtitle=f"Derrotou {self._spawn_strategy.total_planned} inimigos selecionados",
+            retry_strategy_factory=scene.mode.create_retry_strategy,
+            include_session_summary=True,
+        )
+
+    def on_level_portal_crossed(self, scene: "GameScene") -> None:
+        del scene
 

@@ -74,9 +74,10 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 ### Strategy Pattern
 
 - Variabilidade por strategy em IA, modos de jogo e renderização
-- Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`
+- Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`, `TrainingMode`
 - Cada modo define systems, spawn, progressão e HUD
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
+- `TrainingMode` deve receber plano declarativo de spawn (tipo -> quantidade) vindo da UI de treino com abas por categoria
 - Estratégias de spawn devem aplicar progressão de roster por fase (nível/tempo), liberando arquétipos de maior pressão de forma gradual
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado

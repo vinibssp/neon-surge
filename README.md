@@ -100,6 +100,7 @@ Criação de entidades centralizada nas factories (`game/factories`):
 - `SurvivalMode`
 - `SurvivalHardcoreMode`
 - `LabyrinthMode`
+- `TrainingMode`
 
 Cada modo define:
 
@@ -144,6 +145,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - `LevelProgressionStrategy` por modo (`RaceLevelProgressionStrategy` / `SurvivalLevelProgressionStrategy`)
 - `SpawnDirector` desacoplado de cena em `game/systems/spawn_director.py`
 - `SpawnStrategy` em `game/modes/spawn_strategy.py` opera por `GameWorld` + `elapsed_time`
+- `TrainingMode` usa `TrainingSpawnStrategy` com plano declarativo (`enemy_kind -> quantidade`) definido na tela de treino
 - cada modo controla a política de spawn por categoria (`enemy`, `miniboss`, `boss`)
 - pools de roster são liberados por fase (nível/tempo) para evitar picos injustos no early game
 - sobrevivência/hardcore incluem hazard periódico de lava com fases de aviso, ativo e pisca no encerramento, surgindo em regiões variáveis da tela
@@ -215,6 +217,7 @@ Transições pesadas de UI (ex.: abertura de `GameOverScene`) são efetivadas fo
 - ajustes de `musica` e `sfx` em UI devem usar `AudioSettingsManager` com aplicação imediata e persistência em arquivo
 - overlays compartilham construção via factory de cena (`OverlaySceneFactory`) para consistência de contrato
 - componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
+- `TrainingSetupScene` organiza roster completo em abas (`inimigos`, `minibosses`, `bosses`) com ajuste de quantidade por tipo
 
 #### Regras para Menu Scenes
 
@@ -288,7 +291,7 @@ game/
 ## Fluxo de Alto Nível
 
 1. `main` inicia `Game` e `SceneStack`
-2. `MainMenuScene` escolhe `RaceMode`, `SurvivalMode` ou `LabyrinthMode`
+2. `MainMenuScene` escolhe `RaceMode`, `SurvivalMode`, `LabyrinthMode` ou abre `TrainingSetupScene` para montar `TrainingMode`
 3. `GameScene` monta `LevelProgressionStrategy`, `SystemPipeline` e `SpawnDirector` desacoplado (world + strategy)
 4. systems atualizam estado via ECS, queries reutilizáveis e fases do pipeline
 5. systems publicam eventos; `GameScene` despacha handlers por tipo e decide transições

@@ -19,12 +19,15 @@ class BaseMenuScene(Scene):
 
     def set_navigator(
         self,
-        buttons: list[UIControl],
+        controls: list[UIControl] | None = None,
         actions: dict[UIControl, Callable[[], None]] | None = None,
         on_cancel: Callable[[], None] | None = None,
+        buttons: list[UIControl] | None = None,
     ) -> None:
+        if controls is None:
+            controls = buttons or []
         self.navigator = UINavigator(
-            buttons=buttons,
+            controls=controls,
             actions=actions,
             on_cancel=on_cancel,
             event_bus=self.stack.event_bus,

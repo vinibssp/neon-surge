@@ -42,7 +42,7 @@ class GuideScene(BaseMenuScene):
         )
         line_3 = create_label(
             LabelConfig(
-                text="Treino: 1v1 progressivo para praticar combate",
+                text="Treino: selecione inimigos por abas e pratique composicoes especificas",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 310, 308), (620, 42)),
                 object_id="guide_line_3_label",
             ),

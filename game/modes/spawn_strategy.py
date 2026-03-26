@@ -3,11 +3,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import random
 
-from game.components.data_components import LifetimeComponent
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.factories.enemy_factory import EnemyFactory
-from game.modes.mode_config import RaceConfig, SurvivalConfig
+from game.modes.mode_config import RaceConfig, SurvivalConfig, TrainingConfig
 
 
 EARLY_ENEMY_KINDS: tuple[str, ...] = (
@@ -117,7 +116,7 @@ class SpawnStrategy(ABC):
         ...
 
     @abstractmethod
-    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
         ...
 
 
@@ -201,8 +200,8 @@ class RaceSpawnStrategy(SpawnStrategy):
         levels_per_step = max(1, self.config.portal_growth_levels)
         return min(self.config.max_portals_per_cycle, 1 + (max(0, world.level - 1) // levels_per_step))
 
-    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
-        del world, enemy
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
+        del world, enemy, enemy_kind
 
 
 class SurvivalSpawnStrategy(SpawnStrategy):
@@ -279,7 +278,8 @@ class SurvivalSpawnStrategy(SpawnStrategy):
         growth_step = max(1.0, self.config.portal_growth_time_step)
         return min(self.config.max_portals_per_cycle, 1 + int(elapsed_time // growth_step))
 
-    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
+        del enemy_kind
         lifetime = min(
             self.config.enemy_lifetime_max,
             self.config.enemy_lifetime + max(0, world.level - 1) * self.config.enemy_lifetime_gain_per_level,
@@ -304,8 +304,8 @@ class OneVsOneSpawnStrategy(SpawnStrategy):
         del world, elapsed_time
         return 0
 
-    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
-        del world, enemy
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
+        del world, enemy, enemy_kind
 
 
 class LabyrinthSpawnStrategy(SpawnStrategy):
@@ -325,5 +325,46 @@ class LabyrinthSpawnStrategy(SpawnStrategy):
         del world, elapsed_time
         return 0
 
-    def on_enemy_spawned(self, world: GameWorld, enemy: Entity) -> None:
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
+        del world, enemy, enemy_kind
+
+
+class TrainingSpawnStrategy(SpawnStrategy):
+    def __init__(self, spawn_plan: dict[str, int], config: TrainingConfig) -> None:
+        self.config = config
+        self._remaining_by_kind = {kind: max(0, int(count)) for kind, count in spawn_plan.items() if int(count) > 0}
+        self._total_planned = sum(self._remaining_by_kind.values())
+
+    @property
+    def remaining_to_spawn(self) -> int:
+        return sum(self._remaining_by_kind.values())
+
+    @property
+    def total_planned(self) -> int:
+        return self._total_planned
+
+    def initial_timer(self, world: GameWorld, elapsed_time: float) -> float:
+        return min(self.config.initial_spawn_cap, self.next_interval(world, elapsed_time))
+
+    def next_interval(self, world: GameWorld, elapsed_time: float) -> float:
+        del world, elapsed_time
+        return self.config.spawn_interval
+
+    def choose_enemy_kind(self, world: GameWorld, elapsed_time: float) -> str:
+        del world, elapsed_time
+        available_kinds = [kind for kind, count in self._remaining_by_kind.items() if count > 0]
+        if not available_kinds:
+            raise ValueError("TrainingSpawnStrategy called without remaining enemies to spawn")
+        weights = [self._remaining_by_kind[kind] for kind in available_kinds]
+        return random.choices(available_kinds, weights=weights, k=1)[0]
+
+    def portals_per_cycle(self, world: GameWorld, elapsed_time: float) -> int:
+        del world, elapsed_time
+        return min(self.config.max_portals_per_cycle, self.remaining_to_spawn)
+
+    def on_enemy_spawned(self, world: GameWorld, enemy: Entity, enemy_kind: str) -> None:
         del world, enemy
+        remaining = self._remaining_by_kind.get(enemy_kind, 0)
+        if remaining <= 0:
+            return
+        self._remaining_by_kind[enemy_kind] = remaining - 1

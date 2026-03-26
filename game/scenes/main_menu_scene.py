@@ -5,7 +5,6 @@ import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
 from game.modes.labyrinth_mode import LabyrinthMode
-from game.modes.one_vs_one_mode import OneVsOneMode
 from game.modes.race_infinite_mode import RaceInfiniteMode
 from game.modes.race_mode import RaceMode
 from game.modes.survival_hardcore_mode import SurvivalHardcoreMode
@@ -14,6 +13,7 @@ from game.scenes.game_scene import GameScene
 from game.scenes.guide_scene import GuideScene
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.scenes.settings_scene import SettingsScene
+from game.scenes.training_setup_scene import TrainingSetupScene
 from game.scenes.services import CyberpunkMenuBackgroundRenderer
 from game.ui.components import ButtonConfig, LabelConfig, create_button, create_label
 from game.ui.gui_theme import register_custom_element_themes
@@ -108,7 +108,7 @@ class MainMenuScene(BaseMenuScene):
                 survival_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalMode())),
                 hardcore_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalHardcoreMode())),
                 labyrinth_button: lambda: self.stack.replace(GameScene(self.stack, LabyrinthMode())),
-                training_button: lambda: self.stack.replace(GameScene(self.stack, OneVsOneMode())),
+                training_button: lambda: self.stack.push(TrainingSetupScene(self.stack)),
                 guide_button: lambda: self.stack.push(GuideScene(self.stack)),
                 settings_button: lambda: self.stack.push(SettingsScene(self.stack)),
             },

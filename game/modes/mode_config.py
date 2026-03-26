@@ -139,6 +139,14 @@ class OneVsOneConfig:
 
 
 @dataclass(frozen=True)
+class TrainingConfig:
+    description: str = "Pratique contra composicoes especificas de inimigos selecionadas no menu."
+    spawn_interval: float = 1.0
+    initial_spawn_cap: float = 0.8
+    max_portals_per_cycle: int = 3
+
+
+@dataclass(frozen=True)
 class LabyrinthConfig:
     description: str = "Explore labirintos procedurais, pegue a chave e escape por uma saida bloqueada."
     base_enemy_speed: float = 82.0

@@ -65,7 +65,7 @@ class SpawnDirector:
                 continue
 
             enemy = EnemyFactory.create_by_kind(spawn.enemy_kind, transform.position)
-            self.strategy.on_enemy_spawned(self.world, enemy)
+            self.strategy.on_enemy_spawned(self.world, enemy, spawn.enemy_kind)
             self.world.add_entity(enemy)
             self.world.event_bus.publish(EnemySpawned(enemy_kind=spawn.enemy_kind))
             self.world.remove_entity(portal)
