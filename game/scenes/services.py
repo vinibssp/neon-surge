@@ -213,19 +213,23 @@ class CyberpunkMenuBackgroundRenderer:
         horizon_y = int(height * 0.6)
         center_x = width // 2
 
+        # 1. SKY GRADIENT (Enhanced)
         for y in range(height):
             t = y / max(1, height)
             if y <= horizon_y:
-                red = int(12 + (46 * t))
-                green = int(8 + (10 * t))
-                blue = int(34 + (90 * t))
+                # Deep space purple to horizon orange/pink
+                red = int(10 + (180 * (y / horizon_y)**3.5))
+                green = int(5 + (40 * (y / horizon_y)**4.0))
+                blue = int(25 + (15 * (y / horizon_y)))
             else:
+                # Dark ground
                 t2 = (y - horizon_y) / max(1, (height - horizon_y))
-                red = int(18 + (16 * t2))
-                green = int(4 + (14 * t2))
-                blue = int(30 + (56 * t2))
-            pygame.draw.line(screen, (red, green, blue), (0, y), (width, y))
+                red = int(15 + (10 * t2))
+                green = int(5 + (5 * t2))
+                blue = int(25 + (20 * t2))
+            pygame.draw.line(screen, (min(255, red), min(255, green), min(255, blue)), (0, y), (width, y))
 
+        # 2. STARS (Twinkling)
         sky_height = max(1, int(horizon_y * 0.9))
         self._ensure_star_layout(width, sky_height)
         for star_x, star_y, twinkle_phase, twinkle_speed, radius in self._stars:
@@ -237,123 +241,78 @@ class CyberpunkMenuBackgroundRenderer:
             else:
                 pygame.draw.circle(screen, color, (star_x, star_y), radius)
 
-        if self._next_shooting_star_time <= 0.0:
-            self._next_shooting_star_time = elapsed_time + self._rng.uniform(2.4, 6.8)
-        if elapsed_time >= self._next_shooting_star_time:
-            self._spawn_shooting_star(elapsed_time, width, sky_height)
-            self._next_shooting_star_time = elapsed_time + self._rng.uniform(3.0, 8.2)
-
-        active_shooting_stars: list[dict[str, float]] = []
-        for shooting_star in self._shooting_stars:
-            age = elapsed_time - shooting_star["start_time"]
-            lifetime = shooting_star["lifetime"]
-            if age < 0.0 or age > lifetime:
-                continue
-            fade = 1.0 - (age / lifetime)
-            head_x = shooting_star["start_x"] + shooting_star["velocity_x"] * age
-            head_y = shooting_star["start_y"] + shooting_star["velocity_y"] * age
-            trail_length = 80.0 + (shooting_star["velocity_x"] * 0.11)
-            direction_length = max(
-                1.0,
-                math.sqrt(
-                    shooting_star["velocity_x"] * shooting_star["velocity_x"]
-                    + shooting_star["velocity_y"] * shooting_star["velocity_y"]
-                ),
-            )
-            direction_x = shooting_star["velocity_x"] / direction_length
-            direction_y = shooting_star["velocity_y"] / direction_length
-            tail_x = head_x - direction_x * trail_length
-            tail_y = head_y - direction_y * trail_length
-            if head_x < -120 or head_y > sky_height + 120 or head_x > width + 120:
-                continue
-
-            alpha = int(170 * fade)
-            trail_color = (150, 220, 255, alpha)
-            head_color = (235, 250, 255, min(255, int(240 * fade + 15)))
-            shooting_surface = pygame.Surface((width, sky_height), pygame.SRCALPHA)
-            pygame.draw.line(
-                shooting_surface,
-                trail_color,
-                (int(tail_x), int(tail_y)),
-                (int(head_x), int(head_y)),
-                2,
-            )
-            pygame.draw.circle(shooting_surface, head_color, (int(head_x), int(head_y)), 2)
-            screen.blit(shooting_surface, (0, 0))
-            active_shooting_stars.append(shooting_star)
-
-        self._shooting_stars = active_shooting_stars
-
-        sun_center_x = center_x
-        sun_radius = int(min(width, height) * 0.12)
-        if sun_rise_progress is None:
-            rise_progress = 1.0
-        else:
-            rise_progress = max(0.0, min(1.0, sun_rise_progress))
-        sun_start_y = int(horizon_y + sun_radius * 0.95)
-        sun_end_y = int(horizon_y * 0.66)
+        # 3. SEGMENTED SYNTHWAVE SUN
+        sun_radius = int(min(width, height) * 0.18)
+        rise_progress = max(0.0, min(1.0, sun_rise_progress)) if sun_rise_progress is not None else 1.0
+        sun_start_y = int(horizon_y + sun_radius)
+        sun_end_y = int(horizon_y * 0.75)
         sun_center_y = int(sun_start_y + (sun_end_y - sun_start_y) * rise_progress)
-
+        
+        # Sun Glow
         sun_glow = pygame.Surface((width, height), pygame.SRCALPHA)
-        pulse = 0.86 + 0.14 * math.sin(elapsed_time * 1.6)
-        for multiplier, alpha in ((2.3, 18), (1.7, 30), (1.25, 55)):
-            pygame.draw.circle(
-                sun_glow,
-                (255, 60, 175, int(alpha * pulse)),
-                (sun_center_x, sun_center_y),
-                int(sun_radius * multiplier),
-            )
+        pulse = 0.9 + 0.1 * math.sin(elapsed_time * 1.5)
+        for multiplier, alpha in ((2.5, 12), (1.8, 22), (1.3, 45)):
+            pygame.draw.circle(sun_glow, (255, 20, 147, int(alpha * pulse)), (center_x, sun_center_y), int(sun_radius * multiplier))
         screen.blit(sun_glow, (0, 0))
 
-        pygame.draw.circle(screen, (255, 110, 70), (sun_center_x, sun_center_y), sun_radius)
-        pygame.draw.circle(screen, (255, 185, 90), (sun_center_x, sun_center_y - 2), int(sun_radius * 0.72))
+        # Draw sun segments
+        sun_surf = pygame.Surface((sun_radius * 2, sun_radius * 2), pygame.SRCALPHA)
+        pygame.draw.circle(sun_surf, (255, 20, 147), (sun_radius, sun_radius), sun_radius)
+        # Inner core glow
+        pygame.draw.circle(sun_surf, (255, 215, 0), (sun_radius, sun_radius), int(sun_radius * 0.8))
+        
+        # Cut segments (the classic synthwave lines)
+        for i in range(1, 12):
+            line_y = int(sun_radius * 2 * (i / 12))
+            thickness = int(2 + (i * 1.2)) # Thicker lines at the bottom
+            pygame.draw.rect(sun_surf, (0, 0, 0, 0), (0, line_y, sun_radius * 2, thickness))
+        
+        screen.blit(sun_surf, (center_x - sun_radius, sun_center_y - sun_radius), special_flags=pygame.BLEND_RGBA_ADD)
 
-        if sun_center_text is not None and sun_center_text.strip() != "":
-            glyph_font = pygame.font.Font(None, max(24, int(sun_radius * 1.65)))
-            glyph_surface = glyph_font.render(sun_center_text, True, (255, 92, 204))
-            glyph_rect = glyph_surface.get_rect(center=(sun_center_x, sun_center_y - 2))
-            screen.blit(glyph_surface, glyph_rect)
-
-        mountain_points: list[tuple[int, int]] = []
-        for x in range(-80, width + 81, 45):
-            base = horizon_y - 12
-            peak = 28 + (x % 140)
-            y = int(base - peak - 14 * math.sin((x * 0.018) + elapsed_time * 0.35))
+        # 4. MOUNTAINS (Retro-Silicon)
+        mountain_points = []
+        for x in range(-100, width + 101, 60):
+            base = horizon_y
+            # Fractal-like peaks
+            peak = (40 if (x // 60) % 2 == 0 else 70) + (20 * math.sin(x * 0.05))
+            y = int(base - peak)
             mountain_points.append((x, y))
 
-        mountain_fill_color = MENU_MOUNTAIN_FILL_COLOR
         mountain_polygon = list(mountain_points)
-        mountain_polygon.append((width + 90, height + 20))
-        mountain_polygon.append((-90, height + 20))
-        pygame.draw.polygon(screen, mountain_fill_color, mountain_polygon)
+        mountain_polygon.append((width + 100, height))
+        mountain_polygon.append((-100, height))
+        pygame.draw.polygon(screen, (15, 0, 30), mountain_polygon)
+        # Mountain outlines
+        for i in range(1, len(mountain_points)):
+            pygame.draw.line(screen, (255, 0, 255, 180), mountain_points[i-1], mountain_points[i], 2)
 
-        for index in range(1, len(mountain_points)):
-            pygame.draw.line(screen, self.neon_color, mountain_points[index - 1], mountain_points[index], 2)
+        # 5. HORIZON LINE
+        pygame.draw.line(screen, (0, 255, 255), (0, horizon_y), (width, horizon_y), 3)
 
-        pygame.draw.line(screen, self.neon_color, (0, horizon_y), (width, horizon_y), 2)
+        # 6. PERSPECTIVE GRID
+        grid_surf = pygame.Surface((width, height - horizon_y), pygame.SRCALPHA)
+        grid_h = height - horizon_y
+        shift = (elapsed_time * 120) % 40
+        
+        # Horizontal lines
+        for y in range(0, grid_h + 40, 40):
+            ly = y + shift
+            if ly > grid_h: continue
+            alpha = int(255 * (ly / grid_h)) # Fade out near horizon
+            pygame.draw.line(grid_surf, (0, 255, 255, alpha), (0, ly), (width, ly), 1)
+            
+        # Vertical vanishing lines
+        for i in range(-15, 16):
+            x_start = width // 2 + i * 40
+            x_end = width // 2 + i * 250
+            pygame.draw.line(grid_surf, (0, 255, 255, 100), (x_start, 0), (x_end, grid_h), 1)
+        
+        screen.blit(grid_surf, (0, horizon_y))
 
-        shift = (elapsed_time * 180) % 38
-        for y in range(horizon_y + 12, height + 42, 38):
-            line_y = int(y + shift)
-            if line_y > height:
-                break
-            opening = int((line_y - horizon_y) * 2.25)
-            pygame.draw.line(
-                screen,
-                (45, 190, 220),
-                (center_x - opening, line_y),
-                (center_x + opening, line_y),
-                1,
-            )
-
-        for index in range(-10, 11):
-            x_base = center_x + index * 58
-            x_end = int(center_x + index * 122)
-            pygame.draw.line(screen, (30, 140, 190), (x_base, horizon_y), (x_end, height), 1)
-
+        # 7. SCANLINES & VIGNETTE
         scanline = pygame.Surface((width, height), pygame.SRCALPHA)
-        for y in range(0, height, 3):
-            pygame.draw.line(scanline, (10, 0, 22, 18), (0, y), (width, y))
+        for y in range(0, height, 4):
+            pygame.draw.line(scanline, (0, 0, 0, 40), (0, y), (width, y))
         screen.blit(scanline, (0, 0))
 
         vignette = pygame.Surface((width, height), pygame.SRCALPHA)
