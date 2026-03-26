@@ -169,21 +169,24 @@ class TrainingSetupScene(BaseMenuScene):
         )
 
         # Tabs
+        tab_w, tab_h, gap = 240, 40, 10
+        tab_start_x = SCREEN_WIDTH // 2 - 495
+        
         self._tab_buttons: dict[TrainingTab, object] = {
             "enemy": create_button(
-                ButtonConfig(text="Inimigos", rect=pygame.Rect((SCREEN_WIDTH // 2 - 440, 150), (210, 40)), variant="tab_enemy"),
+                ButtonConfig(text="Inimigos", rect=pygame.Rect((tab_start_x, 150), (tab_w, tab_h)), variant="tab_enemy"),
                 manager=self.ui_manager,
             ),
             "miniboss": create_button(
-                ButtonConfig(text="Minibosses", rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 150), (210, 40)), variant="tab_miniboss"),
+                ButtonConfig(text="Minibosses", rect=pygame.Rect((tab_start_x + (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_miniboss"),
                 manager=self.ui_manager,
             ),
             "boss": create_button(
-                ButtonConfig(text="Bosses", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 150), (200, 40)), variant="tab_boss"),
+                ButtonConfig(text="Bosses", rect=pygame.Rect((tab_start_x + 2 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_boss"),
                 manager=self.ui_manager,
             ),
             "event": create_button(
-                ButtonConfig(text="Eventos", rect=pygame.Rect((SCREEN_WIDTH // 2 + 220, 150), (200, 40)), variant="tab_event"),
+                ButtonConfig(text="Eventos", rect=pygame.Rect((tab_start_x + 3 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_event"),
                 manager=self.ui_manager,
             ),
         }
