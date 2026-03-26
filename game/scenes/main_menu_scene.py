@@ -20,7 +20,7 @@ from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_bu
 
 MODE_INFO = {
     "race": (
-        "MÓDULO DE CORRIDA",
+        "CORRIDA",
         "Navegação em alta velocidade por portais de salto.",
         "Objetivo: coletar núcleos e escapar antes do cronômetro.",
     ),
@@ -35,7 +35,7 @@ MODE_INFO = {
         "Objetivo: manter-se vivo enquanto a arena se torna mais hostil.",
     ),
     "hardcore": (
-        "ERRO FATAL",
+        "HARDCORE",
         "Execução extrema sem margem para falhas.",
         "Objetivo: avançar sem sofrer dano crítico único.",
     ),
@@ -152,7 +152,7 @@ class MainMenuScene(BaseMenuScene):
         # 5. Global Ranking (Center Bottom)
         self._ranking_btn = create_button(
             ButtonConfig(
-                text="RANKING GLOBAL DE PILOTOS",
+                text="RANKING",
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 200, 580), (400, 50)),
                 variant="primary"
             ),
