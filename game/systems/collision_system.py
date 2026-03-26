@@ -204,7 +204,7 @@ class CollisionSystem:
 
     def _apply_area_stagger(self, center, radius: float, duration: float) -> None:
         radius_sq = radius * radius
-        for enemy in self.world.entities:
+        for enemy in tuple(self.world.entities):
             if not enemy.has_tag("enemy"):
                 continue
             transform = enemy.get_component(TransformComponent)
@@ -231,6 +231,9 @@ class CollisionSystem:
         return stagger is not None and stagger.time_left > 0.0
 
     def _kill_player(self, cause: str) -> None:
+        if self.world.runtime_state.get("death_transition"):
+            return
+        self.world.runtime_state["death_transition"] = True
         self.world.runtime_state["last_death_cause"] = cause
         self.world.event_bus.publish(PlayerDamaged())
         self.world.event_bus.publish(PlayerDied())

@@ -230,9 +230,7 @@ class EnvironmentEventSystem:
                 invulnerability = entity.get_component(InvulnerabilityComponent)
                 if invulnerability is not None and invulnerability.time_left > 0.0:
                     continue
-                self.world.runtime_state["last_death_cause"] = "Consumido pelo buraco negro"
-                self.world.event_bus.publish(PlayerDamaged())
-                self.world.event_bus.publish(PlayerDied())
+                self._kill_player("Consumido pelo buraco negro")
                 return
 
             if entity.has_tag("enemy"):
@@ -250,6 +248,14 @@ class EnvironmentEventSystem:
 
         self._apply_lava_damage()
         self._publish_lava_state()
+
+    def _kill_player(self, cause: str) -> None:
+        if self.world.runtime_state.get("death_transition"):
+            return
+        self.world.runtime_state["death_transition"] = True
+        self.world.runtime_state["last_death_cause"] = cause
+        self.world.event_bus.publish(PlayerDamaged())
+        self.world.event_bus.publish(PlayerDied())
 
     def _apply_lava_damage(self) -> None:
         player = self.world.player
@@ -272,9 +278,7 @@ class EnvironmentEventSystem:
         if not self._circle_overlaps_rect(transform.position, collision.radius, region):
             return
 
-        self.world.runtime_state["last_death_cause"] = "Queimado na lava"
-        self.world.event_bus.publish(PlayerDamaged())
-        self.world.event_bus.publish(PlayerDied())
+        self._kill_player("Queimado na lava")
 
     def _lava_blink_visible(self) -> bool:
         if self._lava_phase != "active":

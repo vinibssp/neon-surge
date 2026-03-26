@@ -8,8 +8,8 @@ from typing import Callable
 import pygame
 from pygame import Vector2
 
-from game.components.data_components import BossComponent, TransformComponent
-from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.components.data_components import BossComponent, InvulnerabilityComponent, TransformComponent
+from game.config import PLAYER_RESPAWN_INVULN, SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import (
     AudioContextChanged,
     BulletExpired,
@@ -251,6 +251,7 @@ class GameScene(Scene):
         self.level_portal_spawned = False
         self._transition_in_progress = False
         self._boss_card_states.clear()
+        self.world.runtime_state.pop("death_transition", None)
         self.world.runtime_state.pop("last_death_cause", None)
 
         if self.world.player is None:
@@ -262,6 +263,11 @@ class GameScene(Scene):
             player_transform = self.world.player.get_component(TransformComponent)
             if player_transform is not None:
                 player_transform.position = Vector2(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5)
+
+        if self.world.player is not None:
+            invulnerability = self.world.player.get_component(InvulnerabilityComponent)
+            if invulnerability is not None:
+                invulnerability.time_left = max(invulnerability.time_left, PLAYER_RESPAWN_INVULN)
 
         self.mode.configure_level(self, level)
 
