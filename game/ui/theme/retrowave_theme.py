@@ -145,6 +145,17 @@ THEME_DATA = {
         }
     },
 
+    "label.highlight": {
+        "colours": {
+            "normal_text": "#00ff00"
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
+        }
+    },
+
     "panel": {
         "colours": {
             "dark_bg": BG_MAIN,

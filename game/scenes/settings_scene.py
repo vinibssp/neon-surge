@@ -163,8 +163,18 @@ class SettingsScene(BaseMenuScene):
         back_button = create_button(
             ButtonConfig(
                 text="Voltar",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 130, 480), (260, 56)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 130, 520), (260, 56)),
                 object_id="settings_back_button",
+            ),
+            manager=self.ui_manager,
+        )
+        
+        change_name_button = create_button(
+            ButtonConfig(
+                text="Alterar Nome",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 130, 580), (260, 56)),
+                variant="primary",
+                object_id="settings_change_name_button",
             ),
             manager=self.ui_manager,
         )
@@ -176,6 +186,7 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_decrease_button,
                 self._sfx_increase_button,
                 back_button,
+                change_name_button,
             ],
             actions={
                 self._music_decrease_button: lambda: self._step_music(-0.05),
@@ -183,9 +194,14 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_decrease_button: lambda: self._step_sfx(-0.05),
                 self._sfx_increase_button: lambda: self._step_sfx(0.05),
                 back_button: self._close,
+                change_name_button: self._change_name,
             },
             on_cancel=self._close,
         )
+
+    def _change_name(self) -> None:
+        from game.scenes.player_name_scene import PlayerNameScene
+        self.stack.push(PlayerNameScene(self.stack, is_first_time=False))
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:

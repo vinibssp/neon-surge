@@ -4,6 +4,7 @@ from typing import Callable, Protocol, runtime_checkable
 
 import pygame
 import pygame_gui
+from pygame_gui.elements import UITextEntryLine
 
 from game.core.events import EventBus, UICancelled, UIConfirmed, UINavigated
 
@@ -139,6 +140,13 @@ class UINavigator:
         if not self._has_active_controls():
             return False
 
+        if self._has_focused_text_entry():
+            if event.key == pygame.K_ESCAPE:
+                self.cancel()
+                return True
+            # Let UITextEntryLine handle typing, deletion and cursor movement.
+            return False
+
         key = event.key
         if key in (pygame.K_UP, pygame.K_LEFT, pygame.K_w, pygame.K_a):
             self.move_selection(-1)
@@ -156,12 +164,28 @@ class UINavigator:
         if key == pygame.K_END:
             self.select_last_active()
             return True
-        if key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+        if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.confirm_selected()
             return True
-        if key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+        if key == pygame.K_SPACE:
+            if isinstance(self._selected_element, UITextEntryLine):
+                return False
+            self.confirm_selected()
+            return True
+        if key == pygame.K_ESCAPE:
             self.cancel()
             return True
+        if key == pygame.K_BACKSPACE:
+            if isinstance(self._selected_element, UITextEntryLine):
+                return False
+            self.cancel()
+            return True
+        return False
+
+    def _has_focused_text_entry(self) -> bool:
+        for control in self.controls:
+            if isinstance(control, UITextEntryLine) and control.is_focused:
+                return True
         return False
 
     def move_selection(self, delta: int) -> None:

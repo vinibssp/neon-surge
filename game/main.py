@@ -14,6 +14,8 @@ from game.config import SCREEN_HEIGHT, SCREEN_WIDTH, WINDOW_TITLE
 from game.core.game import Game
 from game.core.scene_stack import SceneStack
 from game.scenes.main_menu_scene import MainMenuScene
+from game.scenes.player_name_scene import PlayerNameScene
+from game.services.ranking_service import RankingService
 
 
 def main() -> None:
@@ -43,7 +45,10 @@ def main() -> None:
     audio_director.initialize()
     audio_backend.apply_runtime_settings(is_ducked=False)
 
-    stack.push(MainMenuScene(stack))
+    if RankingService().get_player_name() is None:
+        stack.push(PlayerNameScene(stack, is_first_time=True))
+    else:
+        stack.push(MainMenuScene(stack))
 
     game = Game(screen=screen, scene_stack=stack)
     game.run()

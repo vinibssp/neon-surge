@@ -31,17 +31,24 @@ def create_text_input(
         object_id=config.object_id,
     )
 
-    entry = pygame_gui.elements.UITextEntryLine(
-        relative_rect=config.rect,
-        manager=manager,
-        container=container,
-        object_id=object_id,
-        placeholder_text=config.placeholder,
-        initial_text=config.initial_text,
-        anchors=config.anchors or None,
-        forbidden_characters=config.forbidden_characters,
-        allowed_characters=config.allowed_characters,
-    )
+    kwargs = {
+        "relative_rect": config.rect,
+        "manager": manager,
+        "container": container,
+        "object_id": object_id,
+        "initial_text": config.initial_text,
+    }
+    if config.placeholder:
+        kwargs["placeholder_text"] = config.placeholder
+    if config.anchors:
+        kwargs["anchors"] = config.anchors
+
+    entry = pygame_gui.elements.UITextEntryLine(**kwargs)
+
+    if config.allowed_characters is not None:
+        entry.set_allowed_characters(config.allowed_characters)
+    if config.forbidden_characters is not None:
+        entry.set_forbidden_characters(config.forbidden_characters)
 
     if not config.enabled:
         entry.disable()

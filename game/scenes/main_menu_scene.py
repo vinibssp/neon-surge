@@ -91,6 +91,17 @@ class MainMenuScene(BaseMenuScene):
         guide_button = menu_buttons["guide_button"]
         settings_button = menu_buttons["settings_button"]
 
+        from game.scenes.leaderboard_scene import LeaderboardScene
+        ranking_button = create_button(
+            ButtonConfig(
+                text="RANKING",
+                rect=pygame.Rect(-200, 20, 160, 45),
+                anchors={'right': 'right', 'top': 'top'},
+                variant="primary",
+            ),
+            manager=self.ui_manager,
+        )
+
         self.set_navigator(
             buttons=[
                 race_button,
@@ -101,6 +112,7 @@ class MainMenuScene(BaseMenuScene):
                 training_button,
                 guide_button,
                 settings_button,
+                ranking_button,
             ],
             actions={
                 race_button: lambda: self.stack.replace(GameScene(self.stack, RaceMode())),
@@ -111,6 +123,7 @@ class MainMenuScene(BaseMenuScene):
                 training_button: lambda: self.stack.push(TrainingSetupScene(self.stack)),
                 guide_button: lambda: self.stack.push(GuideScene(self.stack)),
                 settings_button: lambda: self.stack.push(SettingsScene(self.stack)),
+                ranking_button: lambda: self.stack.push(LeaderboardScene(self.stack)),
             },
             on_cancel=self._quit,
         )

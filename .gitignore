@@ -1,3 +1,4 @@
 .venv/
 __pycache__/
 *.pyc
+player_profile.json
