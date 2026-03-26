@@ -9,7 +9,7 @@ from game.components.data_components import DormantComponent, HealthComponent, P
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.world import GameWorld
 from game.factories.enemy_factory import EnemyFactory
-from game.factories.dungeon_factory import DungeonFactory
+import pygame
 from game.modes.dungeons_layout import DungeonLayout, DungeonRuntimeState, DungeonSpatialIndex
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.modes.level_progression_strategy import DungeonsLevelProgressionStrategy, LevelProgressionStrategy
@@ -31,6 +31,7 @@ from game.systems.player_shoot_system import PlayerShootSystem
 from game.systems.shoot_system import ShootSystem
 from game.systems.stagger_system import StaggerSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
+from game.rendering.strategies import LabyrinthWallRenderStrategy
 
 if TYPE_CHECKING:
     from game.core.session_stats import GameSessionStats
@@ -91,6 +92,8 @@ class DungeonsMode(GameModeStrategy):
             room_min_size=self.config.room_min_size,
             room_max_size=self.config.room_max_size,
             corridor_width=self.config.corridor_width,
+            boss_spawn_min_distance=int(min(self.config.grid_width, self.config.grid_height) * self.config.boss_spawn_min_distance_ratio),
+            min_rooms_before_boss=self.config.min_rooms_before_boss,
         )
         spatial_index = DungeonSpatialIndex.build(layout)
         self._runtime_state = DungeonRuntimeState(
@@ -110,8 +113,7 @@ class DungeonsMode(GameModeStrategy):
         self._position_player(scene, layout)
         self._ensure_player_shooting(scene)
 
-        for wall_rect in layout.wall_rects:
-            scene.world.add_entity(DungeonFactory.create_wall_visual(wall_rect, self.theme))
+        self._runtime_state.wall_surface = self._build_wall_surface(layout)
 
         self._spawn_room_enemies(scene, layout)
         self._spawn_boss(scene, layout)
@@ -151,7 +153,12 @@ class DungeonsMode(GameModeStrategy):
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),
             SystemSpec(system=PlayerShootSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=25),
             SystemSpec(
-                system=DungeonVisibilitySystem(world, runtime_provider, vision_radius=self.config.vision_radius),
+                system=DungeonVisibilitySystem(
+                    world,
+                    runtime_provider,
+                    vision_radius=self.config.vision_radius,
+                    update_interval=self.config.visibility_update_interval,
+                ),
                 phase=PipelinePhase.PRE_UPDATE,
                 priority=30,
             ),
@@ -209,20 +216,37 @@ class DungeonsMode(GameModeStrategy):
             )
         )
 
+    def _build_wall_surface(self, layout: DungeonLayout) -> pygame.Surface:
+        width_px = int(layout.width * layout.geometry.cell_size)
+        height_px = int(layout.height * layout.geometry.cell_size)
+        surface = pygame.Surface((width_px, height_px), pygame.SRCALPHA)
+        wall_size = layout.geometry.cell_size
+        strategy = LabyrinthWallRenderStrategy(
+            fill_color=self.theme.wall_fill,
+            edge_color=self.theme.wall_edge,
+            width=wall_size,
+            height=wall_size,
+            line_thickness=self.theme.wall_line_thickness,
+        )
+        for wall_rect in layout.wall_rects:
+            transform = TransformComponent(position=Vector2(wall_rect.centerx, wall_rect.centery))
+            strategy.render(surface, None, transform)
+        return surface
+
     def _spawn_room_enemies(self, scene: "GameScene", layout: DungeonLayout) -> None:
         blocked_rooms = {layout.spawn_room_index, layout.boss_room_index}
         enemy_pool = self._enemy_pool_for_level(scene.world.level)
         for index, room in enumerate(layout.rooms):
             if index in blocked_rooms:
                 continue
+            room_enemy_kind = EnemyFactory.choose_random_enemy_kind_from(list(enemy_pool))
             enemy_count = self._rng.randint(self.config.enemy_per_room_min, self.config.enemy_per_room_max)
             blocked_cells: set[tuple[int, int]] = set()
             for _ in range(enemy_count):
                 spawn_cell = self._random_cell_in_room(room, blocked_cells)
                 blocked_cells.add(spawn_cell)
                 position = layout.cell_center(spawn_cell)
-                enemy_kind = EnemyFactory.choose_random_enemy_kind_from(list(enemy_pool))
-                enemy = EnemyFactory.create_by_kind(enemy_kind, position)
+                enemy = EnemyFactory.create_by_kind(room_enemy_kind, position)
                 self._adapt_enemy(enemy)
                 scene.world.add_entity(enemy)
 

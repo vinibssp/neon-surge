@@ -84,7 +84,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 - Novos padrões de combate devem priorizar behaviors dedicados e reutilizáveis (composição), evitando ramificações por tipo em systems globais
-- `DungeonsMode` usa layout procedural por salas + corredores, fog of war e camera centralizada; inimigos ficam inativos ate serem revelados
+- `DungeonsMode` usa layout procedural por salas + corredores, fog of war, minimapa e camera centralizada; spawn inicial sempre distante do boss; minimo de 13 salas antes do boss; cada sala usa um unico tipo de inimigo; inimigos ficam inativos ate serem revelados
 
 
 ### Command Pattern

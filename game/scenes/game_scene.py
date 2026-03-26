@@ -8,9 +8,23 @@ from typing import Callable
 import pygame
 from pygame import Vector2
 
-from game.components.data_components import TransformComponent
+from game.components.data_components import HealthComponent, TransformComponent
 from game.modes.dungeons_layout import DungeonRuntimeState
-from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.config import (
+    HEALTH_BAR_BG_COLOR,
+    HEALTH_BAR_ENEMY_COLOR,
+    MINIMAP_BG_COLOR,
+    MINIMAP_BOSS_COLOR,
+    MINIMAP_BORDER_COLOR,
+    MINIMAP_CELL_SIZE,
+    MINIMAP_FLOOR_COLOR,
+    MINIMAP_MARGIN,
+    MINIMAP_PLAYER_COLOR,
+    MINIMAP_VISIBLE_COLOR,
+    MINIMAP_WALL_COLOR,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 from game.core.events import (
     AudioContextChanged,
     BulletExpired,
@@ -140,6 +154,7 @@ class GameScene(Scene):
         if not isinstance(camera_offset, pygame.Vector2):
             camera_offset = pygame.Vector2()
 
+        self._render_dungeon_walls(self._world_surface, camera_offset)
         self.render_system.render(self._world_surface, camera_offset)
         self._render_survival_lava_overlay(self._world_surface, camera_offset)
         self._render_environment_event_overlay(self._world_surface, camera_offset)
@@ -150,6 +165,8 @@ class GameScene(Scene):
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
         self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
+        self._render_dungeon_minimap(screen)
+        self._render_dungeon_boss_hud(screen)
 
     def _render_survival_lava_overlay(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
         lava_state = self.world.runtime_state.get("survival_lava")
@@ -187,6 +204,137 @@ class GameScene(Scene):
         overlay.fill((255, 185, 42, alpha))
         screen.blit(overlay, rect.topleft)
         pygame.draw.rect(screen, (255, 230, 120), rect, 2)
+
+    def _render_dungeon_boss_hud(self, screen: pygame.Surface) -> None:
+        runtime = self.world.runtime_state.get("dungeon_runtime")
+        if not isinstance(runtime, DungeonRuntimeState):
+            return
+        if runtime.boss_defeated:
+            return
+
+        player = self.world.player
+        if player is None:
+            return
+        player_pos = self.world.get_position(player)
+        if player_pos is None:
+            return
+        player_cell = runtime.layout.to_cell(player_pos)
+        if player_cell is None:
+            return
+        if not runtime.layout.room_contains_cell(runtime.layout.boss_room_index, player_cell):
+            return
+
+        boss_entity = None
+        for entity in self.world.entities:
+            if entity.active and entity.has_tag("dungeon_boss"):
+                boss_entity = entity
+                break
+        if boss_entity is None:
+            return
+
+        health = boss_entity.get_component(HealthComponent)
+        if health is None or health.maximum <= 0.0:
+            return
+
+        ratio = max(0.0, min(1.0, health.current / health.maximum))
+        bar_width = int(SCREEN_WIDTH * 0.58)
+        bar_height = 14
+        bar_x = (SCREEN_WIDTH - bar_width) // 2
+        bar_y = 10
+
+        bg_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
+        pygame.draw.rect(screen, HEALTH_BAR_BG_COLOR, bg_rect, border_radius=6)
+        fill_width = max(0, int(bar_width * ratio))
+        if fill_width > 0:
+            fill_rect = pygame.Rect(bar_x, bar_y, fill_width, bar_height)
+            pygame.draw.rect(screen, HEALTH_BAR_ENEMY_COLOR, fill_rect, border_radius=6)
+        pygame.draw.rect(screen, (235, 235, 245), bg_rect, width=2, border_radius=6)
+
+    def _render_dungeon_minimap(self, screen: pygame.Surface) -> None:
+        runtime = self.world.runtime_state.get("dungeon_runtime")
+        if not isinstance(runtime, DungeonRuntimeState):
+            return
+        if not runtime.revealed_cells:
+            return
+
+        cell_size = int(max(2, MINIMAP_CELL_SIZE))
+        map_width = runtime.layout.width * cell_size
+        map_height = runtime.layout.height * cell_size
+        if map_width <= 0 or map_height <= 0:
+            return
+
+        map_x = SCREEN_WIDTH - map_width - MINIMAP_MARGIN
+        map_y = MINIMAP_MARGIN
+        if map_x < MINIMAP_MARGIN:
+            map_x = MINIMAP_MARGIN
+
+        needs_rebuild = runtime.minimap_surface is None or runtime.minimap_size != (map_width, map_height) or runtime.minimap_dirty
+        if needs_rebuild:
+            surface = pygame.Surface((map_width, map_height), pygame.SRCALPHA)
+            surface.fill(MINIMAP_BG_COLOR)
+
+            revealed = runtime.revealed_cells
+            for cell in revealed:
+                cx, cy = cell
+                rect = pygame.Rect(cx * cell_size, cy * cell_size, cell_size, cell_size)
+                surface.fill(MINIMAP_FLOOR_COLOR, rect)
+
+            wall_cells: set[tuple[int, int]] = set()
+            for cell in revealed:
+                cx, cy = cell
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx = cx + dx
+                    ny = cy + dy
+                    if 0 <= nx < runtime.layout.width and 0 <= ny < runtime.layout.height:
+                        if not runtime.layout.grid[ny][nx]:
+                            wall_cells.add((nx, ny))
+            for cell in wall_cells:
+                cx, cy = cell
+                rect = pygame.Rect(cx * cell_size, cy * cell_size, cell_size, cell_size)
+                surface.fill(MINIMAP_WALL_COLOR, rect)
+
+            runtime.minimap_surface = surface
+            runtime.minimap_size = (map_width, map_height)
+            runtime.minimap_dirty = False
+        else:
+            surface = runtime.minimap_surface
+            if surface is None:
+                return
+
+        screen.blit(surface, (map_x, map_y))
+
+        visible = runtime.visible_cells
+        for cell in visible:
+            cx, cy = cell
+            rect = pygame.Rect(map_x + cx * cell_size, map_y + cy * cell_size, cell_size, cell_size)
+            screen.fill(MINIMAP_VISIBLE_COLOR, rect)
+
+        player = self.world.player
+        if player is not None:
+            player_pos = self.world.get_position(player)
+            if player_pos is not None:
+                player_cell = runtime.layout.to_cell(player_pos)
+                if player_cell is not None:
+                    cx, cy = player_cell
+                    rect = pygame.Rect(map_x + cx * cell_size, map_y + cy * cell_size, cell_size, cell_size)
+                    screen.fill(MINIMAP_PLAYER_COLOR, rect)
+
+        boss_entity = None
+        for entity in self.world.entities:
+            if entity.active and entity.has_tag("dungeon_boss"):
+                boss_entity = entity
+                break
+        if boss_entity is not None:
+            boss_pos = self.world.get_position(boss_entity)
+            if boss_pos is not None:
+                boss_cell = runtime.layout.to_cell(boss_pos)
+                if boss_cell is not None:
+                    cx, cy = boss_cell
+                    rect = pygame.Rect(map_x + cx * cell_size, map_y + cy * cell_size, cell_size, cell_size)
+                    screen.fill(MINIMAP_BOSS_COLOR, rect)
+
+        border_rect = pygame.Rect(map_x, map_y, map_width, map_height)
+        pygame.draw.rect(screen, MINIMAP_BORDER_COLOR, border_rect, 1)
 
     def _render_environment_event_overlay(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
         event_state = self.world.runtime_state.get("environment_event")
@@ -410,23 +558,37 @@ class GameScene(Scene):
         runtime = self.world.runtime_state.get("dungeon_runtime")
         if not isinstance(runtime, DungeonRuntimeState):
             return
+        layout = runtime.layout
+        cell_size = max(2, int(layout.geometry.cell_size))
+        fog_width = layout.width
+        fog_height = layout.height
 
-        fog = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        fog.fill((0, 0, 0, 255))
+        if runtime.fog_surface is None or runtime.fog_size != (fog_width, fog_height) or runtime.fog_dirty:
+            fog_grid = pygame.Surface((fog_width, fog_height), pygame.SRCALPHA)
+            fog_grid.fill((0, 0, 0, 255))
+            for cell in runtime.revealed_cells:
+                fog_grid.fill((0, 0, 0, 140), pygame.Rect(cell[0], cell[1], 1, 1))
+            for cell in runtime.visible_cells:
+                fog_grid.fill((0, 0, 0, 0), pygame.Rect(cell[0], cell[1], 1, 1))
+            runtime.fog_surface = pygame.transform.scale(
+                fog_grid,
+                (int(fog_width * cell_size), int(fog_height * cell_size)),
+            )
+            runtime.fog_size = (fog_width, fog_height)
+            runtime.fog_dirty = False
 
-        cell_size = max(2, int(runtime.layout.geometry.cell_size))
-        half = cell_size * 0.5
-        for cell in runtime.revealed_cells:
-            center = runtime.layout.cell_center(cell) + camera_offset
-            rect = pygame.Rect(int(center.x - half), int(center.y - half), cell_size, cell_size)
-            fog.fill((0, 0, 0, 140), rect)
+        fog_surface = runtime.fog_surface
+        if fog_surface is None:
+            return
+        screen.blit(fog_surface, (int(camera_offset.x), int(camera_offset.y)))
 
-        for cell in runtime.visible_cells:
-            center = runtime.layout.cell_center(cell) + camera_offset
-            rect = pygame.Rect(int(center.x - half), int(center.y - half), cell_size, cell_size)
-            fog.fill((0, 0, 0, 0), rect)
-
-        screen.blit(fog, (0, 0))
+    def _render_dungeon_walls(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
+        runtime = self.world.runtime_state.get("dungeon_runtime")
+        if not isinstance(runtime, DungeonRuntimeState):
+            return
+        if runtime.wall_surface is None:
+            return
+        screen.blit(runtime.wall_surface, (int(camera_offset.x), int(camera_offset.y)))
 
     def _render_dungeon_background(self, screen: pygame.Surface) -> None:
         screen.fill((20, 26, 34))

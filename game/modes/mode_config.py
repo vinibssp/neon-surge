@@ -179,6 +179,9 @@ class DungeonsConfig:
     room_min_size: int = 5
     room_max_size: int = 12
     corridor_width: int = 2
+    boss_spawn_min_distance_ratio: float = 0.65
+    min_rooms_before_boss: int = 13
+    visibility_update_interval: float = 0.08
     enemy_per_room_min: int = 1
     enemy_per_room_max: int = 3
     enemy_health_min: int = 2

@@ -1198,10 +1198,20 @@ class LabyrinthWallRenderStrategy:
             int(self.width),
             int(self.height),
         )
-        pygame.draw.rect(screen, self.fill_color, rect)
+        base = _brighten(self.fill_color, gain=1.06, bias=6)
+        accent = _darken(self.fill_color, 28)
+        outer = _brighten(self.edge_color, gain=1.12, bias=18)
+        inner = _brighten(self.edge_color, gain=1.2, bias=28)
 
-        outer = self.edge_color
-        inner = _brighten(self.edge_color, gain=1.08, bias=18)
+        pygame.draw.rect(screen, base, rect)
+
+        tile = max(8, min(rect.width, rect.height, 16))
+        if rect.width >= tile and rect.height >= tile:
+            for y in range(rect.top, rect.bottom, tile):
+                for x in range(rect.left, rect.right, tile):
+                    if ((x // tile) + (y // tile)) % 2 == 0:
+                        pygame.draw.rect(screen, accent, pygame.Rect(x, y, tile, tile))
+
         pygame.draw.rect(screen, outer, rect, width=max(2, self.line_thickness))
 
         inset = rect.inflate(-max(2, self.line_thickness), -max(2, self.line_thickness))
