@@ -12,7 +12,7 @@ from game.components.data_components import (
     RenderComponent,
     TransformComponent,
 )
-from game.config import BULLET_COLOR, BULLET_LIFETIME
+from game.config import BULLET_COLOR, BULLET_LIFETIME, ENEMY_BULLET_DAMAGE, ENEMY_MORTAR_DAMAGE
 from game.ecs.entity import Entity
 from game.rendering.strategies import CircleRenderStrategy, MortarTargetMarkerRenderStrategy
 
@@ -45,6 +45,7 @@ class BulletFactory:
                 owner_entity_id=owner_entity_id,
             )
         )
+        bullet.add_component(DamageComponent(amount=ENEMY_BULLET_DAMAGE))
         bullet.add_component(CollisionComponent(radius=radius, layer="bullet"))
         bullet.add_component(
             RenderComponent(
@@ -120,6 +121,7 @@ class BulletFactory:
             )
         )
         shell.add_component(BulletComponent(owner_tag="enemy", lifetime=BULLET_LIFETIME))
+        shell.add_component(DamageComponent(amount=ENEMY_MORTAR_DAMAGE))
         shell.add_component(
             MortarShellComponent(
                 target_position=Vector2(target),
@@ -174,6 +176,7 @@ class BulletFactory:
         pool.add_component(TransformComponent(position=Vector2(position)))
         pool.add_component(MovementComponent(velocity=Vector2(), input_direction=Vector2(), max_speed=0.0))
         pool.add_component(BulletComponent(owner_tag="enemy", lifetime=lifetime))
+        pool.add_component(DamageComponent(amount=ENEMY_BULLET_DAMAGE))
         pool.add_component(CollisionComponent(radius=radius, layer="bullet"))
         pool.add_component(
             RenderComponent(

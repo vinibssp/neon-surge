@@ -4,9 +4,10 @@ import math
 
 import pygame
 
-from game.components.data_components import CollisionComponent, RenderComponent, StaggeredComponent, TransformComponent
+from game.components.data_components import CollisionComponent, HealthComponent, RenderComponent, StaggeredComponent, TransformComponent
 from game.core.world import GameWorld
 from game.systems.world_queries import RENDERABLE_QUERY
+from game.config import HEALTH_BAR_BG_COLOR, HEALTH_BAR_ENEMY_COLOR, HEALTH_BAR_PLAYER_COLOR
 
 
 class RenderSystem:
@@ -23,6 +24,8 @@ class RenderSystem:
 
             render_transform = TransformComponent(position=transform.position + offset)
             render.render_strategy.render(screen, entity, render_transform)
+
+            self._render_health_bar(screen, entity, render_transform)
 
             stagger = entity.get_component(StaggeredComponent)
             collision = entity.get_component(CollisionComponent)
@@ -44,3 +47,27 @@ class RenderSystem:
                     int(render_transform.position.y - center[1]),
                 ),
             )
+
+    def _render_health_bar(self, screen: pygame.Surface, entity, transform: TransformComponent) -> None:
+        if not self.world.runtime_state.get("show_health_bars", True):
+            return
+        if not (entity.has_tag("enemy") or entity.has_tag("player")):
+            return
+        health = entity.get_component(HealthComponent)
+        if health is None or health.maximum <= 0.0:
+            return
+
+        ratio = max(0.0, min(1.0, health.current / health.maximum))
+        collision = entity.get_component(CollisionComponent)
+        radius = 12.0 if collision is None else collision.radius
+
+        bar_width = max(18, int(radius * 2.2))
+        bar_height = 5 if entity.has_tag("player") else 4
+        bar_x = int(transform.position.x - bar_width * 0.5)
+        bar_y = int(transform.position.y + radius + (8 if entity.has_tag("player") else 6))
+
+        fill_width = max(0, int(bar_width * ratio))
+        pygame.draw.rect(screen, HEALTH_BAR_BG_COLOR, (bar_x, bar_y, bar_width, bar_height))
+        if fill_width > 0:
+            color = HEALTH_BAR_PLAYER_COLOR if entity.has_tag("player") else HEALTH_BAR_ENEMY_COLOR
+            pygame.draw.rect(screen, color, (bar_x, bar_y, fill_width, bar_height))

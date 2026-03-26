@@ -43,6 +43,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Componentes como dados (sem regra pesada)
 - Consultas centralizadas em `WorldQuery`/`world_queries.py`
 - Evitar loops ad-hoc quando houver query reutilizável
+- `HealthComponent` e `DamageComponent` devem ser usados para dano e vida; barras de vida são responsabilidade de render
 
 ### Systems + Orquestração
 
