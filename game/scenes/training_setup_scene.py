@@ -4,6 +4,7 @@ import math
 from typing import Callable, Literal
 
 import pygame
+import pygame_gui
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.factories.enemy_factory import EnemyFactory
@@ -170,86 +171,51 @@ class TrainingSetupScene(BaseMenuScene):
         # Tabs
         self._tab_buttons: dict[TrainingTab, object] = {
             "enemy": create_button(
-                ButtonConfig(
-                    text="Inimigos",
-                    rect=pygame.Rect((SCREEN_WIDTH // 2 - 440, 150), (210, 40)),
-                    variant="tab_enemy",
-                ),
+                ButtonConfig(text="Inimigos", rect=pygame.Rect((SCREEN_WIDTH // 2 - 440, 150), (210, 40)), variant="tab_enemy"),
                 manager=self.ui_manager,
             ),
             "miniboss": create_button(
-                ButtonConfig(
-                    text="Minibosses",
-                    rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 150), (210, 40)),
-                    variant="tab_miniboss",
-                ),
+                ButtonConfig(text="Minibosses", rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 150), (210, 40)), variant="tab_miniboss"),
                 manager=self.ui_manager,
             ),
             "boss": create_button(
-                ButtonConfig(
-                    text="Bosses",
-                    rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 150), (200, 40)),
-                    variant="tab_boss",
-                ),
+                ButtonConfig(text="Bosses", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 150), (200, 40)), variant="tab_boss"),
                 manager=self.ui_manager,
             ),
             "event": create_button(
-                ButtonConfig(
-                    text="Eventos",
-                    rect=pygame.Rect((SCREEN_WIDTH // 2 + 220, 150), (200, 40)),
-                    variant="tab_event",
-                ),
+                ButtonConfig(text="Eventos", rect=pygame.Rect((SCREEN_WIDTH // 2 + 220, 150), (200, 40)), variant="tab_event"),
                 manager=self.ui_manager,
             ),
         }
 
         # Main Panel
         self._content_panel = create_panel(
-            PanelConfig(
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 200), (1000, 360)),
-                variant="card",
-            ),
+            PanelConfig(rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 200), (1000, 360)), variant="card"),
             manager=self.ui_manager,
         )
 
         # Table Headers
         self._header_name_label = create_label(
-            LabelConfig(
-                text="Entidade",
-                rect=pygame.Rect((20, 10), (220, 30)),
-                variant="header",
-            ),
-            manager=self.ui_manager,
-            container=self._content_panel,
+            LabelConfig(text="Entidade", rect=pygame.Rect((20, 10), (220, 30)), variant="header"),
+            manager=self.ui_manager, container=self._content_panel,
         )
         self._header_desc_label = create_label(
-            LabelConfig(
-                text="Descricao",
-                rect=pygame.Rect((250, 10), (450, 30)),
-                variant="header",
-            ),
-            manager=self.ui_manager,
-            container=self._content_panel,
+            LabelConfig(text="Descricao", rect=pygame.Rect((250, 10), (450, 30)), variant="header"),
+            manager=self.ui_manager, container=self._content_panel,
         )
         self._header_count_label = create_label(
-            LabelConfig(
-                text="Qtd",
-                rect=pygame.Rect((780, 10), (100, 30)),
-                variant="header",
-            ),
-            manager=self.ui_manager,
-            container=self._content_panel,
+            LabelConfig(text="Qtd", rect=pygame.Rect((780, 10), (100, 30)), variant="header"),
+            manager=self.ui_manager, container=self._content_panel,
         )
 
         # Rows
-        self._row_name_labels: list[object] = []
-        self._row_desc_labels: list[object] = []
-        self._row_minus_buttons: list[object] = []
-        self._row_count_labels: list[object] = []
-        self._row_plus_buttons: list[object] = []
+        self._row_name_labels = []
+        self._row_desc_labels = []
+        self._row_minus_buttons = []
+        self._row_count_labels = []
+        self._row_plus_buttons = []
 
-        row_y = 50
-        row_h = 45
+        row_y, row_h = 50, 45
         for i in range(self._rows_per_page):
             y = row_y + i * row_h
             self._row_name_labels.append(create_label(
@@ -260,24 +226,22 @@ class TrainingSetupScene(BaseMenuScene):
                 LabelConfig(text="-", rect=pygame.Rect((250, y), (450, 35))),
                 manager=self.ui_manager, container=self._content_panel
             ))
-            minus_btn = create_button(
+            m_btn = create_button(
                 ButtonConfig(text="-", rect=pygame.Rect((720, y), (45, 35)), variant="ghost"),
                 manager=self.ui_manager, container=self._content_panel
             )
-            self._row_minus_buttons.append(minus_btn)
+            self._row_minus_buttons.append(m_btn)
             self._row_count_labels.append(create_label(
                 LabelConfig(text="0", rect=pygame.Rect((775, y), (80, 35)), variant="value"),
                 manager=self.ui_manager, container=self._content_panel
             ))
-            plus_btn = create_button(
+            p_btn = create_button(
                 ButtonConfig(text="+", rect=pygame.Rect((865, y), (45, 35)), variant="ghost"),
                 manager=self.ui_manager, container=self._content_panel
             )
-            self._row_plus_buttons.append(plus_btn)
-            
-            # Register row actions
-            self._control_actions[minus_btn] = lambda idx=i: self._adjust_slot_count(idx, -1)
-            self._control_actions[plus_btn] = lambda idx=i: self._adjust_slot_count(idx, 1)
+            self._row_plus_buttons.append(p_btn)
+            self._control_actions[m_btn] = lambda idx=i: self._adjust_slot_count(idx, -1)
+            self._control_actions[p_btn] = lambda idx=i: self._adjust_slot_count(idx, 1)
 
         # Pagination
         self._page_label = create_label(
@@ -293,8 +257,7 @@ class TrainingSetupScene(BaseMenuScene):
             manager=self.ui_manager, container=self._content_panel
         )
 
-        # Event Interval Controls (Special for Event tab)
-        # Positioned at the bottom of content panel, but properly spaced
+        # Event Interval
         self._event_interval_panel = create_panel(
             PanelConfig(rect=pygame.Rect((200, 295), (600, 55)), variant="hud"),
             manager=self.ui_manager, container=self._content_panel
@@ -316,42 +279,25 @@ class TrainingSetupScene(BaseMenuScene):
             manager=self.ui_manager, container=self._event_interval_panel
         )
 
-        # Bottom Summary & Controls
+        # Bottom
         self._summary_label = create_label(
-            LabelConfig(
-                text="Total Selecionado: 0",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 570), (600, 30)),
-                variant="subtitle",
-            ),
+            LabelConfig(text="Total: 0", rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 570), (600, 30)), variant="subtitle"),
             manager=self.ui_manager,
         )
         self._keyboard_hint_label = create_label(
-            LabelConfig(
-                text="1-4: Abas | Q/E: Alternar | PgUp/Dn: Pagina | Enter: Iniciar | +/-: Ajustar",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 600), (1000, 25)),
-                variant="muted",
-            ),
+            LabelConfig(text="1-4: Abas | Q/E: Alternar | PgUp/Dn: Pagina | Enter: Iniciar | +/-: Ajustar | Mouse Wheel: Pagina | Dir: Ajuste Rapido", 
+                        rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 600), (1000, 25)), variant="muted"),
             manager=self.ui_manager,
         )
-
         self._start_button = create_button(
-            ButtonConfig(
-                text="INICIAR TREINO",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 630), (250, 50)),
-                variant="primary",
-            ),
+            ButtonConfig(text="INICIAR TREINO", rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 630), (250, 50)), variant="primary"),
             manager=self.ui_manager,
         )
         self._back_button = create_button(
-            ButtonConfig(
-                text="VOLTAR",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 630), (250, 50)),
-                variant="danger",
-            ),
+            ButtonConfig(text="VOLTAR", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 630), (250, 50)), variant="danger"),
             manager=self.ui_manager,
         )
 
-        # Register Global Actions
         self._control_actions.update({
             self._tab_buttons["enemy"]: lambda: self._switch_tab("enemy"),
             self._tab_buttons["miniboss"]: lambda: self._switch_tab("miniboss"),
@@ -366,11 +312,8 @@ class TrainingSetupScene(BaseMenuScene):
         })
 
     def _refresh_view(self) -> None:
-        """Update UI elements based on current state."""
-        # Keep track of current selection to restore it later
         old_sel = self.navigator.selected_control if self.navigator else None
 
-        # Update header labels based on tab
         if self._active_tab == "event":
             self._header_name_label.set_text("Evento")
             self._header_desc_label.set_text("Efeito")
@@ -382,7 +325,6 @@ class TrainingSetupScene(BaseMenuScene):
             self._header_count_label.set_text("Qtd")
             self._event_interval_panel.hide()
 
-        # Pagination logic
         kinds = list(self._event_options) if self._active_tab == "event" else self._kinds_by_tab[self._active_tab]
         max_page = max(0, math.ceil(len(kinds) / self._rows_per_page) - 1)
         current_page = min(self._page_index_by_tab[self._active_tab], max_page)
@@ -391,303 +333,184 @@ class TrainingSetupScene(BaseMenuScene):
         start = current_page * self._rows_per_page
         visible_kinds = kinds[start : start + self._rows_per_page]
 
-        # Update rows
         for i in range(self._rows_per_page):
             kind = visible_kinds[i] if i < len(visible_kinds) else None
             self._slot_kinds[i] = kind
             
-            name_lbl = self._row_name_labels[i]
-            desc_lbl = self._row_desc_labels[i]
-            minus_btn = self._row_minus_buttons[i]
-            count_lbl = self._row_count_labels[i]
-            plus_btn = self._row_plus_buttons[i]
+            n_lbl, d_lbl, m_btn, c_lbl, p_btn = self._row_name_labels[i], self._row_desc_labels[i], \
+                self._row_minus_buttons[i], self._row_count_labels[i], self._row_plus_buttons[i]
 
             if kind is None:
-                name_lbl.set_text("-")
-                desc_lbl.set_text("-")
-                count_lbl.set_text("-")
-                minus_btn.disable()
-                plus_btn.disable()
+                for ctrl in [n_lbl, d_lbl, c_lbl]: ctrl.set_text("-")
+                for btn in [m_btn, p_btn]: btn.disable()
                 continue
 
             if self._active_tab == "event":
-                name_lbl.set_text(EVENT_LABELS.get(kind, kind.title()))
+                n_lbl.set_text(EVENT_LABELS.get(kind, kind.title()))
                 is_active = self._selected_event == kind
-                
-                # Highlight active event status
-                count_lbl.set_text("ATIVO" if is_active else "-")
-                count_lbl.change_object_id(build_component_object_id("label", "highlight" if is_active else "value"))
-                
-                # Mute inactive descriptions
-                desc_lbl.set_text(EVENT_DESCRIPTIONS.get(kind, ""))
-                desc_lbl.change_object_id(build_component_object_id("label", "value" if is_active else "muted"))
-                
-                minus_btn.set_text("Ativar")
-                if is_active:
-                    minus_btn.disable()
-                else:
-                    minus_btn.enable()
-                plus_btn.hide()
+                c_lbl.set_text("ATIVO" if is_active else "-")
+                c_lbl.change_object_id(build_component_object_id("label", "highlight" if is_active else "value"))
+                d_lbl.set_text(EVENT_DESCRIPTIONS.get(kind, ""))
+                d_lbl.change_object_id(build_component_object_id("label", "value" if is_active else "muted"))
+                m_btn.set_text("Ativar"); m_btn.enable()
+                if is_active: m_btn.disable()
+                p_btn.hide()
             else:
-                name_lbl.set_text(kind.replace("_", " ").title())
-                desc_lbl.set_text(ENEMY_DESCRIPTIONS.get(kind, ""))
-                desc_lbl.change_object_id(build_component_object_id("label", None)) # Reset variant
+                n_lbl.set_text(kind.replace("_", " ").title())
+                d_lbl.set_text(ENEMY_DESCRIPTIONS.get(kind, ""))
+                d_lbl.change_object_id(build_component_object_id("label", None))
                 count = self._selected_counts.get(kind, 0)
-                count_lbl.set_text(str(count))
-                count_lbl.change_object_id(build_component_object_id("label", "value")) # Reset variant
-                minus_btn.set_text("-")
-                plus_btn.show()
-                plus_btn.enable() # Always enabled for focus stability
-                
-                if count <= 0: minus_btn.disable()
-                else: minus_btn.enable()
+                c_lbl.set_text(str(count))
+                c_lbl.change_object_id(build_component_object_id("label", "value"))
+                m_btn.set_text("-"); p_btn.show(); p_btn.enable()
+                if count <= 0: m_btn.disable()
+                else: m_btn.enable()
 
-        # Update page label and buttons
         self._page_label.set_text(f"Pagina {current_page + 1}/{max_page + 1}")
-        
         if self._active_tab == "event":
-            self._page_label.hide()
-            self._page_prev_button.hide()
-            self._page_next_button.hide()
+            for ctrl in [self._page_label, self._page_prev_button, self._page_next_button]: ctrl.hide()
         else:
-            self._page_label.show()
-            self._page_prev_button.show()
-            self._page_next_button.show()
+            for ctrl in [self._page_label, self._page_prev_button, self._page_next_button]: ctrl.show()
             if current_page <= 0: self._page_prev_button.disable()
             else: self._page_prev_button.enable()
             if current_page >= max_page: self._page_next_button.disable()
             else: self._page_next_button.enable()
 
-        # Update event interval
         self._event_interval_value_label.set_text(f"{self._selected_event_interval:.0f}s")
-        self._event_interval_minus_btn.enable()
-        self._event_interval_plus_btn.enable()
-
-        self._update_tab_highlights()
-        self._update_summary()
-        self._rebuild_navigator(old_sel)
+        self._update_tab_highlights(); self._update_summary(); self._rebuild_navigator(old_sel)
 
     def _update_tab_highlights(self) -> None:
-        """Highlight the active tab."""
         for cat, btn in self._tab_buttons.items():
             marker = ">> " if cat == self._active_tab else ""
             if cat == "event":
-                label = EVENT_LABELS.get(self._selected_event, "Aleatorio")
-                btn.set_text(f"{marker}Eventos ({label})")
+                btn.set_text(f"{marker}Eventos ({EVENT_LABELS.get(self._selected_event, 'Aleatorio')})")
             else:
                 total = sum(self._selected_counts[k] for k in self._kinds_by_tab[cat])
                 btn.set_text(f"{marker}{ENEMY_CATEGORY_LABELS[cat]} ({total})")
 
     def _update_summary(self) -> None:
         total = sum(self._selected_counts.values())
-        event = EVENT_LABELS.get(self._selected_event, "Aleatorio")
-        self._summary_label.set_text(
-            f"Selecionados: {total} | Evento: {event} | Intervalo: {self._selected_event_interval:.0f}s"
-        )
+        self._summary_label.set_text(f"Selecionados: {total} | Evento: {EVENT_LABELS.get(self._selected_event, 'Aleatorio')} | Intervalo: {self._selected_event_interval:.0f}s")
         if total <= 0: self._start_button.disable()
         else: self._start_button.enable()
 
     def _switch_tab(self, tab: TrainingTab) -> None:
-        self._active_tab = tab
-        self._refresh_view()
+        self._active_tab = tab; self._refresh_view()
 
     def _change_page(self, delta: int) -> None:
         kinds = list(self._event_options) if self._active_tab == "event" else self._kinds_by_tab[self._active_tab]
         max_page = max(0, math.ceil(len(kinds) / self._rows_per_page) - 1)
-        current = self._page_index_by_tab[self._active_tab]
-        self._page_index_by_tab[self._active_tab] = max(0, min(max_page, current + delta))
+        self._page_index_by_tab[self._active_tab] = max(0, min(max_page, self._page_index_by_tab[self._active_tab] + delta))
         self._refresh_view()
 
     def _adjust_slot_count(self, slot_idx: int, delta: int) -> None:
         kind = self._slot_kinds[slot_idx]
-        if kind is None: return
-
-        if self._active_tab == "event":
-            self._selected_event = kind
-        else:
-            current = self._selected_counts.get(kind, 0)
-            max_c = self._max_count_by_tab[self._active_tab]
-            self._selected_counts[kind] = max(0, min(max_c, current + delta))
-        
-        self._refresh_view()
+        if kind:
+            if self._active_tab == "event": self._selected_event = kind
+            else:
+                self._selected_counts[kind] = max(0, min(self._max_count_by_tab[self._active_tab], self._selected_counts.get(kind, 0) + delta))
+            self._refresh_view()
 
     def _adjust_event_interval(self, delta: float) -> None:
-        updated = self._selected_event_interval + delta
-        self._selected_event_interval = max(self._event_interval_min, min(self._event_interval_max, updated))
+        self._selected_event_interval = max(self._event_interval_min, min(self._event_interval_max, self._selected_event_interval + delta))
         self._refresh_view()
 
     def _rebuild_navigator(self, old_sel: object | None = None) -> None:
-        """Sync UINavigator with current visible controls."""
-        controls: list[object] = []
-        # Tab buttons are NOT focusable via keyboard navigation (switched via Q/E)
-        # but are clickable by mouse.
-
-        if self._active_tab == "event":
-            for btn in self._row_minus_buttons:
-                if btn.is_enabled: controls.append(btn)
-            controls.extend([self._event_interval_minus_btn, self._event_interval_plus_btn])
-        else:
-            controls.extend([self._page_prev_button, self._page_next_button])
-            # Focus only plus_btn for rows to maintain vertical list
-            for p in self._row_plus_buttons:
-                if p.is_enabled: controls.append(p)
-
+        controls = [self._tab_buttons[t] for t in self._tab_order]
+        if self._active_tab != "event": controls.extend([self._page_prev_button, self._page_next_button])
+        for i in range(self._rows_per_page):
+            if self._slot_kinds[i]:
+                controls.append(self._row_minus_buttons[i])
+                if self._active_tab != "event": controls.append(self._row_plus_buttons[i])
+        if self._active_tab == "event": controls.extend([self._event_interval_minus_btn, self._event_interval_plus_btn])
         controls.extend([self._start_button, self._back_button])
         
-        actions = {c: self._control_actions[c] for c in controls if c in self._control_actions}
-        self.set_navigator(controls=controls, actions=actions, on_cancel=self._close)
-        
-        # Restore focus
-        if old_sel and self.navigator and old_sel in controls:
-            self.navigator.select_index(controls.index(old_sel))
-        elif self.navigator and not self.navigator.selected_control and controls:
-            self.navigator.select_index(0)
+        self.set_navigator(controls=controls, actions={c: self._control_actions[c] for c in controls if c in self._control_actions}, on_cancel=self._close)
+        if old_sel in controls: self.navigator.select_index(controls.index(old_sel))
+        elif not self.navigator.selected_control and controls: self.navigator.select_index(min(len(controls)-1, 4 + (0 if self._active_tab == "event" else 2)))
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
-        filtered_events = []
-        for event in events:
-            consumed = False
-            if event.type == pygame.KEYDOWN:
-                consumed = self._handle_shortcuts(event.key)
-            if not consumed:
-                filtered_events.append(event)
-        super().handle_input(filtered_events)
+        filtered = []
+        for e in events:
+            if e.type == pygame.MOUSEWHEEL: self._change_page(-e.y); continue
+            if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_ON_HOVERED:
+                if self.navigator and e.ui_element in self.navigator.controls: self.navigator.select_index(self.navigator.controls.index(e.ui_element))
+            if e.type == pygame.MOUSEBUTTONDOWN and e.button == 3: self._handle_right_click(e.pos); continue
+            if e.type == pygame.KEYDOWN and self._handle_shortcuts(e.key): continue
+            filtered.append(e)
+        super().handle_input(filtered)
 
-    def _handle_shortcuts(self, key: int) -> bool:
-        # Tab change shortcuts (Q/E and 1-4)
-        if key == pygame.K_1: self._switch_tab("enemy"); return True
-        if key == pygame.K_2: self._switch_tab("miniboss"); return True
-        if key == pygame.K_3: self._switch_tab("boss"); return True
-        if key == pygame.K_4: self._switch_tab("event"); return True
-        if key == pygame.K_q: self._switch_tab_by_offset(-1); return True
-        if key == pygame.K_e: self._switch_tab_by_offset(1); return True
-        
-        # Navigation shortcuts
-        if key == pygame.K_PAGEUP: self._change_page(-1); return True
-        if key == pygame.K_PAGEDOWN: self._change_page(1); return True
-        
-        # Strictly Vertical Navigation (W/S and Up/Down)
-        if key in (pygame.K_w, pygame.K_UP):
-            return self._navigate_vertically(-1)
-        if key in (pygame.K_s, pygame.K_DOWN):
-            return self._navigate_vertically(1)
-            
-        # Horizontal Navigation / Adjustment (A/D and Left/Right)
-        if key in (pygame.K_a, pygame.K_LEFT):
-            return self._navigate_horizontally(-1)
-        if key in (pygame.K_d, pygame.K_RIGHT):
-            return self._navigate_horizontally(1)
-            
-        # Plus/Minus shortcuts
-        if key in (pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS):
-            self._adjust_selected_control(1); return True
-        if key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-            self._adjust_selected_control(-1); return True
-
+    def _handle_right_click(self, pos: tuple[int, int]) -> bool:
+        for btn in self._row_plus_buttons:
+            if btn.rect.collidepoint(pos): self._adjust_slot_count(self._row_plus_buttons.index(btn), 5); return True
+        for btn in self._row_minus_buttons:
+            if btn.rect.collidepoint(pos):
+                k = self._slot_kinds[self._row_minus_buttons.index(btn)]
+                if k and self._active_tab != "event": self._selected_counts[k] = 0; self._refresh_view()
+                return True
+        for b, v in [(self._event_interval_plus_btn, 10), (self._event_interval_minus_btn, -10)]:
+            if b.rect.collidepoint(pos): self._adjust_event_interval(v); return True
         return False
 
-    def _navigate_vertically(self, delta: int) -> bool:
-        if not self.navigator or not self.navigator.selected_control: return False
-        ctrl = self.navigator.selected_control
-        controls = list(self.navigator.controls)
-        
-        # Define functional blocks
-        pagination = [self._page_prev_button, self._page_next_button]
-        rows = [r for r in (self._row_plus_buttons if self._active_tab != "event" else self._row_minus_buttons) if r in controls]
-        event_ctrls = [self._event_interval_minus_btn, self._event_interval_plus_btn]
-        bottom = [self._start_button, self._back_button]
-
-        target = None
-        if ctrl in pagination:
-            if delta > 0: target = rows[0] if rows else bottom[0]
-            else: target = bottom[0]
-        elif ctrl in rows:
-            idx = rows.index(ctrl)
-            if delta > 0:
-                if idx < len(rows) - 1: target = rows[idx + 1]
-                elif self._active_tab == "event": target = event_ctrls[0]
-                else: target = bottom[0]
-            else:
-                if idx > 0: target = rows[idx - 1]
-                elif self._active_tab != "event": target = pagination[0]
-                else: target = bottom[-1]
-        elif ctrl in event_ctrls:
-            if delta > 0: target = bottom[0]
-            else: target = rows[-1] if rows else pagination[0]
-        elif ctrl in bottom:
-            if delta < 0:
-                if self._active_tab == "event": target = event_ctrls[0]
-                elif rows: target = rows[-1]
-                else: target = pagination[0]
-            else:
-                if self._active_tab != "event": target = pagination[0]
-                elif rows: target = rows[0]
-        
-        if target and target in controls:
-            self.navigator.select_index(controls.index(target))
-            return True
+    def _handle_shortcuts(self, k: int) -> bool:
+        if k in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4]: self._switch_tab(self._tab_order[k - pygame.K_1]); return True
+        if k == pygame.K_q: self._switch_tab_by_offset(-1); return True
+        if k == pygame.K_e: self._switch_tab_by_offset(1); return True
+        if k == pygame.K_PAGEUP: self._change_page(-1); return True
+        if k == pygame.K_PAGEDOWN: self._change_page(1); return True
+        if k in [pygame.K_w, pygame.K_UP]: return self._navigate_vertically(-1)
+        if k in [pygame.K_s, pygame.K_DOWN]: return self._navigate_vertically(1)
+        if k in [pygame.K_a, pygame.K_LEFT]: return self._navigate_horizontally(-1)
+        if k in [pygame.K_d, pygame.K_RIGHT]: return self._navigate_horizontally(1)
+        if k in [pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS]: self._adjust_selected_control(1); return True
+        if k in [pygame.K_MINUS, pygame.K_KP_MINUS]: self._adjust_selected_control(-1); return True
         return False
 
-    def _navigate_horizontally(self, delta: int) -> bool:
+    def _navigate_vertically(self, d: int) -> bool:
         if not self.navigator or not self.navigator.selected_control: return False
-        ctrl = self.navigator.selected_control
-
-        # In rows, A/D only adjust values
-        cur_rows = self._row_plus_buttons if self._active_tab != "event" else self._row_minus_buttons
-        if ctrl in cur_rows:
-            self._adjust_slot_count(cur_rows.index(ctrl), delta)
-            return True
-        
-        # In event interval, A/D adjust
-        if ctrl in (self._event_interval_minus_btn, self._event_interval_plus_btn):
-            self._adjust_event_interval(delta * self._event_interval_step)
-            return True
-
-        # In other blocks (pagination, bottom), A/D moves focus
-        self.navigator.move_selection(delta)
+        ctrl, ctrls = self.navigator.selected_control, list(self.navigator.controls)
+        rows = [[self._tab_buttons[t] for t in self._tab_order]]
+        if self._active_tab != "event": rows.append([self._page_prev_button, self._page_next_button])
+        for i in range(self._rows_per_page):
+            r = []
+            if self._row_minus_buttons[i] in ctrls: r.append(self._row_minus_buttons[i])
+            if self._active_tab != "event" and self._row_plus_buttons[i] in ctrls: r.append(self._row_plus_buttons[i])
+            if r: rows.append(r)
+        if self._active_tab == "event": rows.append([self._event_interval_minus_btn, self._event_interval_plus_btn])
+        rows.append([self._start_button, self._back_button])
+        curr_r = next((i for i, r in enumerate(rows) if ctrl in r), -1)
+        if curr_r == -1: return False
+        t_row = rows[(curr_r + d) % len(rows)]
+        self.navigator.select_index(ctrls.index(t_row[min(rows[curr_r].index(ctrl), len(t_row)-1)]))
         return True
 
-    def _switch_tab_by_offset(self, offset: int) -> None:
-        idx = (self._tab_order.index(self._active_tab) + offset) % len(self._tab_order)
-        self._switch_tab(self._tab_order[idx])
-
-    def _adjust_selected_control(self, delta: int) -> bool:
-        if not self.navigator or not self.navigator.selected_control:
-            return False
-            
+    def _navigate_horizontally(self, d: int) -> bool:
+        if not self.navigator or not self.navigator.selected_control: return False
         ctrl = self.navigator.selected_control
-        if ctrl in self._row_minus_buttons:
-            self._adjust_slot_count(self._row_minus_buttons.index(ctrl), delta)
-            return True
-        if ctrl in self._row_plus_buttons:
-            self._adjust_slot_count(self._row_plus_buttons.index(ctrl), delta)
-            return True
-        if ctrl in (self._event_interval_minus_btn, self._event_interval_plus_btn):
-            self._adjust_event_interval(delta * self._event_interval_step)
-            return True
+        rows = [[self._row_minus_buttons[i], self._row_plus_buttons[i]] for i in range(self._rows_per_page)] + [[self._event_interval_minus_btn, self._event_interval_plus_btn]]
+        for r in rows:
+            if ctrl in r:
+                t_idx = r.index(ctrl) + d
+                if 0 <= t_idx < len(r): 
+                    if r[t_idx] in self.navigator.controls: self.navigator.select_index(self.navigator.controls.index(r[t_idx])); return True
+                self._adjust_selected_control(d); return True
+        self.navigator.move_selection(d); return True
+
+    def _switch_tab_by_offset(self, o: int) -> None: self._switch_tab(self._tab_order[(self._tab_order.index(self._active_tab) + o) % len(self._tab_order)])
+
+    def _adjust_selected_control(self, d: int) -> bool:
+        ctrl = self.navigator.selected_control
+        if ctrl in self._row_minus_buttons: self._adjust_slot_count(self._row_minus_buttons.index(ctrl), d); return True
+        if ctrl in self._row_plus_buttons: self._adjust_slot_count(self._row_plus_buttons.index(ctrl), d); return True
+        if ctrl in [self._event_interval_minus_btn, self._event_interval_plus_btn]: self._adjust_event_interval(d * self._event_interval_step); return True
         return False
-
-
 
     def _start_training(self) -> None:
         plan = {k: v for k, v in self._selected_counts.items() if v > 0}
-        if not plan: return
-        
-        from game.scenes.game_scene import GameScene
-        event = None if self._selected_event == "random" else self._selected_event
-        self.stack.replace(GameScene(self.stack, TrainingMode(
-            spawn_plan=plan,
-            config=TrainingConfig(
-                forced_environment_event=event,
-                env_event_interval=self._selected_event_interval
-            )
-        )))
+        if plan:
+            from game.scenes.game_scene import GameScene
+            self.stack.replace(GameScene(self.stack, TrainingMode(spawn_plan=plan, config=TrainingConfig(forced_environment_event=None if self._selected_event == "random" else self._selected_event, env_event_interval=self._selected_event_interval))))
 
-    def _close(self) -> None:
-        self.stack.pop()
-
-    def on_menu_update(self, dt: float) -> None:
-        self._elapsed_time += dt
-
-    def render_menu_background(self, screen: pygame.Surface) -> None:
-        self._background_renderer.render(screen, self._elapsed_time, SCREEN_WIDTH, SCREEN_HEIGHT)
+    def _close(self) -> None: self.stack.pop()
+    def on_menu_update(self, dt: float) -> None: self._elapsed_time += dt
+    def render_menu_background(self, screen: pygame.Surface) -> None: self._background_renderer.render(screen, self._elapsed_time, SCREEN_WIDTH, SCREEN_HEIGHT)
