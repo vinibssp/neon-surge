@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from game.components.data_components import BehaviorComponent, StaggeredComponent
+from game.components.data_components import BehaviorComponent, DormantComponent, StaggeredComponent
 from game.core.world import GameWorld
 from game.systems.world_queries import ENEMY_BEHAVIOR_QUERY
 
@@ -11,6 +11,9 @@ class FollowSystem:
 
     def update(self, dt: float) -> None:
         for entity in self.world.query(ENEMY_BEHAVIOR_QUERY):
+            dormant = entity.get_component(DormantComponent)
+            if dormant is not None and not dormant.active:
+                continue
             stagger = entity.get_component(StaggeredComponent)
             if stagger is not None and stagger.time_left > 0.0:
                 continue

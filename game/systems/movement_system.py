@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from game.components.data_components import DashComponent, MovementComponent, TransformComponent
+from game.components.data_components import DashComponent, DormantComponent, MovementComponent, TransformComponent
 from game.core.world import GameWorld
 from game.systems.world_queries import MOVABLE_QUERY
 
@@ -14,6 +14,12 @@ class MovementSystem:
             transform = entity.get_component(TransformComponent)
             movement = entity.get_component(MovementComponent)
             if transform is None or movement is None:
+                continue
+
+            dormant = entity.get_component(DormantComponent)
+            if dormant is not None and not dormant.active:
+                movement.velocity.update(0, 0)
+                movement.input_direction.update(0, 0)
                 continue
 
             dash = entity.get_component(DashComponent)

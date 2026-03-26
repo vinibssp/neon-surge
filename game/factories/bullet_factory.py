@@ -3,6 +3,7 @@ from __future__ import annotations
 from pygame import Vector2
 
 from game.components.data_components import (
+    DamageComponent,
     BulletComponent,
     CollisionComponent,
     LifetimeComponent,
@@ -54,6 +55,44 @@ class BulletFactory:
                     pulse_speed=16.0,
                     projectile_variant="shard",
                     trail_length=3,
+                )
+            )
+        )
+        return bullet
+
+    @staticmethod
+    def create_player_bullet(
+        origin: Vector2,
+        direction: Vector2,
+        speed: float,
+        radius: float,
+        damage: float,
+        color: tuple[int, int, int],
+    ) -> Entity:
+        bullet = Entity()
+        bullet.add_tag("bullet")
+        bullet.add_tag("player_bullet")
+        bullet.add_component(TransformComponent(position=Vector2(origin)))
+        normalized = direction.normalize() if direction.length_squared() > 0 else Vector2(1, 0)
+        bullet.add_component(
+            MovementComponent(
+                velocity=normalized * speed,
+                input_direction=normalized,
+                max_speed=speed,
+            )
+        )
+        bullet.add_component(BulletComponent(owner_tag="player", lifetime=BULLET_LIFETIME))
+        bullet.add_component(DamageComponent(amount=damage))
+        bullet.add_component(CollisionComponent(radius=radius, layer="bullet"))
+        bullet.add_component(
+            RenderComponent(
+                render_strategy=CircleRenderStrategy(
+                    color=color,
+                    radius=radius,
+                    style="projectile",
+                    pulse_speed=14.0,
+                    projectile_variant="orb",
+                    trail_length=2,
                 )
             )
         )

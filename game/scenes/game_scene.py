@@ -9,6 +9,7 @@ import pygame
 from pygame import Vector2
 
 from game.components.data_components import TransformComponent
+from game.modes.dungeons_layout import DungeonRuntimeState
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import (
     AudioContextChanged,
@@ -126,18 +127,30 @@ class GameScene(Scene):
             self._commit_pending_game_over_transition()
 
     def render(self, screen: pygame.Surface) -> None:
-        self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.render_system.render(self._world_surface)
-        self._render_survival_lava_overlay(self._world_surface)
-        self._render_environment_event_overlay(self._world_surface)
-        self._render_explosion_fx(self._world_surface)
+        background_mode = self.world.runtime_state.get("background_mode")
+        if background_mode == "void":
+            self._world_surface.fill((0, 0, 0))
+        elif background_mode == "dungeon":
+            self._render_dungeon_background(self._world_surface)
+        else:
+            self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        camera_offset = self.world.runtime_state.get("camera_offset")
+        if not isinstance(camera_offset, pygame.Vector2):
+            camera_offset = pygame.Vector2()
+
+        self.render_system.render(self._world_surface, camera_offset)
+        self._render_survival_lava_overlay(self._world_surface, camera_offset)
+        self._render_environment_event_overlay(self._world_surface, camera_offset)
+        self._render_explosion_fx(self._world_surface, camera_offset)
+        self._render_dungeon_fog(self._world_surface, camera_offset)
 
         screen.fill((0, 0, 0))
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
         self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
 
-    def _render_survival_lava_overlay(self, screen: pygame.Surface) -> None:
+    def _render_survival_lava_overlay(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
         lava_state = self.world.runtime_state.get("survival_lava")
         if not isinstance(lava_state, dict):
             return
@@ -147,6 +160,8 @@ class GameScene(Scene):
         if not isinstance(region, tuple) or len(region) != 4:
             return
         rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+        rect.x += int(camera_offset.x)
+        rect.y += int(camera_offset.y)
         if rect.width <= 0 or rect.height <= 0:
             return
 
@@ -172,7 +187,7 @@ class GameScene(Scene):
         screen.blit(overlay, rect.topleft)
         pygame.draw.rect(screen, (255, 230, 120), rect, 2)
 
-    def _render_environment_event_overlay(self, screen: pygame.Surface) -> None:
+    def _render_environment_event_overlay(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
         event_state = self.world.runtime_state.get("environment_event")
         if not isinstance(event_state, dict):
             return
@@ -181,6 +196,8 @@ class GameScene(Scene):
         region = event_state.get("region")
         if isinstance(event_name, str) and isinstance(region, tuple) and len(region) == 4:
             rect = pygame.Rect(int(region[0]), int(region[1]), int(region[2]), int(region[3]))
+            rect.x += int(camera_offset.x)
+            rect.y += int(camera_offset.y)
             if event_name == "snow_drift":
                 surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
                 surface.fill((180, 220, 255, 70))
@@ -200,8 +217,8 @@ class GameScene(Scene):
         black_hole = event_state.get("black_hole")
         if not isinstance(black_hole, dict):
             return
-        x = int(float(black_hole.get("x", 0.0)))
-        y = int(float(black_hole.get("y", 0.0)))
+        x = int(float(black_hole.get("x", 0.0)) + camera_offset.x)
+        y = int(float(black_hole.get("y", 0.0)) + camera_offset.y)
         pull_radius = int(float(black_hole.get("pull_radius", 0.0)))
         consume_radius = int(float(black_hole.get("consume_radius", 0.0)))
         if pull_radius <= 0 or consume_radius <= 0:
@@ -260,8 +277,8 @@ class GameScene(Scene):
     def random_play_area_position(self) -> Vector2:
         padding = 60.0
         return Vector2(
-            random.uniform(padding, SCREEN_WIDTH - padding),
-            random.uniform(padding, SCREEN_HEIGHT - padding),
+            random.uniform(padding, max(padding, self.world.width - padding)),
+            random.uniform(padding, max(padding, self.world.height - padding)),
         )
 
     def open_game_over(
@@ -364,7 +381,7 @@ class GameScene(Scene):
                 active_fx.append(effect)
         self._explosion_fx = active_fx
 
-    def _render_explosion_fx(self, screen: pygame.Surface) -> None:
+    def _render_explosion_fx(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
         for effect in self._explosion_fx:
             progress = min(1.0, effect.age / max(0.001, effect.duration))
             radius = int(10 + effect.max_radius * progress)
@@ -380,7 +397,44 @@ class GameScene(Scene):
             pygame.draw.circle(overlay, (255, 242, 188, min(255, alpha + 20)), center, core_radius)
             pygame.draw.circle(overlay, (255, 140, 70, alpha), center, ring_radius, 3)
             pygame.draw.circle(overlay, (255, 210, 120, max(0, alpha - 40)), center, max(core_radius + 3, ring_radius - 8), 2)
-            screen.blit(overlay, (int(effect.position.x - size / 2), int(effect.position.y - size / 2)))
+            screen.blit(
+                overlay,
+                (
+                    int(effect.position.x + camera_offset.x - size / 2),
+                    int(effect.position.y + camera_offset.y - size / 2),
+                ),
+            )
+
+    def _render_dungeon_fog(self, screen: pygame.Surface, camera_offset: pygame.Vector2) -> None:
+        runtime = self.world.runtime_state.get("dungeon_runtime")
+        if not isinstance(runtime, DungeonRuntimeState):
+            return
+
+        fog = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        fog.fill((0, 0, 0, 255))
+
+        cell_size = max(2, int(runtime.layout.geometry.cell_size))
+        half = cell_size * 0.5
+        for cell in runtime.revealed_cells:
+            center = runtime.layout.cell_center(cell) + camera_offset
+            rect = pygame.Rect(int(center.x - half), int(center.y - half), cell_size, cell_size)
+            fog.fill((0, 0, 0, 140), rect)
+
+        for cell in runtime.visible_cells:
+            center = runtime.layout.cell_center(cell) + camera_offset
+            rect = pygame.Rect(int(center.x - half), int(center.y - half), cell_size, cell_size)
+            fog.fill((0, 0, 0, 0), rect)
+
+        screen.blit(fog, (0, 0))
+
+    def _render_dungeon_background(self, screen: pygame.Surface) -> None:
+        screen.fill((20, 26, 34))
+        grid_color = (40, 52, 66)
+        grid_step = 32
+        for x in range(0, SCREEN_WIDTH, grid_step):
+            pygame.draw.line(screen, grid_color, (x, 0), (x, SCREEN_HEIGHT), 1)
+        for y in range(0, SCREEN_HEIGHT, grid_step):
+            pygame.draw.line(screen, grid_color, (0, y), (SCREEN_WIDTH, y), 1)
 
     def _start_screen_shake(self, intensity: float, duration: float) -> None:
         self._shake_intensity = max(self._shake_intensity, intensity)

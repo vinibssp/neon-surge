@@ -149,6 +149,14 @@ class LabyrinthLevelProgressionStrategy(LevelProgressionStrategy):
         scene.setup_level(scene.world.level + 1)
 
 
+class DungeonsLevelProgressionStrategy(LevelProgressionStrategy):
+    def update(self, scene: "GameScene", dt: float) -> None:
+        del scene, dt
+
+    def on_level_portal_crossed(self, scene: "GameScene") -> None:
+        scene.setup_level(scene.world.level + 1)
+
+
 class TrainingLevelProgressionStrategy(LevelProgressionStrategy):
     def __init__(self, spawn_strategy: TrainingSpawnStrategy) -> None:
         self._spawn_strategy = spawn_strategy

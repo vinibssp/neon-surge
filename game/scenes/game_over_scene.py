@@ -74,7 +74,7 @@ class GameOverScene(BaseMenuScene):
             "SurvivalHardcore": "HARDCORE",
             "Labyrinth": "LABIRINTO"
         }
-        title_variant = "title" if len(title) <= 18 else "subtitle"
+        title_variant = "title" if len(title) <= 14 else "subtitle"
         mode_display = self._modes_display.get(self._mode_key, self._mode_key)
         subtitle_text = subtitle.strip()
         subtitle_is_redundant = subtitle_text.lower().startswith("tempo:") or subtitle_text.lower().startswith("nivel alcancado:")
@@ -103,7 +103,7 @@ class GameOverScene(BaseMenuScene):
             create_label(
                 LabelConfig(
                     text=title,
-                    rect=pygame.Rect((20, 20), (400, 56)),
+                    rect=pygame.Rect((10, 20), (420, 56)),
                     variant=title_variant,
                 ),
                 manager=self.ui_manager,

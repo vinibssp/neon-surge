@@ -230,3 +230,33 @@ class LabyrinthKeyComponent(Component):
 @dataclass
 class LabyrinthExitComponent(Component):
     unlocked: bool = False
+
+
+@dataclass
+class HealthComponent(Component):
+    current: float
+    maximum: float
+
+
+@dataclass
+class DamageComponent(Component):
+    amount: float
+
+
+@dataclass
+class DormantComponent(Component):
+    active: bool = False
+
+
+@dataclass
+class PlayerShootComponent(Component):
+    cooldown: float
+    bullet_speed: float
+    bullet_radius: float
+    bullet_color: tuple[int, int, int]
+    bullet_damage: float
+    cooldown_left: float = 0.0
+    requested: bool = False
+    aim_direction: Vector2 = field(default_factory=Vector2)
+
+

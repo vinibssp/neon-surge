@@ -74,7 +74,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 ### Strategy Pattern
 
 - Variabilidade por strategy em IA, modos de jogo e renderização
-- Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`, `TrainingMode`
+- Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`, `DungeonsMode`, `TrainingMode`
 - Cada modo define systems, spawn, progressão e HUD
 - Cada modo deve implementar `calcular_ranking(elapsed_time, reached_level) -> float` como contrato único de score para ranking
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
@@ -83,6 +83,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Evitar comportamento condicional por tipo dentro de systems centrais
 - Arquétipos de inimigo com estados especiais (ex.: suporte/buff, invulnerabilidade por fase, hazards persistentes) devem expor estado por componente e lógica em behavior/system dedicado
 - Novos padrões de combate devem priorizar behaviors dedicados e reutilizáveis (composição), evitando ramificações por tipo em systems globais
+- `DungeonsMode` usa layout procedural por salas + corredores, fog of war e camera centralizada; inimigos ficam inativos ate serem revelados
 
 
 ### Command Pattern

@@ -13,13 +13,16 @@ class RenderSystem:
     def __init__(self, world: GameWorld) -> None:
         self.world = world
 
-    def render(self, screen: pygame.Surface) -> None:
+    def render(self, screen: pygame.Surface, camera_offset: pygame.Vector2 | None = None) -> None:
+        offset = pygame.Vector2() if camera_offset is None else pygame.Vector2(camera_offset)
         for entity in self.world.query(RENDERABLE_QUERY):
             transform = entity.get_component(TransformComponent)
             render = entity.get_component(RenderComponent)
             if transform is None or render is None:
                 continue
-            render.render_strategy.render(screen, entity, transform)
+
+            render_transform = TransformComponent(position=transform.position + offset)
+            render.render_strategy.render(screen, entity, render_transform)
 
             stagger = entity.get_component(StaggeredComponent)
             collision = entity.get_component(CollisionComponent)
@@ -34,4 +37,10 @@ class RenderSystem:
             pygame.draw.circle(overlay, (tone, tone, tone, 118), center, max(2, int(collision.radius + 1)))
             ring_color = (255, 255, 255, 85) if pulse > 0.5 else (22, 22, 22, 95)
             pygame.draw.circle(overlay, ring_color, center, radius, 2)
-            screen.blit(overlay, (int(transform.position.x - center[0]), int(transform.position.y - center[1])))
+            screen.blit(
+                overlay,
+                (
+                    int(render_transform.position.x - center[0]),
+                    int(render_transform.position.y - center[1]),
+                ),
+            )
