@@ -94,7 +94,7 @@ class MixerBackend:
 
         try:
             if pygame.mixer.music.get_busy():
-                pygame.mixer.music.fadeout(max(0, fade_out_ms))
+                pygame.mixer.music.stop()
             self.play_music(
                 file_name=next_file_name,
                 loop=loop,
