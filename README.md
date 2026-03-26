@@ -73,6 +73,7 @@ Eventos de domínio seguem um barramento único:
 - systems publicam eventos em `EventBus`
 - consumidores transversais (ex.: áudio/UI) podem registrar handlers diretamente no `EventBus`
 - `GameScene` registra/desregistra handlers de gameplay em `on_enter()`/`on_exit()`
+- transições de cena acionadas por eventos de domínio (ex.: `PlayerDied`) são enfileiradas e aplicadas no fim do `update()` para manter fluidez
 
 ### 5) Factory Pattern + Registry
 
@@ -179,6 +180,8 @@ Para reduzir acoplamento e responsabilidades:
 - `post_update`
 
 Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplamento por ordem implícita de lista.
+
+Transições pesadas de UI (ex.: abertura de `GameOverScene`) são efetivadas fora do dispatch imediato de eventos, no fechamento do frame de update.
 
 ### 8) Command Pattern no Input
 

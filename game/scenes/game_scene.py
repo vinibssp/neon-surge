@@ -45,6 +45,15 @@ class ExplosionFxState:
     max_radius: float = 86.0
 
 
+@dataclass(frozen=True)
+class PendingGameOverTransition:
+    title: str
+    subtitle: str
+    retry_strategy_factory: Callable[[], GameModeStrategy]
+    death_cause: str | None
+    include_session_summary: bool
+
+
 class GameScene(Scene):
     def __init__(self, stack, mode: GameModeStrategy) -> None:
         super().__init__(stack)
@@ -72,6 +81,7 @@ class GameScene(Scene):
         self._shake_duration = 0.0
         self._shake_intensity = 0.0
         self._world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self._pending_game_over_transition: PendingGameOverTransition | None = None
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="game_scene_entered"))
@@ -96,6 +106,10 @@ class GameScene(Scene):
             command.execute(self.world.player, self.world)
 
     def update(self, dt: float) -> None:
+        if self._pending_game_over_transition is not None:
+            self._commit_pending_game_over_transition()
+            return
+
         self.elapsed_time += dt
         self.level_progression.update(self, dt)
         self.spawn_director.update(dt=dt, elapsed_time=self.elapsed_time)
@@ -104,6 +118,9 @@ class GameScene(Scene):
         self.world.apply_pending()
         self._update_screen_shake(dt)
         self._update_explosion_fx(dt)
+
+        if self._pending_game_over_transition is not None:
+            self._commit_pending_game_over_transition()
 
     def render(self, screen: pygame.Surface) -> None:
         self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -252,17 +269,30 @@ class GameScene(Scene):
         death_cause: str | None = None,
         include_session_summary: bool = False,
     ) -> None:
-        summary_stats = self.session_stats if include_session_summary else None
+        self._pending_game_over_transition = PendingGameOverTransition(
+            title=title,
+            subtitle=subtitle,
+            retry_strategy_factory=retry_strategy_factory,
+            death_cause=death_cause,
+            include_session_summary=include_session_summary,
+        )
+
+    def _commit_pending_game_over_transition(self) -> None:
+        pending = self._pending_game_over_transition
+        if pending is None:
+            return
+        self._pending_game_over_transition = None
+        summary_stats = self.session_stats if pending.include_session_summary else None
         self.stack.replace(
             GameOverScene(
                 self.stack,
                 reached_level=self.world.level,
-                title=title,
-                subtitle=subtitle,
-                retry_strategy_factory=retry_strategy_factory,
-                death_cause=death_cause,
+                title=pending.title,
+                subtitle=pending.subtitle,
+                retry_strategy_factory=pending.retry_strategy_factory,
+                death_cause=pending.death_cause,
                 session_stats=summary_stats,
-                elapsed_time=self.elapsed_time if include_session_summary else None,
+                elapsed_time=self.elapsed_time if pending.include_session_summary else None,
             )
         )
 

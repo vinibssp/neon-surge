@@ -35,6 +35,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Apenas a cena do topo processa `handle_input()` e `update()`
 - Overlays usam `transparent=True`
 - Cenas base de referência: `MainMenuScene`, `GameScene`, `PauseScene`, `GameOverScene`
+- Transições pesadas de cena iniciadas por eventos de domínio (ex.: `PlayerDied`) devem ser enfileiradas e efetivadas no fim do `update()` da cena atual
 
 ### ECS + Query API
 
@@ -49,6 +50,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - `GameScene` orquestra; não executa lógica de regra diretamente
 - `SystemPipeline` com fases explícitas: `pre_update`, `simulation`, `post_update`
 - Ordem determinada por prioridade explícita
+- Mudanças de cena disparadas durante handlers/eventos devem ser aplicadas fora do loop crítico de systems para evitar hitch na simulação
 
 ### Event Bus de Domínio
 
