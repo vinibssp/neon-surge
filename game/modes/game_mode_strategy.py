@@ -22,22 +22,35 @@ class GameModeStrategy(ABC):
     def on_player_death(self, scene: "GameScene") -> None:
         ...
 
-    @abstractmethod
     def mode_key(self) -> str:
-        ...
+        mapping = {
+            "RaceMode": "Race",
+            "RaceInfiniteMode": "RaceInfinite",
+            "SurvivalMode": "Survival",
+            "SurvivalHardcoreMode": "SurvivalHardcore",
+            "LabyrinthMode": "Labyrinth",
+            "OneVsOneMode": "OneVsOne",
+            "TrainingMode": "Training",
+        }
+        return mapping.get(type(self).__name__, type(self).__name__.replace("Mode", ""))
 
-    @abstractmethod
     def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
-        ...
+        return round(sum(value for _, value in self.score_breakdown(elapsed_time, reached_level, session_stats)), 2)
 
-    @abstractmethod
     def score_breakdown(
         self,
         elapsed_time: float,
         reached_level: int,
         session_stats: "GameSessionStats",
     ) -> list[tuple[str, float]]:
-        ...
+        portal_count = session_stats.spawn_portal_destroyed_total
+        collectible_count = session_stats.collectible_collected_total
+        return [
+            ("level", reached_level * 100.0),
+            ("collectibles", collectible_count * 5.0),
+            ("portals", portal_count * 10.0),
+            ("time_penalty", -elapsed_time),
+        ]
 
     @abstractmethod
     def configure_level(self, scene: "GameScene", level: int) -> None:

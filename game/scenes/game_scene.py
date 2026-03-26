@@ -31,6 +31,7 @@ from game.factories.player_factory import PlayerFactory
 from game.scenes.game_over_scene import GameOverScene
 from game.scenes.pause_scene import PauseScene
 from game.scenes.services import BackgroundRenderer, BossHudCard, HudRenderer
+from game.services.ranking_orchestrator import RankingOrchestrator
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.systems.render_system import RenderSystem
 from game.systems.spawn_director import SpawnDirector
@@ -52,6 +53,8 @@ class PendingGameOverTransition:
     retry_strategy_factory: Callable[[], GameModeStrategy]
     death_cause: str | None
     include_session_summary: bool
+    final_score: float
+    mode_key: str
 
 
 @dataclass
@@ -282,13 +285,20 @@ class GameScene(Scene):
         final_score: float | None = None,
         mode_key: str | None = None,
     ) -> None:
-        del final_score, mode_key
+        resolved_score = (
+            float(final_score)
+            if final_score is not None
+            else float(self.mode.calcular_ranking(self.elapsed_time, self.world.level, self.session_stats))
+        )
+        resolved_mode_key = self.mode.mode_key() if mode_key is None else mode_key
         self._pending_game_over_transition = PendingGameOverTransition(
             title=title,
             subtitle=subtitle,
             retry_strategy_factory=retry_strategy_factory,
             death_cause=death_cause,
             include_session_summary=include_session_summary,
+            final_score=resolved_score,
+            mode_key=resolved_mode_key,
         )
 
     def _commit_pending_game_over_transition(self) -> None:
@@ -297,6 +307,11 @@ class GameScene(Scene):
             return
         self._pending_game_over_transition = None
         summary_stats = self.session_stats if pending.include_session_summary else None
+        ranking_sync_handle = RankingOrchestrator().start(
+            mode=pending.mode_key,
+            score=pending.final_score,
+            limit=10,
+        )
         self.stack.replace(
             GameOverScene(
                 self.stack,
@@ -304,10 +319,12 @@ class GameScene(Scene):
                 title=pending.title,
                 subtitle=pending.subtitle,
                 retry_strategy_factory=pending.retry_strategy_factory,
-                mode_key=self.mode.mode_key(),
+                mode_key=pending.mode_key,
                 death_cause=pending.death_cause,
                 session_stats=summary_stats,
                 elapsed_time=self.elapsed_time if pending.include_session_summary else None,
+                final_score=pending.final_score,
+                ranking_sync_handle=ranking_sync_handle,
             )
         )
 
