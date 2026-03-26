@@ -149,6 +149,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - `TrainingMode` usa `TrainingSpawnStrategy` com plano declarativo (`enemy_kind -> quantidade`) definido na tela de treino
 - `TrainingMode` também inclui eventos ambientais periodicos (lava/neve/agua/nuvem de balas/buraco negro) com tuning dedicado em preset
 - `TrainingSetupScene` possui aba `Eventos` para selecionar o evento ambiental a testar (ou modo aleatorio) e ajustar o intervalo do evento em segundos, aplicado via `TrainingConfig`
+- navegação do menu de treino é contextual por aba (controles ativos mudam conforme categoria/eventos), mantendo foco previsivel no `UINavigator`
 - cada modo controla a política de spawn por categoria (`enemy`, `miniboss`, `boss`)
 - pools de roster são liberados por fase (nível/tempo) para evitar picos injustos no early game
 - sobrevivência/hardcore incluem hazard periódico de lava com fases de aviso, ativo e pisca no encerramento, surgindo em padrões variados por evento (pool, cross, lanes, ring, fork e checker)

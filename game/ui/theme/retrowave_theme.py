@@ -89,6 +89,70 @@ THEME_DATA = {
         }
     },
 
+    "button.tab_enemy": {
+        "colours": {
+            "normal_bg": "#112f15",
+            "hovered_bg": "#19461f",
+            "selected_bg": "#215f2a",
+            "active_bg": "#2a7834",
+            "normal_text": "#92f5a0",
+            "hovered_text": "#ddffe3",
+            "selected_text": "#ddffe3",
+            "normal_border": "#4ee06a",
+            "hovered_border": "#7ff08e",
+            "selected_border": "#b4f7bf"
+        },
+        "font": { "size": "16", "bold": "1" }
+    },
+
+    "button.tab_miniboss": {
+        "colours": {
+            "normal_bg": "#3c1030",
+            "hovered_bg": "#561848",
+            "selected_bg": "#711f60",
+            "active_bg": "#8b2878",
+            "normal_text": "#ff95dd",
+            "hovered_text": "#ffe4f8",
+            "selected_text": "#ffe4f8",
+            "normal_border": "#ff5ec8",
+            "hovered_border": "#ff95dd",
+            "selected_border": "#ffc3ec"
+        },
+        "font": { "size": "16", "bold": "1" }
+    },
+
+    "button.tab_boss": {
+        "colours": {
+            "normal_bg": "#3f1b04",
+            "hovered_bg": "#5b2808",
+            "selected_bg": "#75350b",
+            "active_bg": "#8f410f",
+            "normal_text": "#ffbd85",
+            "hovered_text": "#ffeddc",
+            "selected_text": "#ffeddc",
+            "normal_border": "#ff8e3a",
+            "hovered_border": "#ffad6b",
+            "selected_border": "#ffc89b"
+        },
+        "font": { "size": "16", "bold": "1" }
+    },
+
+    "button.tab_event": {
+        "colours": {
+            "normal_bg": "#0b2d33",
+            "hovered_bg": "#11424b",
+            "selected_bg": "#175761",
+            "active_bg": "#1f6c77",
+            "normal_text": "#9bf7ff",
+            "hovered_text": "#e6fdff",
+            "selected_text": "#e6fdff",
+            "normal_border": "#5de3f2",
+            "hovered_border": "#8aedf7",
+            "selected_border": "#bbf5fb"
+        },
+        "font": { "size": "16", "bold": "1" }
+    },
+
     "label": {
         "colours": {
             "normal_text": TEXT_MAIN,
@@ -153,6 +217,17 @@ THEME_DATA = {
             "name": "noto_sans",
             "size": "14",
             "bold": "0"
+        }
+    },
+
+    "label.header": {
+        "colours": {
+            "normal_text": ACCENT_BLUE
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "16",
+            "bold": "1"
         }
     },
 
