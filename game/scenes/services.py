@@ -193,6 +193,7 @@ class CyberpunkMenuBackgroundRenderer:
                 "velocity_x": math.cos(angle) * speed,
                 "velocity_y": math.sin(angle) * speed,
                 "lifetime": lifetime,
+                "trail_length": self._rng.uniform(120.0, 240.0),
             }
         )
 
@@ -229,6 +230,21 @@ class CyberpunkMenuBackgroundRenderer:
                 blue = int(25 + (20 * t2))
             pygame.draw.line(screen, (min(255, red), min(255, green), min(255, blue)), (0, y), (width, y))
 
+        # Layered nebula haze to deepen the sky.
+        nebula = pygame.Surface((width, height), pygame.SRCALPHA)
+        nebula_specs = (
+            (0.18, 0.25, 0.42, 0.16, (86, 26, 118, 36), 0.18),
+            (0.73, 0.21, 0.38, 0.14, (42, 95, 160, 30), -0.14),
+            (0.48, 0.30, 0.46, 0.18, (255, 88, 160, 24), 0.09),
+        )
+        for cx_ratio, cy_ratio, w_ratio, h_ratio, color, phase in nebula_specs:
+            osc_x = math.sin(elapsed_time * 0.16 + phase) * width * 0.018
+            osc_y = math.cos(elapsed_time * 0.12 + phase * 1.8) * height * 0.01
+            center = (int(width * cx_ratio + osc_x), int(horizon_y * cy_ratio + osc_y))
+            size = (int(width * w_ratio), int(height * h_ratio))
+            pygame.draw.ellipse(nebula, color, pygame.Rect(center[0] - size[0] // 2, center[1] - size[1] // 2, size[0], size[1]))
+        screen.blit(nebula, (0, 0))
+
         # 2. STARS (Twinkling)
         sky_height = max(1, int(horizon_y * 0.9))
         self._ensure_star_layout(width, sky_height)
@@ -240,6 +256,45 @@ class CyberpunkMenuBackgroundRenderer:
                 screen.set_at((star_x, star_y), color)
             else:
                 pygame.draw.circle(screen, color, (star_x, star_y), radius)
+
+        if elapsed_time >= self._next_shooting_star_time:
+            self._spawn_shooting_star(elapsed_time, width, sky_height)
+            self._next_shooting_star_time = elapsed_time + self._rng.uniform(1.6, 4.2)
+
+        if self._shooting_stars:
+            shooting_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+            active_shooting_stars: list[dict[str, float]] = []
+            for shooting_star in self._shooting_stars:
+                age = elapsed_time - shooting_star["start_time"]
+                lifetime = max(0.001, shooting_star["lifetime"])
+                if age < 0.0 or age > lifetime:
+                    continue
+
+                progress = age / lifetime
+                head_x = shooting_star["start_x"] + shooting_star["velocity_x"] * age
+                head_y = shooting_star["start_y"] + shooting_star["velocity_y"] * age
+                trail_scale = 0.65 + 0.35 * (1.0 - progress)
+                trail_length = shooting_star["trail_length"] * trail_scale
+                trail_ratio = trail_length / max(1.0, abs(shooting_star["velocity_x"]) + abs(shooting_star["velocity_y"]))
+                tail_x = head_x - shooting_star["velocity_x"] * trail_ratio
+                tail_y = head_y - shooting_star["velocity_y"] * trail_ratio
+
+                intensity = 1.0 - progress
+                trail_alpha = int(120 + 90 * intensity)
+                core_alpha = int(165 + 85 * intensity)
+
+                pygame.draw.line(
+                    shooting_surf,
+                    (126, 220, 255, trail_alpha),
+                    (int(tail_x), int(tail_y)),
+                    (int(head_x), int(head_y)),
+                    2,
+                )
+                pygame.draw.circle(shooting_surf, (236, 249, 255, core_alpha), (int(head_x), int(head_y)), 2)
+                active_shooting_stars.append(shooting_star)
+
+            self._shooting_stars = active_shooting_stars
+            screen.blit(shooting_surf, (0, 0))
 
         # 3. SEGMENTED SYNTHWAVE SUN
         sun_radius = int(min(width, height) * 0.18)
@@ -266,28 +321,92 @@ class CyberpunkMenuBackgroundRenderer:
             line_y = int(sun_radius * 2 * (i / 12))
             thickness = int(2 + (i * 1.2)) # Thicker lines at the bottom
             pygame.draw.rect(sun_surf, (0, 0, 0, 0), (0, line_y, sun_radius * 2, thickness))
+
+        if sun_center_text:
+            sun_font = pygame.font.Font(None, max(26, int(sun_radius * 0.95)))
+            sun_text = sun_font.render(sun_center_text, True, (255, 250, 195))
+            text_rect = sun_text.get_rect(center=(sun_radius, int(sun_radius * 0.92)))
+            sun_surf.blit(sun_text, text_rect)
         
         screen.blit(sun_surf, (center_x - sun_radius, sun_center_y - sun_radius), special_flags=pygame.BLEND_RGBA_ADD)
 
-        # 4. MOUNTAINS (Retro-Silicon)
-        mountain_points = []
-        for x in range(-100, width + 101, 60):
-            base = horizon_y
-            # Fractal-like peaks
-            peak = (40 if (x // 60) % 2 == 0 else 70) + (20 * math.sin(x * 0.05))
-            y = int(base - peak)
-            mountain_points.append((x, y))
+        # 4. MOUNTAINS (Layered)
+        mountain_layers = (
+            {
+                "step": 84,
+                "amplitude": 52,
+                "offset": 28,
+                "wave": 0.033,
+                "phase": 0.0,
+                "fill": (10, 4, 26),
+                "outline": (148, 80, 238, 155),
+            },
+            {
+                "step": 72,
+                "amplitude": 72,
+                "offset": 12,
+                "wave": 0.043,
+                "phase": 0.95,
+                "fill": (15, 2, 34),
+                "outline": (222, 66, 198, 210),
+            },
+        )
 
-        mountain_polygon = list(mountain_points)
-        mountain_polygon.append((width + 100, height))
-        mountain_polygon.append((-100, height))
-        pygame.draw.polygon(screen, (15, 0, 30), mountain_polygon)
-        # Mountain outlines
-        for i in range(1, len(mountain_points)):
-            pygame.draw.line(screen, (255, 0, 255, 180), mountain_points[i-1], mountain_points[i], 2)
+        for layer in mountain_layers:
+            mountain_points: list[tuple[int, int]] = []
+            step = int(layer["step"])
+            for x in range(-120, width + 121, step):
+                wave_peak = layer["amplitude"] * (0.55 + 0.45 * math.sin(x * layer["wave"] + elapsed_time * 0.12 + layer["phase"]))
+                jag = ((x // step) % 2) * 16
+                y = int(horizon_y - layer["offset"] - wave_peak - jag)
+                mountain_points.append((x, y))
 
-        # 5. HORIZON LINE
+            mountain_polygon = list(mountain_points)
+            mountain_polygon.append((width + 160, height))
+            mountain_polygon.append((-160, height))
+            pygame.draw.polygon(screen, layer["fill"], mountain_polygon)
+
+            for point_index in range(1, len(mountain_points)):
+                pygame.draw.line(screen, layer["outline"], mountain_points[point_index - 1], mountain_points[point_index], 2)
+
+            if len(mountain_points) > 4:
+                for point_index in range(1, len(mountain_points) - 1, 3):
+                    left = mountain_points[point_index - 1]
+                    peak = mountain_points[point_index]
+                    right = mountain_points[point_index + 1]
+                    cap_y = min(peak[1] + 8, horizon_y - 4)
+                    pygame.draw.polygon(
+                        screen,
+                        (255, 198, 244, 110),
+                        [(left[0], cap_y), peak, (right[0], cap_y)],
+                    )
+
+        # 5. HORIZON LINE + SKYLINE
+        horizon_glow = pygame.Surface((width, height), pygame.SRCALPHA)
+        for glow_index in range(9):
+            alpha = max(0, 64 - glow_index * 7)
+            pygame.draw.line(
+                horizon_glow,
+                (40, 245, 255, alpha),
+                (0, horizon_y + glow_index),
+                (width, horizon_y + glow_index),
+                1,
+            )
+        screen.blit(horizon_glow, (0, 0))
         pygame.draw.line(screen, (0, 255, 255), (0, horizon_y), (width, horizon_y), 3)
+
+        skyline = pygame.Surface((width, height), pygame.SRCALPHA)
+        city_step = max(22, width // 48)
+        for x in range(0, width, city_step):
+            wave = 0.5 + 0.5 * math.sin((x * 0.045) + elapsed_time * 0.12)
+            tower_h = int(16 + 30 * wave)
+            tower_w = max(4, int(city_step * 0.65))
+            base_y = horizon_y + 2
+            tower_rect = pygame.Rect(x, base_y - tower_h, tower_w, tower_h)
+            pygame.draw.rect(skyline, (8, 14, 30, 180), tower_rect)
+            if (x // city_step) % 3 != 0:
+                pygame.draw.rect(skyline, (76, 222, 246, 110), pygame.Rect(x + 1, base_y - tower_h + 3, max(2, tower_w - 3), 2))
+        screen.blit(skyline, (0, 0))
 
         # 6. PERSPECTIVE GRID
         grid_surf = pygame.Surface((width, height - horizon_y), pygame.SRCALPHA)
