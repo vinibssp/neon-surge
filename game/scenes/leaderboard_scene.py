@@ -27,7 +27,7 @@ class LeaderboardScene(BaseMenuScene):
             "SurvivalHardcore": "HARDCORE",
             "Labyrinth": "LABIRINTO"
         }
-        self._time_based_modes = {"Race", "Survival", "SurvivalHardcore", "OneVsOne", "Training"}
+        self._time_based_modes = {"OneVsOne", "Training"}
         
         self._setup_ui()
         self._fetch_data()

@@ -20,6 +20,7 @@ from game.systems.stagger_system import StaggerSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
+    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -35,7 +36,7 @@ class TrainingMode(GameModeStrategy):
     def on_player_death(self, scene: "GameScene") -> None:
         elapsed_time = float(scene.elapsed_time)
         reached_level = int(scene.world.level)
-        score = self.calcular_ranking(elapsed_time, reached_level)
+        score = self.calcular_ranking(elapsed_time, reached_level, scene.session_stats)
         death_cause = scene.world.runtime_state.get("last_death_cause")
         total_planned = sum(self.spawn_plan.values())
         remaining_to_spawn = self._spawn_strategy.remaining_to_spawn if self._spawn_strategy is not None else 0
@@ -51,9 +52,24 @@ class TrainingMode(GameModeStrategy):
             final_score=score,
         )
 
-    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+    def mode_key(self) -> str:
+        return "Training"
+
+    def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
+        return round(sum(points for _, points in self.score_breakdown(elapsed_time, reached_level, session_stats)), 2)
+
+    def score_breakdown(
+        self,
+        elapsed_time: float,
+        reached_level: int,
+        session_stats: "GameSessionStats",
+    ) -> list[tuple[str, float]]:
         del reached_level
-        return round(elapsed_time, 2)
+        portal_count = session_stats.spawn_portal_destroyed_total
+        return [
+            (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
+            (f"Portais ({portal_count}x5)", portal_count * 5.0),
+        ]
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         del scene, level

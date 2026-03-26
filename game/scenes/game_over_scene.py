@@ -10,7 +10,7 @@ from game.core.events import AudioContextChanged
 from game.core.session_stats import GameSessionStats
 from game.modes.game_mode_strategy import GameModeStrategy
 from game.scenes.menus._base_menu_scene import BaseMenuScene
-from game.services.ranking_service import RankingService
+from game.services.ranking_orchestrator import RankingSyncHandle
 from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_button, create_label, create_panel
 
 
@@ -22,10 +22,12 @@ class GameOverScene(BaseMenuScene):
         title: str,
         subtitle: str,
         retry_strategy_factory: Callable[[], GameModeStrategy],
+        mode_key: str,
         death_cause: str | None = None,
         session_stats: GameSessionStats | None = None,
         elapsed_time: float | None = None,
         final_score: float = 0.0,
+        ranking_sync_handle: RankingSyncHandle | None = None,
     ) -> None:
         super().__init__(stack)
         self.retry_strategy_factory = retry_strategy_factory
@@ -33,13 +35,19 @@ class GameOverScene(BaseMenuScene):
         self.session_stats = session_stats
         self.elapsed_time = elapsed_time
         self._last_score = float(final_score)
-        self._ranking_service = RankingService()
-        self._current_player = self._ranking_service.get_player_name() or "ANONIMO"
-        self._pending_global_data: list[dict] | None = None
+        self._mode_key = mode_key
+        self._ranking_sync_handle = ranking_sync_handle
+        self._last_snapshot_status = ""
         
-        # Obter nome do modo
         self._retry_mode_instance = self.retry_strategy_factory()
-        self._mode_name = self._retry_mode_instance.__class__.__name__.replace("Mode", "")
+        stats_for_breakdown = session_stats if session_stats is not None else GameSessionStats()
+        elapsed_for_breakdown = float(elapsed_time) if elapsed_time is not None else 0.0
+        score_breakdown = self._retry_mode_instance.score_breakdown(
+            elapsed_time=elapsed_for_breakdown,
+            reached_level=reached_level,
+            session_stats=stats_for_breakdown,
+        )
+        self._score_breakdown_lines = self._format_score_breakdown_lines(score_breakdown)
         
         # Display name mapping
         self._modes_display = {
@@ -49,7 +57,6 @@ class GameOverScene(BaseMenuScene):
             "SurvivalHardcore": "HARDCORE",
             "Labyrinth": "LABIRINTO"
         }
-        self._time_based_modes = {"Race", "Survival", "SurvivalHardcore", "OneVsOne", "Training"}
         title_variant = "title" if len(title) <= 18 else "subtitle"
         
         _labels: list[object] = []
@@ -153,7 +160,7 @@ class GameOverScene(BaseMenuScene):
             manager=self.ui_manager
         )
         
-        mode_display = self._modes_display.get(self._mode_name, self._mode_name)
+        mode_display = self._modes_display.get(self._mode_key, self._mode_key)
         create_label(
             LabelConfig(text=f"TOP 10 LOCAL - {mode_display}", rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
             manager=self.ui_manager,
@@ -167,15 +174,31 @@ class GameOverScene(BaseMenuScene):
 
         self.local_ranking_box = UITextBox(
             html_text="",
-            relative_rect=pygame.Rect((20, 70), (320, SCREEN_HEIGHT - 170)),
+            relative_rect=pygame.Rect((20, 70), (320, SCREEN_HEIGHT - 195)),
             manager=self.ui_manager,
             container=self.combat_panel,
         )
         self.global_ranking_box = UITextBox(
             html_text="<i>Sincronizando com a rede...</i>",
-            relative_rect=pygame.Rect((360, 70), (320, SCREEN_HEIGHT - 170)),
+            relative_rect=pygame.Rect((360, 70), (320, SCREEN_HEIGHT - 360)),
             manager=self.ui_manager,
             container=self.combat_panel
+        )
+        create_label(
+            LabelConfig(text="DETALHE DA PONTUACAO", rect=pygame.Rect((360, SCREEN_HEIGHT - 280), (320, 30)), variant="subtitle"),
+            manager=self.ui_manager,
+            container=self.combat_panel,
+        )
+        self.breakdown_box = UITextBox(
+            html_text=self._format_score_breakdown_html(self._score_breakdown_lines),
+            relative_rect=pygame.Rect((360, SCREEN_HEIGHT - 245), (320, 120)),
+            manager=self.ui_manager,
+            container=self.combat_panel,
+        )
+        self.sync_status_label = create_label(
+            LabelConfig(text="Status: sincronizando...", rect=pygame.Rect((20, SCREEN_HEIGHT - 120), (660, 30)), variant="muted"),
+            manager=self.ui_manager,
+            container=self.combat_panel,
         )
 
         self.set_navigator(
@@ -189,36 +212,43 @@ class GameOverScene(BaseMenuScene):
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="game_over", reason="game_over_entered"))
+        self._apply_snapshot()
 
-        self._ranking_service.save_local_score(
-            player_name=self._current_player,
-            mode=self._mode_name,
-            score=self._last_score,
-        )
-        local_list = self._ranking_service.get_local_top_10(self._mode_name)
+    def _apply_snapshot(self) -> None:
+        if self._ranking_sync_handle is None:
+            self.local_ranking_box.set_text("<i>Nenhum dado local.</i>")
+            self.global_ranking_box.set_text("<i>Sem sincronizacao global.</i>")
+            return
+
+        snapshot = self._ranking_sync_handle.get_snapshot()
+        if snapshot.status == self._last_snapshot_status:
+            return
+        self._last_snapshot_status = snapshot.status
+
         self.local_ranking_box.set_text(
-            self._format_ranking_html(local_list, self._current_player, self._last_score)
+            self._format_ranking_html(snapshot.local_entries, self._last_score, show_sync_status=True)
         )
-        self._ranking_service.enviar_e_buscar_global(
-            player_name=self._current_player,
-            mode=self._mode_name,
-            score=self._last_score,
-            callback=self._on_global_ranking_received,
-        )
+        if snapshot.global_entries:
+            self.global_ranking_box.set_text(
+                self._format_ranking_html(snapshot.global_entries, self._last_score, show_sync_status=False)
+            )
+        elif snapshot.status == "degraded":
+            self.global_ranking_box.set_text("<i>Falha na sincronizacao global.</i>")
+        else:
+            self.global_ranking_box.set_text("<i>Sincronizando com a rede...</i>")
 
-    def _on_global_ranking_received(self, lista_global: list[dict]) -> None:
-        self._pending_global_data = lista_global
+        if snapshot.status == "done":
+            self.sync_status_label.set_text(f"Status: sincronizado ({snapshot.synced_now} item(ns) enviados)")
+        elif snapshot.status == "degraded":
+            self.sync_status_label.set_text("Status: pendencias locais aguardando proxima sincronizacao")
+        else:
+            self.sync_status_label.set_text("Status: sincronizando ranking global...")
 
     def update(self, dt: float) -> None:
         super().update(dt)
-        if self._pending_global_data is not None:
-            global_data = self._pending_global_data
-            self._pending_global_data = None
-            self.global_ranking_box.set_text(
-                self._format_ranking_html(global_data, self._current_player, self._last_score)
-            )
+        self._apply_snapshot()
 
-    def _format_ranking_html(self, ranking_list: list[dict], current_player: str, current_score: float) -> str:
+    def _format_ranking_html(self, ranking_list: list[dict], current_score: float, show_sync_status: bool) -> str:
         if not ranking_list:
             return "<i>Nenhum registro.</i>"
 
@@ -229,8 +259,11 @@ class GameOverScene(BaseMenuScene):
                 item = top_10[index]
                 item_name = str(item.get("player_name", "ANONIMO"))
                 item_score = float(item.get("score", 0.0))
-                line = f"{index + 1}. {item_name} - {self._format_metric_value(item_score)}"
-                if item_name == current_player and item_score == current_score:
+                sync_suffix = ""
+                if show_sync_status:
+                    sync_suffix = " ✓" if bool(item.get("synced", False)) else " ⏳"
+                line = f"{index + 1}. {item_name} - {self._format_metric_value(item_score)}{sync_suffix}"
+                if abs(item_score - current_score) < 0.01:
                     line = f"<font color='#44ff44'>{line}</font>"
             else:
                 line = f"{index + 1}. ---"
@@ -239,14 +272,26 @@ class GameOverScene(BaseMenuScene):
         return "<br>".join(lines)
 
     def _metric_label(self) -> str:
-        if self._mode_name in self._time_based_modes:
-            return "Tempo"
         return "Score"
 
     def _format_metric_value(self, value: float) -> str:
-        if self._mode_name in self._time_based_modes:
-            return f"{value:.2f}s"
         return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
+
+    def _format_score_breakdown_lines(self, breakdown: list[tuple[str, float]]) -> list[str]:
+        if not breakdown:
+            return [f"Total: {self._format_metric_value(self._last_score)}"]
+        lines: list[str] = []
+        for label, points in breakdown:
+            points_prefix = "+" if points >= 0 else ""
+            lines.append(f"- {label}: {points_prefix}{self._format_metric_value(points)}")
+        lines.append(f"- Total: {self._format_metric_value(self._last_score)}")
+        return lines
+
+    @staticmethod
+    def _format_score_breakdown_html(lines: list[str]) -> str:
+        if not lines:
+            return "<i>Sem detalhamento.</i>"
+        return "<br>".join(lines)
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene

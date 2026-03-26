@@ -9,6 +9,7 @@ from game.modes.spawn_strategy import SpawnStrategy
 from game.systems.system_pipeline import SystemSpec
 
 if TYPE_CHECKING:
+    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -22,7 +23,20 @@ class GameModeStrategy(ABC):
         ...
 
     @abstractmethod
-    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+    def mode_key(self) -> str:
+        ...
+
+    @abstractmethod
+    def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
+        ...
+
+    @abstractmethod
+    def score_breakdown(
+        self,
+        elapsed_time: float,
+        reached_level: int,
+        session_stats: "GameSessionStats",
+    ) -> list[tuple[str, float]]:
         ...
 
     @abstractmethod

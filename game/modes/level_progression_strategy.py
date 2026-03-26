@@ -37,7 +37,7 @@ class RaceLevelProgressionStrategy(LevelProgressionStrategy):
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:
         if not self.config.infinite and scene.world.level >= self.config.total_levels:
-            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level, scene.session_stats)
             scene.open_game_over(
                 title="Corrida Completa",
                 subtitle=f"Tempo: {scene.elapsed_time:.2f}s",
@@ -106,7 +106,7 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
             return
         if self.current_enemy_index >= self.total_enemies - 1:
             self._completed = True
-            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level, scene.session_stats)
             scene.open_game_over(
                 title="1v1 Completo",
                 subtitle=f"Sobreviveu a {self.total_enemies} inimigos",
@@ -123,7 +123,7 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
         next_index = self.current_enemy_index + 1
         if next_index >= self.total_enemies:
             self._completed = True
-            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level, scene.session_stats)
             scene.open_game_over(
                 title="1v1 Completo",
                 subtitle=f"Sobreviveu a {self.total_enemies} inimigos",
@@ -166,7 +166,7 @@ class TrainingLevelProgressionStrategy(LevelProgressionStrategy):
             return
 
         self._completed = True
-        final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
+        final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level, scene.session_stats)
         scene.open_game_over(
             title="Treino Completo",
             subtitle=f"Derrotou {self._spawn_strategy.total_planned} inimigos selecionados",

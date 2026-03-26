@@ -17,6 +17,7 @@ from game.systems.shoot_system import ShootSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
+    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -32,7 +33,7 @@ class OneVsOneMode(GameModeStrategy):
     def on_player_death(self, scene: "GameScene") -> None:
         elapsed_time = float(scene.elapsed_time)
         reached_level = int(scene.world.level)
-        score = self.calcular_ranking(elapsed_time, reached_level)
+        score = self.calcular_ranking(elapsed_time, reached_level, scene.session_stats)
         defeated_count = 0
         if self._progression is not None:
             defeated_count = max(0, self._progression.current_enemy_index)
@@ -46,9 +47,24 @@ class OneVsOneMode(GameModeStrategy):
             final_score=score,
         )
 
-    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+    def mode_key(self) -> str:
+        return "OneVsOne"
+
+    def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
+        return round(sum(points for _, points in self.score_breakdown(elapsed_time, reached_level, session_stats)), 2)
+
+    def score_breakdown(
+        self,
+        elapsed_time: float,
+        reached_level: int,
+        session_stats: "GameSessionStats",
+    ) -> list[tuple[str, float]]:
         del reached_level
-        return round(elapsed_time, 2)
+        portal_count = session_stats.spawn_portal_destroyed_total
+        return [
+            (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
+            (f"Portais ({portal_count}x5)", portal_count * 5.0),
+        ]
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         del scene, level
