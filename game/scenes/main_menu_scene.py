@@ -29,7 +29,7 @@ class MainMenuScene(BaseMenuScene):
         title = create_label(
             LabelConfig(
                 text="NEON SURGE 2",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 190, 120), (380, 64)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 116), (440, 72)),
                 variant="title",
             ),
             manager=self.ui_manager,

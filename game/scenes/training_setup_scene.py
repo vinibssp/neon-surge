@@ -117,7 +117,7 @@ class TrainingSetupScene(BaseMenuScene):
         title = create_label(
             LabelConfig(
                 text="TREINO PERSONALIZADO",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 72), (520, 56)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 68), (600, 68)),
                 object_id="training_title_label",
             ),
             manager=self.ui_manager,

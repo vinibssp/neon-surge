@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import random
 
+from game.components.data_components import LifetimeComponent
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.factories.enemy_factory import EnemyFactory
