@@ -365,6 +365,9 @@ class TrainingSetupScene(BaseMenuScene):
 
     def _refresh_view(self) -> None:
         """Update UI elements based on current state."""
+        # Keep track of current selection to restore it later
+        old_sel = self.navigator.selected_control if self.navigator else None
+
         # Update header labels based on tab
         if self._active_tab == "event":
             self._header_name_label.set_text("Evento")
@@ -423,12 +426,10 @@ class TrainingSetupScene(BaseMenuScene):
                 count_lbl.set_text(str(count))
                 minus_btn.set_text("-")
                 plus_btn.show()
+                plus_btn.enable() # Always enabled for focus stability
                 
                 if count <= 0: minus_btn.disable()
                 else: minus_btn.enable()
-                
-                if count >= self._max_count_by_tab[self._active_tab]: plus_btn.disable()
-                else: plus_btn.enable()
 
         # Update page label and buttons
         self._page_label.set_text(f"Pagina {current_page + 1}/{max_page + 1}")
@@ -439,14 +440,12 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Update event interval
         self._event_interval_value_label.set_text(f"{self._selected_event_interval:.0f}s")
-        if self._selected_event_interval <= self._event_interval_min: self._event_interval_minus_btn.disable()
-        else: self._event_interval_minus_btn.enable()
-        if self._selected_event_interval >= self._event_interval_max: self._event_interval_plus_btn.disable()
-        else: self._event_interval_plus_btn.enable()
+        self._event_interval_minus_btn.enable()
+        self._event_interval_plus_btn.enable()
 
         self._update_tab_highlights()
         self._update_summary()
-        self._rebuild_navigator()
+        self._rebuild_navigator(old_sel)
 
     def _update_tab_highlights(self) -> None:
         """Highlight the active tab."""
@@ -497,14 +496,11 @@ class TrainingSetupScene(BaseMenuScene):
         self._selected_event_interval = max(self._event_interval_min, min(self._event_interval_max, updated))
         self._refresh_view()
 
-    def _rebuild_navigator(self) -> None:
+    def _rebuild_navigator(self, old_sel: object | None = None) -> None:
         """Sync UINavigator with current visible controls."""
-        controls: list[object] = [
-            self._tab_buttons["enemy"],
-            self._tab_buttons["miniboss"],
-            self._tab_buttons["boss"],
-            self._tab_buttons["event"],
-        ]
+        controls: list[object] = []
+        # Tab buttons are NOT focusable via keyboard navigation (switched via Q/E)
+        # but are clickable by mouse.
 
         if self._active_tab == "event":
             for btn in self._row_minus_buttons:
@@ -512,44 +508,133 @@ class TrainingSetupScene(BaseMenuScene):
             controls.extend([self._event_interval_minus_btn, self._event_interval_plus_btn])
         else:
             controls.extend([self._page_prev_button, self._page_next_button])
-            for m, p in zip(self._row_minus_buttons, self._row_plus_buttons):
-                if m.is_enabled: controls.append(m)
+            # Focus only plus_btn for rows to maintain vertical list
+            for p in self._row_plus_buttons:
                 if p.is_enabled: controls.append(p)
 
         controls.extend([self._start_button, self._back_button])
         
         actions = {c: self._control_actions[c] for c in controls if c in self._control_actions}
         self.set_navigator(controls=controls, actions=actions, on_cancel=self._close)
+        
+        # Restore focus
+        if old_sel and self.navigator and old_sel in controls:
+            self.navigator.select_index(controls.index(old_sel))
+        elif self.navigator and not self.navigator.selected_control and controls:
+            self.navigator.select_index(0)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
+        filtered_events = []
         for event in events:
+            consumed = False
             if event.type == pygame.KEYDOWN:
-                if self._handle_shortcuts(event.key): continue
-        super().handle_input(events)
+                consumed = self._handle_shortcuts(event.key)
+            if not consumed:
+                filtered_events.append(event)
+        super().handle_input(filtered_events)
 
     def _handle_shortcuts(self, key: int) -> bool:
+        # Tab change shortcuts (Q/E and 1-4)
         if key == pygame.K_1: self._switch_tab("enemy"); return True
         if key == pygame.K_2: self._switch_tab("miniboss"); return True
         if key == pygame.K_3: self._switch_tab("boss"); return True
         if key == pygame.K_4: self._switch_tab("event"); return True
         if key == pygame.K_q: self._switch_tab_by_offset(-1); return True
         if key == pygame.K_e: self._switch_tab_by_offset(1); return True
+        
+        # Navigation shortcuts
         if key == pygame.K_PAGEUP: self._change_page(-1); return True
         if key == pygame.K_PAGEDOWN: self._change_page(1); return True
         
-        # Shortcut for +/- on selected control
-        if self.navigator and self.navigator.selected_control:
-            if key in (pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS):
-                return self._adjust_selected_control(1)
-            if key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-                return self._adjust_selected_control(-1)
+        # Strictly Vertical Navigation (W/S and Up/Down)
+        if key in (pygame.K_w, pygame.K_UP):
+            return self._navigate_vertically(-1)
+        if key in (pygame.K_s, pygame.K_DOWN):
+            return self._navigate_vertically(1)
+            
+        # Horizontal Navigation / Adjustment (A/D and Left/Right)
+        if key in (pygame.K_a, pygame.K_LEFT):
+            return self._navigate_horizontally(-1)
+        if key in (pygame.K_d, pygame.K_RIGHT):
+            return self._navigate_horizontally(1)
+            
+        # Plus/Minus shortcuts
+        if key in (pygame.K_PLUS, pygame.K_KP_PLUS, pygame.K_EQUALS):
+            self._adjust_selected_control(1); return True
+        if key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+            self._adjust_selected_control(-1); return True
+
         return False
+
+    def _navigate_vertically(self, delta: int) -> bool:
+        if not self.navigator or not self.navigator.selected_control: return False
+        ctrl = self.navigator.selected_control
+        controls = list(self.navigator.controls)
+        
+        # Define functional blocks
+        pagination = [self._page_prev_button, self._page_next_button]
+        rows = [r for r in (self._row_plus_buttons if self._active_tab != "event" else self._row_minus_buttons) if r in controls]
+        event_ctrls = [self._event_interval_minus_btn, self._event_interval_plus_btn]
+        bottom = [self._start_button, self._back_button]
+
+        target = None
+        if ctrl in pagination:
+            if delta > 0: target = rows[0] if rows else bottom[0]
+            else: target = bottom[0]
+        elif ctrl in rows:
+            idx = rows.index(ctrl)
+            if delta > 0:
+                if idx < len(rows) - 1: target = rows[idx + 1]
+                elif self._active_tab == "event": target = event_ctrls[0]
+                else: target = bottom[0]
+            else:
+                if idx > 0: target = rows[idx - 1]
+                elif self._active_tab != "event": target = pagination[0]
+                else: target = bottom[-1]
+        elif ctrl in event_ctrls:
+            if delta > 0: target = bottom[0]
+            else: target = rows[-1] if rows else pagination[0]
+        elif ctrl in bottom:
+            if delta < 0:
+                if self._active_tab == "event": target = event_ctrls[0]
+                elif rows: target = rows[-1]
+                else: target = pagination[0]
+            else:
+                if self._active_tab != "event": target = pagination[0]
+                elif rows: target = rows[0]
+        
+        if target and target in controls:
+            self.navigator.select_index(controls.index(target))
+            return True
+        return False
+
+    def _navigate_horizontally(self, delta: int) -> bool:
+        if not self.navigator or not self.navigator.selected_control: return False
+        ctrl = self.navigator.selected_control
+
+        # In rows, A/D only adjust values
+        cur_rows = self._row_plus_buttons if self._active_tab != "event" else self._row_minus_buttons
+        if ctrl in cur_rows:
+            self._adjust_slot_count(cur_rows.index(ctrl), delta)
+            return True
+        
+        # In event interval, A/D adjust
+        if ctrl in (self._event_interval_minus_btn, self._event_interval_plus_btn):
+            self._adjust_event_interval(delta * self._event_interval_step)
+            return True
+
+        # In other blocks (pagination, bottom), A/D moves focus
+        self.navigator.move_selection(delta)
+        return True
 
     def _switch_tab_by_offset(self, offset: int) -> None:
         idx = (self._tab_order.index(self._active_tab) + offset) % len(self._tab_order)
         self._switch_tab(self._tab_order[idx])
 
     def _adjust_selected_control(self, delta: int) -> bool:
+        if not self.navigator or not self.navigator.selected_control:
+            return False
+            
         ctrl = self.navigator.selected_control
         if ctrl in self._row_minus_buttons:
             self._adjust_slot_count(self._row_minus_buttons.index(ctrl), delta)
@@ -561,6 +646,8 @@ class TrainingSetupScene(BaseMenuScene):
             self._adjust_event_interval(delta * self._event_interval_step)
             return True
         return False
+
+
 
     def _start_training(self) -> None:
         plan = {k: v for k, v in self._selected_counts.items() if v > 0}
