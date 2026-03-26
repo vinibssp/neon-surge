@@ -11,6 +11,7 @@ from game.modes.mode_config import TrainingConfig
 from game.modes.training_mode import TrainingMode
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.scenes.services import CyberpunkMenuBackgroundRenderer
+from game.ui.gui_theme import build_component_object_id
 from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_button, create_label, create_panel
 
 EnemyCategory = Literal["enemy", "miniboss", "boss"]
@@ -152,7 +153,7 @@ class TrainingSetupScene(BaseMenuScene):
         create_label(
             LabelConfig(
                 text="TREINO PERSONALIZADO",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 40), (600, 60)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 320, 34), (640, 72)),
                 variant="title",
             ),
             manager=self.ui_manager,
@@ -293,24 +294,25 @@ class TrainingSetupScene(BaseMenuScene):
         )
 
         # Event Interval Controls (Special for Event tab)
+        # Positioned at the bottom of content panel, but properly spaced
         self._event_interval_panel = create_panel(
-            PanelConfig(rect=pygame.Rect((250, 260), (500, 50)), variant="hud"),
+            PanelConfig(rect=pygame.Rect((200, 295), (600, 55)), variant="hud"),
             manager=self.ui_manager, container=self._content_panel
         )
         create_label(
-            LabelConfig(text="Intervalo de Evento", rect=pygame.Rect((10, 10), (200, 30)), variant="header"),
+            LabelConfig(text="INTERVALO ENTRE EVENTOS", rect=pygame.Rect((20, 12), (240, 30)), variant="header"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_minus_btn = create_button(
-            ButtonConfig(text="-", rect=pygame.Rect((220, 10), (40, 30)), variant="ghost"),
+            ButtonConfig(text="-", rect=pygame.Rect((280, 10), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_value_label = create_label(
-            LabelConfig(text="22s", rect=pygame.Rect((270, 10), (80, 30)), variant="value"),
+            LabelConfig(text="22s", rect=pygame.Rect((340, 10), (100, 35)), variant="value"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_plus_btn = create_button(
-            ButtonConfig(text="+", rect=pygame.Rect((360, 10), (40, 30)), variant="ghost"),
+            ButtonConfig(text="+", rect=pygame.Rect((450, 10), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
 
@@ -410,9 +412,16 @@ class TrainingSetupScene(BaseMenuScene):
 
             if self._active_tab == "event":
                 name_lbl.set_text(EVENT_LABELS.get(kind, kind.title()))
-                desc_lbl.set_text(EVENT_DESCRIPTIONS.get(kind, ""))
                 is_active = self._selected_event == kind
+                
+                # Highlight active event status
                 count_lbl.set_text("ATIVO" if is_active else "-")
+                count_lbl.change_object_id(build_component_object_id("label", "highlight" if is_active else "value"))
+                
+                # Mute inactive descriptions
+                desc_lbl.set_text(EVENT_DESCRIPTIONS.get(kind, ""))
+                desc_lbl.change_object_id(build_component_object_id("label", "value" if is_active else "muted"))
+                
                 minus_btn.set_text("Ativar")
                 if is_active:
                     minus_btn.disable()
@@ -422,8 +431,10 @@ class TrainingSetupScene(BaseMenuScene):
             else:
                 name_lbl.set_text(kind.replace("_", " ").title())
                 desc_lbl.set_text(ENEMY_DESCRIPTIONS.get(kind, ""))
+                desc_lbl.change_object_id(build_component_object_id("label", None)) # Reset variant
                 count = self._selected_counts.get(kind, 0)
                 count_lbl.set_text(str(count))
+                count_lbl.change_object_id(build_component_object_id("label", "value")) # Reset variant
                 minus_btn.set_text("-")
                 plus_btn.show()
                 plus_btn.enable() # Always enabled for focus stability
@@ -433,10 +444,19 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Update page label and buttons
         self._page_label.set_text(f"Pagina {current_page + 1}/{max_page + 1}")
-        if current_page <= 0: self._page_prev_button.disable()
-        else: self._page_prev_button.enable()
-        if current_page >= max_page: self._page_next_button.disable()
-        else: self._page_next_button.enable()
+        
+        if self._active_tab == "event":
+            self._page_label.hide()
+            self._page_prev_button.hide()
+            self._page_next_button.hide()
+        else:
+            self._page_label.show()
+            self._page_prev_button.show()
+            self._page_next_button.show()
+            if current_page <= 0: self._page_prev_button.disable()
+            else: self._page_prev_button.enable()
+            if current_page >= max_page: self._page_next_button.disable()
+            else: self._page_next_button.enable()
 
         # Update event interval
         self._event_interval_value_label.set_text(f"{self._selected_event_interval:.0f}s")

@@ -31,6 +31,7 @@ class EnvironmentEventSystem:
         black_hole_pull_strength: float,
         black_hole_speed: float,
         black_hole_consume_radius: float,
+        black_hole_warning_duration: float,
         lava_warning_duration: float,
         lava_active_duration: float,
         lava_blink_duration: float,
@@ -48,6 +49,7 @@ class EnvironmentEventSystem:
         self.black_hole_pull_strength = max(60.0, black_hole_pull_strength)
         self.black_hole_speed = max(8.0, black_hole_speed)
         self.black_hole_consume_radius = max(12.0, min(self.black_hole_pull_radius * 0.5, black_hole_consume_radius))
+        self.black_hole_warning_duration = max(0.5, black_hole_warning_duration)
         self.lava_warning_duration = max(0.5, lava_warning_duration)
         self.lava_active_duration = max(0.6, lava_active_duration)
         self.lava_blink_duration = max(0.2, min(lava_blink_duration, self.lava_active_duration))
@@ -68,6 +70,8 @@ class EnvironmentEventSystem:
         self._bullet_timer = 0.0
         self._black_hole_position = Vector2()
         self._black_hole_velocity = Vector2()
+        self._black_hole_phase = "warning"
+        self._black_hole_phase_time_left = 0.0
         self._lava_phase = "warning"
         self._lava_phase_time_left = 0.0
         self._lava_regions: list[Rect] = []
@@ -123,6 +127,9 @@ class EnvironmentEventSystem:
             self._water_phase_time_left = self._water_active_duration
 
         if self._active_event == self.EVENT_BLACK_HOLE:
+            self._event_time_left = self.black_hole_warning_duration + self.duration
+            self._black_hole_phase = "warning"
+            self._black_hole_phase_time_left = self.black_hole_warning_duration
             self._black_hole_position = self._random_point_with_margin(120.0)
             heading = Vector2(1, 0).rotate(random.uniform(0.0, 360.0))
             self._black_hole_velocity = heading * self.black_hole_speed
@@ -138,6 +145,8 @@ class EnvironmentEventSystem:
         self._active_event = None
         self._event_region = None
         self._lava_regions = []
+        self._black_hole_phase = "warning"
+        self._black_hole_phase_time_left = 0.0
         self._water_phase = "warning"
         self._water_phase_time_left = 0.0
         self._event_time_left = 0.0
@@ -207,6 +216,14 @@ class EnvironmentEventSystem:
             )
 
     def _update_black_hole(self, dt: float) -> None:
+        self._black_hole_phase_time_left = max(0.0, self._black_hole_phase_time_left - dt)
+
+        if self._black_hole_phase == "warning":
+            if self._black_hole_phase_time_left <= 0.0:
+                self._black_hole_phase = "active"
+                self._black_hole_phase_time_left = self.duration
+            return
+
         self._black_hole_position += self._black_hole_velocity * dt
         margin = self.black_hole_consume_radius + 10.0
         if self._black_hole_position.x <= margin or self._black_hole_position.x >= self.world.width - margin:
@@ -447,11 +464,17 @@ class EnvironmentEventSystem:
             )
 
         if self._active_event == self.EVENT_BLACK_HOLE:
+            warning_left = self._black_hole_phase_time_left if self._black_hole_phase == "warning" else 0.0
+            active_left = self._black_hole_phase_time_left if self._black_hole_phase == "active" else 0.0
             payload["black_hole"] = {
                 "x": float(self._black_hole_position.x),
                 "y": float(self._black_hole_position.y),
                 "pull_radius": self.black_hole_pull_radius,
                 "consume_radius": self.black_hole_consume_radius,
+                "phase": self._black_hole_phase,
+                "time_to_active": warning_left,
+                "active_time_left": active_left,
+                "warning_duration": self.black_hole_warning_duration,
             }
         elif self._active_event == self.EVENT_WATER:
             payload["water_phase"] = self._water_phase

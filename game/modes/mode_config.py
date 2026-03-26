@@ -93,6 +93,7 @@ class SurvivalConfig:
     black_hole_pull_strength: float = 220.0
     black_hole_speed: float = 40.0
     black_hole_consume_radius: float = 24.0
+    black_hole_warning_duration: float = 1.8
 
 
 @dataclass(frozen=True)
@@ -131,6 +132,7 @@ class SurvivalHardcoreConfig(SurvivalConfig):
     black_hole_pull_strength: float = 360.0
     black_hole_speed: float = 55.0
     black_hole_consume_radius: float = 30.0
+    black_hole_warning_duration: float = 1.2
 
 
 @dataclass(frozen=True)
@@ -159,6 +161,7 @@ class TrainingConfig:
     black_hole_pull_strength: float = 180.0
     black_hole_speed: float = 34.0
     black_hole_consume_radius: float = 20.0
+    black_hole_warning_duration: float = 2.0
 
 
 @dataclass(frozen=True)

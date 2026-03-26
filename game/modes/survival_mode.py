@@ -91,6 +91,7 @@ class SurvivalMode(GameModeStrategy):
                     black_hole_pull_strength=self.config.black_hole_pull_strength,
                     black_hole_speed=self.config.black_hole_speed,
                     black_hole_consume_radius=self.config.black_hole_consume_radius,
+                    black_hole_warning_duration=self.config.black_hole_warning_duration,
                     lava_warning_duration=self.config.lava_warning_duration,
                     lava_active_duration=self.config.lava_active_duration,
                     lava_blink_duration=self.config.lava_blink_duration,

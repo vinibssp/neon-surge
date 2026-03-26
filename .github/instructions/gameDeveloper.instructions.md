@@ -189,6 +189,7 @@ Resiliência operacional:
 - Lava deve poder surgir em regiões variadas da arena (não fixa na borda), com padrões múltiplos por evento (pool, cross, lanes, ring, fork, checker), mantendo o mesmo contrato de aviso, janela ativa e pisca final
 - Lava deve manter telegraph visual de alto contraste em linguagem pixel-art arcade (camadas de calor, bordas energizadas e runas pulsantes), sem acoplamento com regra de dano
 - Presets de sobrevivência devem concentrar eventos ambientais periódicos (neve/água/nuvem de balas/buraco negro): intervalo global, duração e intensidade por evento
+- Buraco negro deve ter fase curta de aviso visual antes da fase ativa de sucção, com duração configurada no preset do modo
 - Evento de água deve ativar imediatamente (sem fase de aviso), mantendo fase ativa/pisca, sem spawn de torretas, cobrindo a arena e aplicando arrasto de movimentação em player/inimigos durante a fase ativa
 - Lava integra o sistema de eventos ambientais e deve respeitar exclusividade: apenas um evento ativo por vez
 - Presets de sobrevivência devem concentrar progressão de coletáveis especiais e habilidades de pico (ex.: bomba nuclear por limiar de coleta)

@@ -391,10 +391,76 @@ class GameScene(Scene):
         y = int(float(black_hole.get("y", 0.0)))
         pull_radius = int(float(black_hole.get("pull_radius", 0.0)))
         consume_radius = int(float(black_hole.get("consume_radius", 0.0)))
+        phase = str(black_hole.get("phase", "active"))
         if pull_radius <= 0 or consume_radius <= 0:
             return
 
+        if phase == "warning":
+            warning_left = float(black_hole.get("time_to_active", 0.0))
+            warning_duration = float(black_hole.get("warning_duration", 0.0))
+            if warning_duration <= 0.0:
+                return
+            warning_ratio = max(0.15, min(1.0, 1.0 - (warning_left / warning_duration)))
+            self._render_event_black_hole_warning_overlay(screen, x, y, pull_radius, consume_radius, now, warning_ratio)
+            return
+
         self._render_event_black_hole_overlay(screen, x, y, pull_radius, consume_radius, now)
+
+    def _render_event_black_hole_warning_overlay(
+        self,
+        screen: pygame.Surface,
+        x: int,
+        y: int,
+        pull_radius: int,
+        consume_radius: int,
+        now: float,
+        warning_ratio: float,
+    ) -> None:
+        pulse = 0.5 + 0.5 * math.sin((now * 9.4) + (warning_ratio * 2.0))
+        overlay_radius = pull_radius + 12
+        overlay = pygame.Surface((overlay_radius * 2, overlay_radius * 2), pygame.SRCALPHA)
+        center = (overlay_radius, overlay_radius)
+
+        base_alpha = int(26 + 78 * warning_ratio)
+        pygame.draw.circle(overlay, (78, 26, 136, base_alpha), center, pull_radius)
+
+        ring_count = 4
+        for ring_index in range(ring_count):
+            ring_phase = (ring_index / ring_count) * math.pi
+            ring_radius = int(consume_radius + 10 + ring_index * ((pull_radius - consume_radius) / max(1, ring_count)))
+            ring_wave = 0.5 + 0.5 * math.sin((now * 8.6) + ring_phase)
+            ring_alpha = int(62 + 130 * warning_ratio * ring_wave)
+            pygame.draw.circle(overlay, (236, 186, 255, ring_alpha), center, max(2, ring_radius), 2)
+
+        spoke_count = 10
+        spoke_span = max(8.0, pull_radius - consume_radius)
+        for spoke_index in range(spoke_count):
+            angle = (spoke_index / spoke_count) * (math.pi * 2.0) + (now * 1.6)
+            start_radius = consume_radius + 4 + (2 if spoke_index % 2 == 0 else 0)
+            end_radius = min(pull_radius - 3, start_radius + spoke_span)
+            x0 = int(center[0] + math.cos(angle) * start_radius)
+            y0 = int(center[1] + math.sin(angle) * start_radius)
+            x1 = int(center[0] + math.cos(angle) * end_radius)
+            y1 = int(center[1] + math.sin(angle) * end_radius)
+            spoke_alpha = int(70 + 110 * pulse)
+            pygame.draw.line(overlay, (188, 238, 255, spoke_alpha), (x0, y0), (x1, y1), 1)
+
+        screen.blit(overlay, (x - overlay_radius, y - overlay_radius))
+
+        pulse_radius = consume_radius + 8 + int(10 * pulse)
+        pygame.draw.circle(screen, (255, 226, 255), (x, y), max(2, pulse_radius), 2)
+        pygame.draw.circle(screen, (156, 232, 255), (x, y), max(2, consume_radius + 3), 1)
+
+        marker_count = 8
+        for marker_index in range(marker_count):
+            angle = (marker_index / marker_count) * (math.pi * 2.0) - (now * 2.3)
+            marker_radius = pull_radius - 8
+            mx = int(x + math.cos(angle) * marker_radius)
+            my = int(y + math.sin(angle) * marker_radius)
+            marker_size = 4 if marker_index % 2 == 0 else 3
+            marker_color = (255, 242, 194) if marker_index % 2 == 0 else (218, 248, 255)
+            pygame.draw.line(screen, marker_color, (mx - marker_size, my), (mx + marker_size, my), 1)
+            pygame.draw.line(screen, marker_color, (mx, my - marker_size), (mx, my + marker_size), 1)
 
     def _render_event_snow_overlay(self, screen: pygame.Surface, rect: pygame.Rect, now: float) -> None:
         if rect.width <= 0 or rect.height <= 0:

@@ -156,6 +156,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - visual da lava usa camadas de calor, crosta escura, fissuras, runas e brasas animadas para leitura de risco mais forte em combate intenso
 - visual da lava enfatiza linguagem pixel-art de alto contraste (mosaico magmatico, borda energizada segmentada, runas pulsantes e telegraph agressivo)
 - sobrevivência/hardcore incluem eventos ambientais periódicos: região de neve (drift), evento de água em tela cheia com ativação imediata (ativo/pisca) e arrasto de movimento em player/inimigos, nuvem de balas e buraco negro móvel com sucção
+- buraco negro inclui fase curta de aviso visual antes da sucção ativa, com telegraph de anéis/pulsos para leitura antecipada de risco
 - overlays de eventos ambientais usam telegraph de alto contraste e camadas animadas (grelha, runas, pulsos e particulas) para leitura estilo arcade bullet-hell
 - frequência dos eventos ambientais em sobrevivência/hardcore foi elevada via presets para manter pressão contínua sem quebrar exclusividade de evento ativo
 - eventos ambientais são mutuamente exclusivos: lava, neve, água, nuvem de balas e buraco negro nunca acontecem juntos

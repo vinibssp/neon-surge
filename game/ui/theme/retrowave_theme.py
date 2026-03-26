@@ -102,7 +102,7 @@ THEME_DATA = {
             "hovered_border": "#7ff08e",
             "selected_border": "#b4f7bf"
         },
-        "font": { "size": "16", "bold": "1" }
+        "font": { "name": "noto_sans", "size": "16", "bold": "1" }
     },
 
     "button.tab_miniboss": {
@@ -118,7 +118,7 @@ THEME_DATA = {
             "hovered_border": "#ff95dd",
             "selected_border": "#ffc3ec"
         },
-        "font": { "size": "16", "bold": "1" }
+        "font": { "name": "noto_sans", "size": "16", "bold": "1" }
     },
 
     "button.tab_boss": {
@@ -134,7 +134,7 @@ THEME_DATA = {
             "hovered_border": "#ffad6b",
             "selected_border": "#ffc89b"
         },
-        "font": { "size": "16", "bold": "1" }
+        "font": { "name": "noto_sans", "size": "16", "bold": "1" }
     },
 
     "button.tab_event": {
@@ -150,7 +150,7 @@ THEME_DATA = {
             "hovered_border": "#8aedf7",
             "selected_border": "#bbf5fb"
         },
-        "font": { "size": "16", "bold": "1" }
+        "font": { "name": "noto_sans", "size": "16", "bold": "1" }
     },
 
     "label": {
