@@ -111,6 +111,8 @@ class TrainingSetupScene(BaseMenuScene):
             for kind in self._kinds_by_tab[category]
         }
         self._slot_kinds: list[str | None] = [None] * self._rows_per_page
+        self._row_minus_index_by_control: dict[object, int] = {}
+        self._row_plus_index_by_control: dict[object, int] = {}
 
         title = create_label(
             LabelConfig(
@@ -291,6 +293,14 @@ class TrainingSetupScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
+        self._keyboard_hint_label = create_label(
+            LabelConfig(
+                text="Atalhos: 1/2/3 abas | Q/E alterna abas | PgUp/PgDn pagina | <-/-> ou A/D e +/- ajustam linha focada",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 592), (1000, 24)),
+                object_id="training_keyboard_hint_label",
+            ),
+            manager=self.ui_manager,
+        )
 
         self._start_button = create_button(
             ButtonConfig(
@@ -324,12 +334,12 @@ class TrainingSetupScene(BaseMenuScene):
             self._page_next_button: lambda: self._change_page(1),
         }
 
-        for index, minus_button in enumerate(self._row_minus_buttons):
+        for index, (minus_button, plus_button) in enumerate(zip(self._row_minus_buttons, self._row_plus_buttons)):
+            self._row_minus_index_by_control[minus_button] = index
+            self._row_plus_index_by_control[plus_button] = index
             controls.append(minus_button)
-            actions[minus_button] = lambda idx=index: self._adjust_slot_count(idx, -1)
-
-        for index, plus_button in enumerate(self._row_plus_buttons):
             controls.append(plus_button)
+            actions[minus_button] = lambda idx=index: self._adjust_slot_count(idx, -1)
             actions[plus_button] = lambda idx=index: self._adjust_slot_count(idx, 1)
 
         controls.extend([self._start_button, self._back_button])
@@ -343,6 +353,16 @@ class TrainingSetupScene(BaseMenuScene):
         )
 
         self._refresh_tab_view()
+
+    def handle_input(self, events: list[pygame.event.Event]) -> None:
+        forwarded_events: list[pygame.event.Event] = []
+        for event in events:
+            if event.type != pygame.KEYDOWN:
+                forwarded_events.append(event)
+                continue
+            if not self._handle_keyboard_shortcut(event):
+                forwarded_events.append(event)
+        super().handle_input(forwarded_events)
 
     def _register_themes(self) -> None:
         register_custom_element_themes(
@@ -365,6 +385,16 @@ class TrainingSetupScene(BaseMenuScene):
                     "font": {
                         "name": "noto_sans",
                         "size": "16",
+                        "bold": "0",
+                    },
+                },
+                "training_keyboard_hint_label": {
+                    "colours": {
+                        "normal_text": "#9ed8ea",
+                    },
+                    "font": {
+                        "name": "noto_sans",
+                        "size": "14",
                         "bold": "0",
                     },
                 },
@@ -550,6 +580,11 @@ class TrainingSetupScene(BaseMenuScene):
         self._active_tab = category
         self._refresh_tab_view()
 
+    def _switch_tab_by_offset(self, offset: int) -> None:
+        current_index = self._tab_order.index(self._active_tab)
+        target_index = (current_index + offset) % len(self._tab_order)
+        self._switch_tab(self._tab_order[target_index])
+
     def _change_page(self, delta: int) -> None:
         kinds = self._kinds_by_tab[self._active_tab]
         max_page = max(0, math.ceil(len(kinds) / self._rows_per_page) - 1)
@@ -629,6 +664,58 @@ class TrainingSetupScene(BaseMenuScene):
 
         self._update_tab_titles()
         self._update_summary()
+
+    def _handle_keyboard_shortcut(self, event: pygame.event.Event) -> bool:
+        key = event.key
+        if key in (pygame.K_LEFT, pygame.K_a):
+            return self._adjust_selected_row_count(-1)
+        if key in (pygame.K_RIGHT, pygame.K_d):
+            return self._adjust_selected_row_count(1)
+        if key in (pygame.K_1, pygame.K_KP1):
+            self._switch_tab("enemy")
+            return True
+        if key in (pygame.K_2, pygame.K_KP2):
+            self._switch_tab("miniboss")
+            return True
+        if key in (pygame.K_3, pygame.K_KP3):
+            self._switch_tab("boss")
+            return True
+        if key == pygame.K_q:
+            self._switch_tab_by_offset(-1)
+            return True
+        if key == pygame.K_e:
+            self._switch_tab_by_offset(1)
+            return True
+        if key == pygame.K_PAGEUP:
+            self._change_page(-1)
+            return True
+        if key == pygame.K_PAGEDOWN:
+            self._change_page(1)
+            return True
+        if key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+            return self._adjust_selected_row_count(-1)
+        if key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
+            return self._adjust_selected_row_count(1)
+        return False
+
+    def _adjust_selected_row_count(self, delta: int) -> bool:
+        if self.navigator is None:
+            return False
+        selected_control = self.navigator.selected_control
+        if selected_control is None:
+            return False
+
+        slot_index: int | None = None
+        if selected_control in self._row_minus_index_by_control:
+            slot_index = self._row_minus_index_by_control[selected_control]
+        elif selected_control in self._row_plus_index_by_control:
+            slot_index = self._row_plus_index_by_control[selected_control]
+
+        if slot_index is None:
+            return False
+
+        self._adjust_slot_count(slot_index, delta)
+        return True
 
     def _update_tab_titles(self) -> None:
         for category in self._tab_order:

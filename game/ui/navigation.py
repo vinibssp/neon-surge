@@ -91,6 +91,10 @@ class UINavigator:
     def selected_index(self) -> int:
         return self._index_for(self._selected_element)
 
+    @property
+    def selected_control(self) -> UIControl | None:
+        return self._selected_element
+
     def knows_control(self, element: object) -> bool:
         return self._index_for(element) >= 0
 
