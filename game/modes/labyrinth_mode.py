@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pygame import Vector2
 
 from game.components.data_components import MovementComponent, TransformComponent
+from game.core.events import EnemySpawned
 from game.core.world import GameWorld
 from game.factories.enemy_factory import EnemyFactory
 from game.factories.labyrinth_factory import LabyrinthFactory
@@ -29,7 +30,6 @@ from game.systems.stagger_system import StaggerSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
-    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -43,9 +43,6 @@ class LabyrinthMode(GameModeStrategy):
         scene.setup_level(1)
 
     def on_player_death(self, scene: "GameScene") -> None:
-        elapsed_time = float(scene.elapsed_time)
-        reached_level = int(scene.world.level)
-        score = self.calcular_ranking(elapsed_time, reached_level, scene.session_stats)
         death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Labirinto - Falha de Sistema",
@@ -53,27 +50,7 @@ class LabyrinthMode(GameModeStrategy):
             retry_strategy_factory=self.create_retry_strategy,
             death_cause=death_cause if isinstance(death_cause, str) else None,
             include_session_summary=True,
-            final_score=score,
         )
-
-    def mode_key(self) -> str:
-        return "Labyrinth"
-
-    def calcular_ranking(self, elapsed_time: float, reached_level: int, session_stats: "GameSessionStats") -> float:
-        return round(sum(points for _, points in self.score_breakdown(elapsed_time, reached_level, session_stats)), 2)
-
-    def score_breakdown(
-        self,
-        elapsed_time: float,
-        reached_level: int,
-        session_stats: "GameSessionStats",
-    ) -> list[tuple[str, float]]:
-        portal_count = session_stats.spawn_portal_destroyed_total
-        return [
-            (f"Nivel ({reached_level}x100)", reached_level * 100.0),
-            (f"Tempo (-{elapsed_time:.1f}s)", -elapsed_time),
-            (f"Portais ({portal_count}x5)", portal_count * 5.0),
-        ]
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         is_boss_level = level % self.config.boss_level_interval == 0
@@ -223,6 +200,7 @@ class LabyrinthMode(GameModeStrategy):
         if boss_movement is not None:
             boss_movement.max_speed *= 0.9 + (level * self.config.boss_speed_gain_per_level)
         scene.world.add_entity(boss)
+        scene.world.event_bus.publish(EnemySpawned(enemy_kind=boss_kind))
 
         for key_position in self._build_boss_key_positions(scene):
             scene.world.add_entity(LabyrinthFactory.create_key(key_position))

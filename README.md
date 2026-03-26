@@ -74,6 +74,7 @@ Eventos de domínio seguem um barramento único:
 - consumidores transversais (ex.: áudio/UI) podem registrar handlers diretamente no `EventBus`
 - `GameScene` registra/desregistra handlers de gameplay em `on_enter()`/`on_exit()`
 - transições de cena acionadas por eventos de domínio (ex.: `PlayerDied`) são enfileiradas e aplicadas no fim do `update()` para manter fluidez
+- spawns de boss fora do `SpawnDirector` também publicam `EnemySpawned(enemy_kind=...)` para manter consumidores transversais consistentes
 
 ### 5) Factory Pattern + Registry
 
@@ -109,7 +110,6 @@ Cada modo define:
 - estratégia de progressão (`build_level_progression_strategy`)
 - HUD (`build_hud_lines`)
 - retry (`create_retry_strategy`)
-- score de ranking (`calcular_ranking(elapsed_time, reached_level) -> float`)
 
 #### Modo Labirinto
 
@@ -175,6 +175,7 @@ Para reduzir acoplamento e responsabilidades:
 - `HudRenderer`
 - `SpawnDirector` (systems layer)
 - `SystemPipeline` com fases e prioridade explícita
+- card temporário de boss no HUD ao receber `EnemySpawned` com categoria `boss`, exibindo nome amigável do chefe
 
 `SystemPipeline` executa por etapa:
 

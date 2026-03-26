@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+from dataclasses import dataclass
 
 import pygame
 from game.config import (
@@ -108,6 +109,39 @@ class HudRenderer:
         for surface in rendered:
             screen.blit(surface, (text_x, current_y))
             current_y += effective_line_height
+
+    def render_boss_card(
+        self,
+        screen: pygame.Surface,
+        card: BossHudCard,
+        x: int = 16,
+        y: int = 118,
+        align_right: bool = False,
+        right_margin: int = 16,
+    ) -> None:
+        name_surface = self.font.render(card.boss_name, True, self.color)
+        card_width = name_surface.get_width() + self.padding_x * 2
+        card_height = self.padding_y * 2 + name_surface.get_height()
+        card_x = screen.get_width() - card_width - right_margin if align_right else x
+
+        panel = pygame.Surface((card_width, card_height), pygame.SRCALPHA)
+        pygame.draw.rect(panel, card.fill_color, panel.get_rect(), border_radius=10)
+        pygame.draw.rect(panel, card.border_color, panel.get_rect(), width=2, border_radius=10)
+        screen.blit(panel, (card_x, y))
+
+        text_x = card_x + self.padding_x
+        current_y = y + self.padding_y
+        screen.blit(name_surface, (text_x, current_y))
+
+    def boss_card_height(self) -> int:
+        return self.padding_y * 2 + self.font.get_height()
+
+
+@dataclass(frozen=True)
+class BossHudCard:
+    boss_name: str
+    fill_color: tuple[int, int, int, int] = (24, 8, 14, 176)
+    border_color: tuple[int, int, int, int] = (252, 94, 128, 220)
 
 
 class CyberpunkMenuBackgroundRenderer:

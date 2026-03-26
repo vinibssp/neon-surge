@@ -8,7 +8,7 @@ from typing import Callable
 import pygame
 from pygame import Vector2
 
-from game.components.data_components import TransformComponent
+from game.components.data_components import BossComponent, TransformComponent
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import (
     AudioContextChanged,
@@ -30,9 +30,8 @@ from game.core.world import GameWorld
 from game.factories.player_factory import PlayerFactory
 from game.scenes.game_over_scene import GameOverScene
 from game.scenes.pause_scene import PauseScene
-from game.scenes.services import BackgroundRenderer, HudRenderer
+from game.scenes.services import BackgroundRenderer, BossHudCard, HudRenderer
 from game.modes.game_mode_strategy import GameModeStrategy
-from game.services.ranking_orchestrator import RankingOrchestrator, RankingSyncHandle
 from game.systems.render_system import RenderSystem
 from game.systems.spawn_director import SpawnDirector
 from game.systems.system_pipeline import SystemPipeline
@@ -53,8 +52,12 @@ class PendingGameOverTransition:
     retry_strategy_factory: Callable[[], GameModeStrategy]
     death_cause: str | None
     include_session_summary: bool
-    final_score: float
-    mode_key: str
+
+
+@dataclass
+class BossCardState:
+    entity_id: int
+    boss_name: str
 
 
 class GameScene(Scene):
@@ -85,6 +88,7 @@ class GameScene(Scene):
         self._shake_intensity = 0.0
         self._world_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self._pending_game_over_transition: PendingGameOverTransition | None = None
+        self._boss_card_states: list[BossCardState] = []
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="gameplay", reason="game_scene_entered"))
@@ -119,6 +123,7 @@ class GameScene(Scene):
 
         self.system_pipeline.update(dt)
         self.world.apply_pending()
+        self._update_boss_cards()
         self._update_screen_shake(dt)
         self._update_explosion_fx(dt)
 
@@ -136,6 +141,8 @@ class GameScene(Scene):
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
         self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
+        if self._boss_card_states:
+            self._render_boss_cards(screen)
 
     def _render_survival_lava_overlay(self, screen: pygame.Surface) -> None:
         lava_state = self.world.runtime_state.get("survival_lava")
@@ -240,6 +247,7 @@ class GameScene(Scene):
         self.world.level = level
         self.level_portal_spawned = False
         self._transition_in_progress = False
+        self._boss_card_states.clear()
         self.world.runtime_state.pop("last_death_cause", None)
 
         if self.world.player is None:
@@ -272,20 +280,15 @@ class GameScene(Scene):
         death_cause: str | None = None,
         include_session_summary: bool = False,
         final_score: float | None = None,
+        mode_key: str | None = None,
     ) -> None:
-        resolved_score = (
-            float(final_score)
-            if final_score is not None
-            else float(self.mode.calcular_ranking(self.elapsed_time, self.world.level, self.session_stats))
-        )
+        del final_score, mode_key
         self._pending_game_over_transition = PendingGameOverTransition(
             title=title,
             subtitle=subtitle,
             retry_strategy_factory=retry_strategy_factory,
             death_cause=death_cause,
             include_session_summary=include_session_summary,
-            final_score=resolved_score,
-            mode_key=self.mode.mode_key(),
         )
 
     def _commit_pending_game_over_transition(self) -> None:
@@ -294,11 +297,6 @@ class GameScene(Scene):
             return
         self._pending_game_over_transition = None
         summary_stats = self.session_stats if pending.include_session_summary else None
-        ranking_sync_handle: RankingSyncHandle = RankingOrchestrator().start(
-            mode=pending.mode_key,
-            score=pending.final_score,
-            limit=10,
-        )
         self.stack.replace(
             GameOverScene(
                 self.stack,
@@ -306,12 +304,10 @@ class GameScene(Scene):
                 title=pending.title,
                 subtitle=pending.subtitle,
                 retry_strategy_factory=pending.retry_strategy_factory,
-                mode_key=pending.mode_key,
+                mode_key=self.mode.mode_key(),
                 death_cause=pending.death_cause,
                 session_stats=summary_stats,
                 elapsed_time=self.elapsed_time if pending.include_session_summary else None,
-                final_score=pending.final_score,
-                ranking_sync_handle=ranking_sync_handle,
             )
         )
 
@@ -393,6 +389,35 @@ class GameScene(Scene):
             return
         self._shake_time_left = max(0.0, self._shake_time_left - dt)
 
+    def _update_boss_cards(self) -> None:
+        alive_bosses: list[BossCardState] = []
+        for entity in self.world.entities:
+            if not entity.active:
+                continue
+            boss_component = entity.get_component(BossComponent)
+            if boss_component is None:
+                continue
+            alive_bosses.append(
+                BossCardState(
+                    entity_id=entity.id,
+                    boss_name=_format_enemy_name(boss_component.boss_kind),
+                )
+            )
+        alive_bosses.sort(key=lambda boss: boss.entity_id)
+        self._boss_card_states = alive_bosses
+
+    def _render_boss_cards(self, screen: pygame.Surface) -> None:
+        card_height = self.hud_renderer.boss_card_height()
+        y = 20
+        for boss_state in self._boss_card_states:
+            self.hud_renderer.render_boss_card(
+                screen,
+                BossHudCard(boss_name=boss_state.boss_name),
+                y=y,
+                align_right=True,
+            )
+            y += card_height + 8
+
     def _screen_shake_offset(self) -> tuple[int, int]:
         if self._shake_time_left <= 0.0 or self._shake_duration <= 0.0 or self._shake_intensity <= 0.0:
             return (0, 0)
@@ -402,3 +427,17 @@ class GameScene(Scene):
             int(random.uniform(-amplitude, amplitude)),
             int(random.uniform(-amplitude, amplitude)),
         )
+
+
+def _format_enemy_name(kind: str) -> str:
+    boss_names = {
+        "boss": "Boss Prime",
+        "boss_artilharia": "Boss Artilharia",
+        "boss_caotico": "Boss Caotico",
+        "boss_colosso_laser": "Boss Colosso Laser",
+        "boss_druida_toxico": "Boss Druida Toxico",
+        "boss_soberano_espectral": "Boss Soberano Espectral",
+    }
+    if kind in boss_names:
+        return boss_names[kind]
+    return kind.replace("_", " ").title()

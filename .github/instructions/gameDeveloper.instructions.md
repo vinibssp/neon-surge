@@ -60,6 +60,8 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Não usar flags globais para transições de estado
 - Evitar roteamento espalhado baseado em `isinstance`
 - Eventos de explosão de domínio (`ExplosionTriggered`) devem acionar feedback visual (animação + tremor de tela) na orquestração de cena/render, sem acoplamento da regra de dano
+- Spawns de `boss` fora do `SpawnDirector` também devem publicar `EnemySpawned(enemy_kind=...)` para manter contratos transversais
+- Aparição de `boss` deve acionar card temporário no HUD com nome amigável, via handler de evento no `GameScene`
 
 ### Factories
 
@@ -76,7 +78,6 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Variabilidade por strategy em IA, modos de jogo e renderização
 - Modos concretos suportados: `RaceMode`, `RaceInfiniteMode`, `SurvivalMode`, `SurvivalHardcoreMode`, `LabyrinthMode`, `TrainingMode`
 - Cada modo define systems, spawn, progressão e HUD
-- Cada modo deve implementar `calcular_ranking(elapsed_time, reached_level) -> float` como contrato único de score para ranking
 - Estratégias de spawn do modo devem controlar categoria/tipo spawnado (enemy/miniboss/boss)
 - `TrainingMode` deve receber plano declarativo de spawn (tipo -> quantidade) vindo da UI de treino com abas por categoria
 - Estratégias de spawn devem aplicar progressão de roster por fase (nível/tempo), liberando arquétipos de maior pressão de forma gradual
