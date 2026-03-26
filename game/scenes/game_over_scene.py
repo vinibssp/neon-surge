@@ -124,13 +124,14 @@ class GameOverScene(BaseMenuScene):
 
         del _labels
 
-        # Botões reposicionados (esquerda)
+        # Botões reposicionados (centro da coluna esquerda)
         buttons_y = min(SCREEN_HEIGHT - 170, next_row + 24)
+        btn_x = 40 + (400 - 280) // 2
 
         retry_button = create_button(
             ButtonConfig(
                 text="Tentar Novamente",
-                rect=pygame.Rect((40, buttons_y), (280, 56)),
+                rect=pygame.Rect((btn_x, buttons_y), (280, 56)),
                 variant="primary",
             ),
             manager=self.ui_manager,
@@ -138,7 +139,7 @@ class GameOverScene(BaseMenuScene):
         menu_button = create_button(
             ButtonConfig(
                 text="Menu Principal",
-                rect=pygame.Rect((40, buttons_y + 72), (280, 56)),
+                rect=pygame.Rect((btn_x, buttons_y + 72), (280, 56)),
                 variant="danger",
             ),
             manager=self.ui_manager,
