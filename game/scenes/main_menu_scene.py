@@ -9,7 +9,6 @@ from game.modes.race_infinite_mode import RaceInfiniteMode
 from game.modes.race_mode import RaceMode
 from game.modes.survival_hardcore_mode import SurvivalHardcoreMode
 from game.modes.survival_mode import SurvivalMode
-from game.scenes.dungeon_select_scene import DungeonSelectScene
 from game.scenes.game_scene import GameScene
 from game.scenes.guide_scene import GuideScene
 from game.scenes.menus._base_menu_scene import BaseMenuScene
@@ -42,8 +41,8 @@ class MainMenuScene(BaseMenuScene):
         button_height = 58
         horizontal_gap = 14
         vertical_gap = 18
-        columns = 4
-        rows = 2
+        columns = 6
+        rows = 1
         grid_width = columns * button_width + (columns - 1) * horizontal_gap
         grid_height = rows * button_height + (rows - 1) * vertical_gap
         start_x = (SCREEN_WIDTH - grid_width) // 2
@@ -54,9 +53,8 @@ class MainMenuScene(BaseMenuScene):
             ("Corrida Infinita", "race_infinite_button", 1, 0),
             ("Sobrevivencia", "survival_button", 2, 0),
             ("Hardcore", "hardcore_button", 3, 0),
-            ("Labirinto", "labyrinth_button", 0, 1),
-            ("Dungeons", "dungeons_button", 1, 1),
-            ("Treino", "training_button", 2, 1),
+            ("Labirinto", "labyrinth_button", 4, 0),
+            ("Treino", "training_button", 5, 0),
         ]
 
         menu_buttons = {}
@@ -80,7 +78,6 @@ class MainMenuScene(BaseMenuScene):
         survival_button = menu_buttons["survival_button"]
         hardcore_button = menu_buttons["hardcore_button"]
         labyrinth_button = menu_buttons["labyrinth_button"]
-        dungeons_button = menu_buttons["dungeons_button"]
         training_button = menu_buttons["training_button"]
 
         from game.scenes.leaderboard_scene import LeaderboardScene
@@ -129,7 +126,6 @@ class MainMenuScene(BaseMenuScene):
                 survival_button,
                 hardcore_button,
                 labyrinth_button,
-                dungeons_button,
                 training_button,
                 ranking_button,
                 guide_button,
@@ -142,7 +138,6 @@ class MainMenuScene(BaseMenuScene):
                 survival_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalMode())),
                 hardcore_button: lambda: self.stack.replace(GameScene(self.stack, SurvivalHardcoreMode())),
                 labyrinth_button: lambda: self.stack.replace(GameScene(self.stack, LabyrinthMode())),
-                dungeons_button: lambda: self.stack.push(DungeonSelectScene(self.stack)),
                 training_button: lambda: self.stack.push(TrainingSetupScene(self.stack)),
                 guide_button: lambda: self.stack.push(GuideScene(self.stack)),
                 settings_button: lambda: self.stack.push(SettingsScene(self.stack)),
@@ -252,25 +247,6 @@ class MainMenuScene(BaseMenuScene):
                     "normal_border": "#4ee06a",
                     "hovered_border": "#7ff08e",
                     "selected_border": "#b4f7bf",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "dungeons_button": {
-                "colours": {
-                    "normal_bg": "#1b1230",
-                    "hovered_bg": "#2a1b4a",
-                    "selected_bg": "#3a2668",
-                    "active_bg": "#4a3086",
-                    "normal_text": "#c9b0ff",
-                    "hovered_text": "#efe5ff",
-                    "selected_text": "#efe5ff",
-                    "normal_border": "#8b6dff",
-                    "hovered_border": "#b59cff",
-                    "selected_border": "#d2c1ff",
                 },
                 "font": {
                     "name": "noto_sans",

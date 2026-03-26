@@ -4,14 +4,7 @@ from abc import ABC, abstractmethod
 
 from pygame import Vector2
 
-from game.components.data_components import (
-    DashComponent,
-    MovementComponent,
-    NuclearBombComponent,
-    ParryComponent,
-    PlayerShootComponent,
-    TransformComponent,
-)
+from game.components.data_components import DashComponent, MovementComponent, NuclearBombComponent, ParryComponent
 from game.ecs.entity import Entity
 
 
@@ -57,30 +50,6 @@ class NuclearBombCommand(Command):
         if bomb is None:
             return
         bomb.requested = True
-
-
-class ShootCommand(Command):
-    def __init__(self, screen_position: Vector2) -> None:
-        self.screen_position = Vector2(screen_position)
-
-    def execute(self, entity: Entity, world: "GameWorld") -> None:
-        shoot = entity.get_component(PlayerShootComponent)
-        transform = entity.get_component(TransformComponent)
-        if shoot is None or transform is None:
-            return
-
-        camera_offset = world.runtime_state.get("camera_offset")
-        if isinstance(camera_offset, Vector2):
-            world_position = self.screen_position - camera_offset
-        else:
-            world_position = Vector2(self.screen_position)
-
-        direction = world_position - transform.position
-        if direction.length_squared() <= 0.0001:
-            return
-
-        shoot.aim_direction = direction.normalize()
-        shoot.requested = True
 
 
 from game.core.world import GameWorld

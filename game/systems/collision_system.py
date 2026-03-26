@@ -4,7 +4,6 @@ from game.components.data_components import (
     CollectibleComponent,
     BulletComponent,
     CollisionComponent,
-    DormantComponent,
     DashOnlyDefeatComponent,
     DashComponent,
     GhostComponent,
@@ -107,13 +106,6 @@ class CollisionSystem:
                 continue
 
             if entity.has_tag("enemy") or entity.has_tag("bullet"):
-                dormant = entity.get_component(DormantComponent)
-                if dormant is not None and not dormant.active:
-                    continue
-                if entity.has_tag("bullet"):
-                    bullet = entity.get_component(BulletComponent)
-                    if bullet is not None and bullet.owner_tag == "player":
-                        continue
                 if entity.has_tag("enemy") and is_player_parrying:
                     stagger_duration = 0.9 if player_parry is None else player_parry.stagger_duration
                     self._apply_stagger(entity, stagger_duration)

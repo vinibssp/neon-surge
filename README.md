@@ -29,7 +29,6 @@ python -m game.main
 
 - `WASD`: movimentação do player
 - `Espaço`: dash
-- `Mouse 1`: atirar
 - `Esc`: alternar pausa (abrir/fechar)
 
 ### Menus (UI Navigation)
@@ -101,7 +100,6 @@ Criação de entidades centralizada nas factories (`game/factories`):
 - `SurvivalMode`
 - `SurvivalHardcoreMode`
 - `LabyrinthMode`
-- `DungeonsMode`
 - `TrainingMode`
 
 Cada modo define:
@@ -131,24 +129,6 @@ Sistemas dedicados do modo:
 - `ParrySystem` + `StaggerSystem`: parry ativo no labirinto; vírus afetados ficam parados com pulso visual preto e branco
 
 Para evitar acoplamento com o `SpawnDirector` global, o modo usa `LabyrinthSpawnStrategy` com ciclos de portal desativados e controla spawns via configuração de nível.
-
-#### Modo Dungeons
-
-`DungeonsMode` implementa dungeons procedurais com salas e corredores:
-
-- layout gerado com rooms + corridors, garantindo navegabilidade total
-- sala de spawn segura (sem inimigos instanciados)
-- boss dedicado por dungeon, liberando portal de progresso ao ser derrotado
-- inimigos com ativacao por visao: permanecem inativos ate serem revelados na fog of war
-- camera sempre centralizada no player, sem clamp nas bordas
-- fog of war totalmente escura fora do campo de visao
-
-Sistemas dedicados do modo:
-
-- `DungeonVisibilitySystem`: visao + revelacao progressiva e ativacao de inimigos
-- `DungeonCollisionSystem`: colisao contra paredes da dungeon
-- `DungeonObjectiveSystem`: conclusao do boss e liberacao de portal
-- `CameraSystem`: offset de camera centrado no player
 
 #### Presets por modo
 
