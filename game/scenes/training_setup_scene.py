@@ -190,7 +190,7 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Main Panel
         self._content_panel = create_panel(
-            PanelConfig(rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 200), (1000, 360)), variant="card"),
+            PanelConfig(rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 200), (1000, 400)), variant="card"),
             manager=self.ui_manager,
         )
 
@@ -245,56 +245,56 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Pagination
         self._page_label = create_label(
-            LabelConfig(text="Pagina 1/1", rect=pygame.Rect((400, 320), (200, 30)), variant="muted"),
+            LabelConfig(text="Pagina 1/1", rect=pygame.Rect((400, 325), (200, 30)), variant="muted"),
             manager=self.ui_manager, container=self._content_panel
         )
         self._page_prev_button = create_button(
-            ButtonConfig(text="<", rect=pygame.Rect((340, 315), (50, 35)), variant="ghost"),
+            ButtonConfig(text="<", rect=pygame.Rect((340, 320), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._content_panel
         )
         self._page_next_button = create_button(
-            ButtonConfig(text=">", rect=pygame.Rect((610, 315), (50, 35)), variant="ghost"),
+            ButtonConfig(text=">", rect=pygame.Rect((610, 320), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._content_panel
         )
 
         # Event Interval
         self._event_interval_panel = create_panel(
-            PanelConfig(rect=pygame.Rect((200, 295), (600, 55)), variant="hud"),
+            PanelConfig(rect=pygame.Rect((150, 330), (700, 60)), variant="hud"),
             manager=self.ui_manager, container=self._content_panel
         )
         create_label(
-            LabelConfig(text="INTERVALO ENTRE EVENTOS", rect=pygame.Rect((20, 12), (240, 30)), variant="header"),
+            LabelConfig(text="INTERVALO ENTRE EVENTOS", rect=pygame.Rect((20, 15), (260, 30)), variant="header"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_minus_btn = create_button(
-            ButtonConfig(text="-", rect=pygame.Rect((280, 10), (50, 35)), variant="ghost"),
+            ButtonConfig(text="-", rect=pygame.Rect((300, 12), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_value_label = create_label(
-            LabelConfig(text="22s", rect=pygame.Rect((340, 10), (100, 35)), variant="value"),
+            LabelConfig(text="22s", rect=pygame.Rect((360, 12), (100, 35)), variant="value"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_plus_btn = create_button(
-            ButtonConfig(text="+", rect=pygame.Rect((450, 10), (50, 35)), variant="ghost"),
+            ButtonConfig(text="+", rect=pygame.Rect((470, 12), (50, 35)), variant="ghost"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
 
         # Bottom
         self._summary_label = create_label(
-            LabelConfig(text="Total: 0", rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 570), (600, 30)), variant="subtitle"),
+            LabelConfig(text="Total: 0", rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 605), (600, 30)), variant="subtitle"),
             manager=self.ui_manager,
         )
         self._keyboard_hint_label = create_label(
             LabelConfig(text="1-4: Abas | Q/E: Alternar | PgUp/Dn: Pagina | Enter: Iniciar | +/-: Ajustar | Mouse Wheel: Pagina | Dir: Ajuste Rapido", 
-                        rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 600), (1000, 25)), variant="muted"),
+                        rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 635), (1000, 25)), variant="muted"),
             manager=self.ui_manager,
         )
         self._start_button = create_button(
-            ButtonConfig(text="INICIAR TREINO", rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 630), (250, 50)), variant="primary"),
+            ButtonConfig(text="INICIAR TREINO", rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 665), (250, 50)), variant="primary"),
             manager=self.ui_manager,
         )
         self._back_button = create_button(
-            ButtonConfig(text="VOLTAR", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 630), (250, 50)), variant="danger"),
+            ButtonConfig(text="VOLTAR", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 665), (250, 50)), variant="danger"),
             manager=self.ui_manager,
         )
 
