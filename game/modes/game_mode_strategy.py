@@ -22,6 +22,10 @@ class GameModeStrategy(ABC):
         ...
 
     @abstractmethod
+    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+        ...
+
+    @abstractmethod
     def configure_level(self, scene: "GameScene", level: int) -> None:
         ...
 

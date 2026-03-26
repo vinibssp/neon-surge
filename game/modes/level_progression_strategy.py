@@ -37,10 +37,12 @@ class RaceLevelProgressionStrategy(LevelProgressionStrategy):
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:
         if not self.config.infinite and scene.world.level >= self.config.total_levels:
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
             scene.open_game_over(
                 title="Corrida Completa",
                 subtitle=f"Tempo: {scene.elapsed_time:.2f}s",
                 retry_strategy_factory=scene.mode.create_retry_strategy,
+                final_score=final_score,
             )
             return
         scene.setup_level(scene.world.level + 1)
@@ -104,10 +106,12 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
             return
         if self.current_enemy_index >= self.total_enemies - 1:
             self._completed = True
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
             scene.open_game_over(
                 title="1v1 Completo",
                 subtitle=f"Sobreviveu a {self.total_enemies} inimigos",
                 retry_strategy_factory=scene.mode.create_retry_strategy,
+                final_score=final_score,
             )
             return
 
@@ -119,10 +123,12 @@ class OneVsOneLevelProgressionStrategy(LevelProgressionStrategy):
         next_index = self.current_enemy_index + 1
         if next_index >= self.total_enemies:
             self._completed = True
+            final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
             scene.open_game_over(
                 title="1v1 Completo",
                 subtitle=f"Sobreviveu a {self.total_enemies} inimigos",
                 retry_strategy_factory=scene.mode.create_retry_strategy,
+                final_score=final_score,
             )
             return
 
@@ -160,11 +166,13 @@ class TrainingLevelProgressionStrategy(LevelProgressionStrategy):
             return
 
         self._completed = True
+        final_score = scene.mode.calcular_ranking(scene.elapsed_time, scene.world.level)
         scene.open_game_over(
             title="Treino Completo",
             subtitle=f"Derrotou {self._spawn_strategy.total_planned} inimigos selecionados",
             retry_strategy_factory=scene.mode.create_retry_strategy,
             include_session_summary=True,
+            final_score=final_score,
         )
 
     def on_level_portal_crossed(self, scene: "GameScene") -> None:

@@ -37,6 +37,9 @@ class SurvivalMode(GameModeStrategy):
             player.add_component(NuclearBombComponent())
 
     def on_player_death(self, scene: "GameScene") -> None:
+        elapsed_time = float(scene.elapsed_time)
+        reached_level = int(scene.world.level)
+        score = self.calcular_ranking(elapsed_time, reached_level)
         death_cause = scene.world.runtime_state.get("last_death_cause")
         scene.open_game_over(
             title="Game Over",
@@ -44,7 +47,12 @@ class SurvivalMode(GameModeStrategy):
             retry_strategy_factory=self.create_retry_strategy,
             death_cause=death_cause if isinstance(death_cause, str) else None,
             include_session_summary=True,
+            final_score=score,
         )
+
+    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+        del reached_level
+        return round(elapsed_time, 2)
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         del scene, level

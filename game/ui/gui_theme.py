@@ -9,6 +9,16 @@ from .theme.retrowave_theme import THEME_DATA
 
 def create_ui_manager(window_size: tuple[int, int]) -> pygame_gui.UIManager:
     manager = pygame_gui.UIManager(window_size, THEME_DATA)
+    manager.preload_fonts(
+        [
+            {
+                "name": "noto_sans",
+                "point_size": 14,
+                "style": "italic",
+                "antialiased": "1",
+            }
+        ]
+    )
 
     return manager
 

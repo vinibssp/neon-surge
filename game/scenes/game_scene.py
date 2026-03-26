@@ -52,6 +52,7 @@ class PendingGameOverTransition:
     retry_strategy_factory: Callable[[], GameModeStrategy]
     death_cause: str | None
     include_session_summary: bool
+    final_score: float
 
 
 class GameScene(Scene):
@@ -268,13 +269,20 @@ class GameScene(Scene):
         retry_strategy_factory: Callable[[], GameModeStrategy],
         death_cause: str | None = None,
         include_session_summary: bool = False,
+        final_score: float | None = None,
     ) -> None:
+        resolved_score = (
+            float(final_score)
+            if final_score is not None
+            else float(self.mode.calcular_ranking(self.elapsed_time, self.world.level))
+        )
         self._pending_game_over_transition = PendingGameOverTransition(
             title=title,
             subtitle=subtitle,
             retry_strategy_factory=retry_strategy_factory,
             death_cause=death_cause,
             include_session_summary=include_session_summary,
+            final_score=resolved_score,
         )
 
     def _commit_pending_game_over_transition(self) -> None:
@@ -293,6 +301,7 @@ class GameScene(Scene):
                 death_cause=pending.death_cause,
                 session_stats=summary_stats,
                 elapsed_time=self.elapsed_time if pending.include_session_summary else None,
+                final_score=pending.final_score,
             )
         )
 

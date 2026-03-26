@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Callable
 
 import pygame
+from pygame_gui.elements import UITextBox
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
@@ -24,12 +25,17 @@ class GameOverScene(BaseMenuScene):
         death_cause: str | None = None,
         session_stats: GameSessionStats | None = None,
         elapsed_time: float | None = None,
+        final_score: float = 0.0,
     ) -> None:
         super().__init__(stack)
         self.retry_strategy_factory = retry_strategy_factory
         self.reached_level = reached_level
         self.session_stats = session_stats
         self.elapsed_time = elapsed_time
+        self._last_score = float(final_score)
+        self._ranking_service = RankingService()
+        self._current_player = self._ranking_service.get_player_name() or "ANONIMO"
+        self._pending_global_data: list[dict] | None = None
         
         # Obter nome do modo
         self._retry_mode_instance = self.retry_strategy_factory()
@@ -43,11 +49,9 @@ class GameOverScene(BaseMenuScene):
             "SurvivalHardcore": "HARDCORE",
             "Labyrinth": "LABIRINTO"
         }
+        self._time_based_modes = {"Race", "Survival", "SurvivalHardcore", "OneVsOne", "Training"}
+        title_variant = "title" if len(title) <= 18 else "subtitle"
         
-        self._global_data: list[dict] | None = None
-        self._global_applied = False
-        self._global_labels: list[object] = []
-
         _labels: list[object] = []
 
         _labels.append(
@@ -55,7 +59,7 @@ class GameOverScene(BaseMenuScene):
                 LabelConfig(
                     text=title,
                     rect=pygame.Rect((40, 40), (400, 70)),
-                    variant="title",
+                    variant=title_variant,
                 ),
                 manager=self.ui_manager,
             )
@@ -140,7 +144,6 @@ class GameOverScene(BaseMenuScene):
             manager=self.ui_manager,
         )
         
-        # Painel Direito: RELATÓRIO DE COMBATE
         self.combat_panel = create_panel(
             PanelConfig(
                 rect=pygame.Rect((500, 40), (700, SCREEN_HEIGHT - 80)),
@@ -151,18 +154,25 @@ class GameOverScene(BaseMenuScene):
         
         mode_display = self._modes_display.get(self._mode_name, self._mode_name)
         create_label(
-            LabelConfig(text=f"TOP 5 LOCAL - {mode_display}", rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=f"TOP 10 LOCAL - {mode_display}", rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
         create_label(
-            LabelConfig(text=f"TOP 5 GLOBAL - {mode_display}", rect=pygame.Rect((360, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=f"TOP 10 GLOBAL - {mode_display}", rect=pygame.Rect((360, 20), (320, 40)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
-        
-        self.loading_global_lbl = create_label(
-            LabelConfig(text="Buscando...", rect=pygame.Rect((360, 80), (320, 30)), variant="muted"),
+
+        self.local_ranking_box = UITextBox(
+            html_text="",
+            relative_rect=pygame.Rect((20, 70), (320, SCREEN_HEIGHT - 170)),
+            manager=self.ui_manager,
+            container=self.combat_panel,
+        )
+        self.global_ranking_box = UITextBox(
+            html_text="<i>Sincronizando com a rede...</i>",
+            relative_rect=pygame.Rect((360, 70), (320, SCREEN_HEIGHT - 170)),
             manager=self.ui_manager,
             container=self.combat_panel
         )
@@ -178,80 +188,64 @@ class GameOverScene(BaseMenuScene):
 
     def on_enter(self) -> None:
         self.stack.event_bus.publish(AudioContextChanged(context="game_over", reason="game_over_entered"))
-        
-        self._last_score = self.reached_level * 1000
-        if self.session_stats is not None:
-            self._last_score += self.session_stats.enemy_spawned_total * 50
-            self._last_score += self.session_stats.collectible_collected_total * 200
 
-        RankingService().save_score(
+        self._ranking_service.save_local_score(
+            player_name=self._current_player,
+            mode=self._mode_name,
             score=self._last_score,
-            mode=self._mode_name
         )
-        
-        self._show_local_ranking()
-        RankingService().fetch_global_ranking(limit=5, mode=self._mode_name, callback=self._on_global_fetched)
+        local_list = self._ranking_service.get_local_top_10(self._mode_name)
+        self.local_ranking_box.set_text(
+            self._format_ranking_html(local_list, self._current_player, self._last_score)
+        )
+        self._ranking_service.enviar_e_buscar_global(
+            player_name=self._current_player,
+            mode=self._mode_name,
+            score=self._last_score,
+            callback=self._on_global_ranking_received,
+        )
 
-    def _show_local_ranking(self) -> None:
-        local_data = RankingService().get_local_ranking(mode=self._mode_name, limit=5)
-        player_name = RankingService().get_player_name() or "Desconhecido"
-        start_y = 80
-        if not local_data:
-            create_label(
-                LabelConfig(text="Nenhum registro.", rect=pygame.Rect((20, start_y), (320, 30)), variant="muted"),
-                manager=self.ui_manager, container=self.combat_panel
-            )
-            return
-            
-        for i, entry in enumerate(local_data):
-            is_current = (
-                entry.get("player_name") == player_name and 
-                abs(entry.get("score", 0) - self._last_score) < 0.01
-            )
-            create_label(
-                LabelConfig(
-                    text=f"{i+1}. {entry.get('player_name', '')} | {entry.get('score', 0)}",
-                    rect=pygame.Rect((20, start_y + (i * 35)), (320, 30)),
-                    variant="highlight" if is_current else "value"
-                ),
-                manager=self.ui_manager, container=self.combat_panel
-            )
-
-    def _on_global_fetched(self, data: list[dict]) -> None:
-        self._global_data = data
+    def _on_global_ranking_received(self, lista_global: list[dict]) -> None:
+        self._pending_global_data = lista_global
 
     def update(self, dt: float) -> None:
         super().update(dt)
-        if self._global_data is not None and not self._global_applied:
-            self._global_applied = True
-            self.loading_global_lbl.kill()
-            
-            start_y = 80
-            if not self._global_data:
-                self._global_labels.append(
-                    create_label(
-                        LabelConfig(text="Sem registros ou erro.", rect=pygame.Rect((360, start_y), (320, 30)), variant="muted"),
-                        manager=self.ui_manager, container=self.combat_panel
-                    )
-                )
-                return
-            
-            player_name = RankingService().get_player_name() or "Desconhecido"
-            for i, entry in enumerate(self._global_data):
-                is_current = (
-                    entry.get("player_name") == player_name and 
-                    abs(entry.get("score", 0) - self._last_score) < 0.01
-                )
-                self._global_labels.append(
-                    create_label(
-                        LabelConfig(
-                            text=f"{i+1}. {entry.get('player_name', '')} | {entry.get('score', 0)}",
-                            rect=pygame.Rect((360, start_y + (i * 35)), (320, 30)),
-                            variant="highlight" if is_current else "value"
-                        ),
-                        manager=self.ui_manager, container=self.combat_panel
-                    )
-                )
+        if self._pending_global_data is not None:
+            global_data = self._pending_global_data
+            self._pending_global_data = None
+            self.global_ranking_box.set_text(
+                self._format_ranking_html(global_data, self._current_player, self._last_score)
+            )
+
+    def _format_ranking_html(self, ranking_list: list[dict], current_player: str, current_score: float) -> str:
+        if not ranking_list:
+            return "<i>Nenhum registro.</i>"
+
+        lines: list[str] = []
+        top_10 = ranking_list[:10]
+        for index in range(10):
+            if index < len(top_10):
+                item = top_10[index]
+                item_name = str(item.get("player_name", "ANONIMO"))
+                item_score = float(item.get("score", 0.0))
+                line = f"{index + 1}. {item_name} - {self._format_metric_value(item_score)}"
+                if item_name == current_player and item_score == current_score:
+                    line = f"<font color='#44ff44'>{line}</font>"
+            else:
+                line = f"{index + 1}. ---"
+            lines.append(line)
+
+        return "<br>".join(lines)
+
+    def _metric_label(self) -> str:
+        if self._mode_name in self._time_based_modes:
+            return "Tempo"
+        return "Score"
+
+    def _format_metric_value(self, value: float) -> str:
+        if self._mode_name in self._time_based_modes:
+            return f"{value:.2f}s"
+        return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import urllib.parse
 import urllib.request
 from typing import Any, Callable
 
@@ -44,42 +45,68 @@ class RankingService:
         self.local_data["player_name"] = name
         self._save_local_data()
 
-    def save_score(self, score: float, mode: str) -> None:
-        player_name = self.get_player_name() or "Desconhecido"
-        
-        # Save locally
+    def save_local_score(self, player_name: str, mode: str, score: float) -> None:
         scores_dict = self.local_data.setdefault("scores", {})
         mode_scores = scores_dict.setdefault(mode, [])
-        mode_scores.append({"player_name": player_name, "score": score})
+        mode_scores.append({"player_name": player_name, "score": float(score)})
         mode_scores.sort(key=lambda x: x.get("score", 0), reverse=True)
         scores_dict[mode] = mode_scores[:10]
         self._save_local_data()
 
+    def get_local_top_10(self, mode: str) -> list[dict[str, Any]]:
+        scores = self.local_data.get("scores", {}).get(mode, [])
+        return list(scores[:10])
+
+    def enviar_e_buscar_global(
+        self,
+        player_name: str,
+        mode: str,
+        score: float,
+        callback: Callable[[list[dict[str, Any]]], None],
+    ) -> None:
         def _run() -> None:
             try:
-                payload = json.dumps({
-                    "player_name": player_name,
-                    "score": float(score),
-                    "mode": mode
-                }).encode("utf-8")
-                
-                req = urllib.request.Request(
+                payload = json.dumps(
+                    {
+                        "player_name": player_name,
+                        "score": float(score),
+                        "mode": mode,
+                    }
+                ).encode("utf-8")
+                post_request = urllib.request.Request(
                     SUPABASE_URL,
                     data=payload,
                     headers=self.headers,
-                    method="POST"
+                    method="POST",
                 )
-                with urllib.request.urlopen(req) as response:
-                    pass  # Requisição concluída com sucesso
+                with urllib.request.urlopen(post_request):
+                    pass
+
+                mode_encoded = urllib.parse.quote(mode)
+                get_url = f"{SUPABASE_URL}?select=*&mode=eq.{mode_encoded}&order=score.desc&limit=10"
+                get_request = urllib.request.Request(get_url, headers=self.headers, method="GET")
+                with urllib.request.urlopen(get_request) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                    callback(data)
             except Exception as e:
-                print(f"[RankingService] Erro ao salvar pontuação: {e}")
+                print(f"[RankingService] Erro no envio/busca global: {e}")
+                callback([])
 
         threading.Thread(target=_run, daemon=True).start()
+
+    def save_score(self, score: float, mode: str) -> None:
+        player_name = self.get_player_name() or "Desconhecido"
+        self.save_local_score(player_name=player_name, mode=mode, score=score)
+        self.enviar_e_buscar_global(
+            player_name=player_name,
+            mode=mode,
+            score=score,
+            callback=lambda _data: None,
+        )
 
     def fetch_global_ranking(self, limit: int, mode: str, callback: Callable[[list[dict[str, Any]]], None]) -> None:
         def _run() -> None:
             try:
-                import urllib.parse
                 mode_encoded = urllib.parse.quote(mode)
                 url = f"{SUPABASE_URL}?select=*&mode=eq.{mode_encoded}&order=score.desc&limit={limit}"
                 req = urllib.request.Request(url, headers=self.headers, method="GET")
@@ -93,5 +120,4 @@ class RankingService:
         threading.Thread(target=_run, daemon=True).start()
 
     def get_local_ranking(self, mode: str, limit: int = 10) -> list[dict[str, Any]]:
-        scores = self.local_data.get("scores", {}).get(mode, [])
-        return scores[:limit]
+        return self.get_local_top_10(mode)[:limit]

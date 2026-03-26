@@ -31,7 +31,22 @@ class RaceMode(GameModeStrategy):
         scene.setup_level(1)
 
     def on_player_death(self, scene: "GameScene") -> None:
-        scene.setup_level(scene.world.level)
+        elapsed_time = float(scene.elapsed_time)
+        reached_level = int(scene.world.level)
+        score = self.calcular_ranking(elapsed_time, reached_level)
+        death_cause = scene.world.runtime_state.get("last_death_cause")
+        scene.open_game_over(
+            title="Corrida - Derrota",
+            subtitle=f"Tempo: {scene.elapsed_time:.2f}s",
+            retry_strategy_factory=self.create_retry_strategy,
+            death_cause=death_cause if isinstance(death_cause, str) else None,
+            include_session_summary=True,
+            final_score=score,
+        )
+
+    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+        del reached_level
+        return round(elapsed_time, 2)
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         growth_steps = max(0, (level - 1) // max(1, self.config.collectible_growth_every))

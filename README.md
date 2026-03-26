@@ -109,6 +109,7 @@ Cada modo define:
 - estratégia de progressão (`build_level_progression_strategy`)
 - HUD (`build_hud_lines`)
 - retry (`create_retry_strategy`)
+- score de ranking (`calcular_ranking(elapsed_time, reached_level) -> float`)
 
 #### Modo Labirinto
 

@@ -27,6 +27,7 @@ class LeaderboardScene(BaseMenuScene):
             "SurvivalHardcore": "HARDCORE",
             "Labyrinth": "LABIRINTO"
         }
+        self._time_based_modes = {"Race", "Survival", "SurvivalHardcore", "OneVsOne", "Training"}
         
         self._setup_ui()
         self._fetch_data()
@@ -171,19 +172,19 @@ class LeaderboardScene(BaseMenuScene):
             start_y = 20
             for i, entry in enumerate(self._ranking_data):
                 name = entry.get("player_name", "Desconhecido")
-                score = entry.get("score", 0)
+                score = float(entry.get("score", 0.0))
                 
                 is_highlight = False
                 if self._highlight_data:
                     is_highlight = (
                         entry.get("player_name") == self._highlight_data.get("player_name") and 
-                        abs(entry.get("score", 0) - self._highlight_data.get("score", 0)) < 0.01
+                        abs(score - float(self._highlight_data.get("score", 0.0))) < 0.01
                     )
                 
                 self._labels.append(
                     create_label(
                         LabelConfig(
-                            text=f"{i+1}. {name} | Score: {score}",
+                            text=f"{i+1}. {name} | {self._metric_label()}: {self._format_metric_value(score)}",
                             rect=pygame.Rect((50, start_y + (i * 30)), (600, 30)),
                             variant="highlight" if is_highlight else "value",
                         ),
@@ -191,3 +192,13 @@ class LeaderboardScene(BaseMenuScene):
                         container=self.data_panel
                     )
                 )
+
+    def _metric_label(self) -> str:
+        if self._mode_key in self._time_based_modes:
+            return "Tempo"
+        return "Score"
+
+    def _format_metric_value(self, value: float) -> str:
+        if self._mode_key in self._time_based_modes:
+            return f"{value:.2f}s"
+        return f"{value:.2f}"

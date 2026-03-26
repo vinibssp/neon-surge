@@ -30,6 +30,9 @@ class OneVsOneMode(GameModeStrategy):
         scene.setup_level(1)
 
     def on_player_death(self, scene: "GameScene") -> None:
+        elapsed_time = float(scene.elapsed_time)
+        reached_level = int(scene.world.level)
+        score = self.calcular_ranking(elapsed_time, reached_level)
         defeated_count = 0
         if self._progression is not None:
             defeated_count = max(0, self._progression.current_enemy_index)
@@ -40,7 +43,12 @@ class OneVsOneMode(GameModeStrategy):
             retry_strategy_factory=self.create_retry_strategy,
             death_cause=death_cause if isinstance(death_cause, str) else None,
             include_session_summary=True,
+            final_score=score,
         )
+
+    def calcular_ranking(self, elapsed_time: float, reached_level: int) -> float:
+        del reached_level
+        return round(elapsed_time, 2)
 
     def configure_level(self, scene: "GameScene", level: int) -> None:
         del scene, level
