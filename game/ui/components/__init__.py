@@ -6,6 +6,8 @@ from game.ui.components.progress_bar import ProgressBarConfig, create_progress_b
 from game.ui.components.checkbox import CheckboxConfig, create_checkbox
 from game.ui.components.slider import SliderConfig, create_slider
 from game.ui.components.status_bar import StatusBarConfig, create_status_bar
+from game.ui.components.ranking_table import RankingTable, RankingTableConfig
+from game.ui.components.table_view import TableView, TableViewConfig, TableColumn, TableCell, TableRow
 
 __all__ = [
     "ButtonConfig", "create_button",
@@ -16,4 +18,6 @@ __all__ = [
     "CheckboxConfig", "create_checkbox",
     "SliderConfig", "create_slider",
     "StatusBarConfig", "create_status_bar",
+    "RankingTable", "RankingTableConfig",
+    "TableView", "TableViewConfig", "TableColumn", "TableCell", "TableRow",
 ]

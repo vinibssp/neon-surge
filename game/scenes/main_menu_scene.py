@@ -26,44 +26,44 @@ class MainMenuScene(BaseMenuScene):
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
         self._register_main_menu_button_themes()
 
-        title = create_label(
+        subtitle = create_label(
             LabelConfig(
-                text="NEON SURGE 2",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 116), (440, 72)),
-                variant="title",
+                text="2",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 1100, 55), (2200, 210)),
+                variant="subtitle",
+                object_id="main_menu_subtitle",
             ),
             manager=self.ui_manager,
         )
-        subtitle = create_label(
+        title = create_label(
             LabelConfig(
-                text="Selecione um modo",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 180), (300, 40)),
-                variant="subtitle",
+                text="NEON SURGE",
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 430, 108), (860, 120)),
+                variant="title",
+                object_id="main_menu_title",
             ),
             manager=self.ui_manager,
         )
         del title, subtitle
 
-        button_width = 246
+        button_width = 188
         button_height = 58
-        horizontal_gap = 18
+        horizontal_gap = 14
         vertical_gap = 18
-        columns = 4
-        rows = 2
+        columns = 6
+        rows = 1
         grid_width = columns * button_width + (columns - 1) * horizontal_gap
         grid_height = rows * button_height + (rows - 1) * vertical_gap
         start_x = (SCREEN_WIDTH - grid_width) // 2
-        start_y = max(250, (SCREEN_HEIGHT - grid_height) // 2)
+        start_y = max(360, (SCREEN_HEIGHT - grid_height) // 2)
 
         button_specs = [
             ("Corrida", "race_button", 0, 0),
             ("Corrida Infinita", "race_infinite_button", 1, 0),
             ("Sobrevivencia", "survival_button", 2, 0),
             ("Hardcore", "hardcore_button", 3, 0),
-            ("Labirinto", "labyrinth_button", 0, 1),
-            ("Treino", "training_button", 1, 1),
-            ("Guia", "guide_button", 2, 1),
-            ("Config", "settings_button", 3, 1),
+            ("Labirinto", "labyrinth_button", 4, 0),
+            ("Treino", "training_button", 5, 0),
         ]
 
         menu_buttons = {}
@@ -88,16 +88,42 @@ class MainMenuScene(BaseMenuScene):
         hardcore_button = menu_buttons["hardcore_button"]
         labyrinth_button = menu_buttons["labyrinth_button"]
         training_button = menu_buttons["training_button"]
-        guide_button = menu_buttons["guide_button"]
-        settings_button = menu_buttons["settings_button"]
 
         from game.scenes.leaderboard_scene import LeaderboardScene
         ranking_button = create_button(
             ButtonConfig(
                 text="RANKING",
-                rect=pygame.Rect(-200, 20, 160, 45),
-                anchors={'right': 'right', 'top': 'top'},
+                rect=pygame.Rect(20, -80, 180, 52),
+                anchors={"left": "left", "bottom": "bottom"},
                 variant="primary",
+            ),
+            manager=self.ui_manager,
+        )
+        guide_button = create_button(
+            ButtonConfig(
+                text="?",
+                rect=pygame.Rect(-150, -80, 58, 58),
+                anchors={"right": "right", "bottom": "bottom"},
+                variant="primary",
+            ),
+            manager=self.ui_manager,
+        )
+        settings_button = create_button(
+            ButtonConfig(
+                text="*",
+                rect=pygame.Rect(-80, -80, 58, 58),
+                anchors={"right": "right", "bottom": "bottom"},
+                variant="primary",
+            ),
+            manager=self.ui_manager,
+        )
+
+        close_button = create_button(
+            ButtonConfig(
+                text="X",
+                rect=pygame.Rect(-80, 20, 58, 45),
+                anchors={"right": "right", "top": "top"},
+                variant="danger",
             ),
             manager=self.ui_manager,
         )
@@ -110,9 +136,10 @@ class MainMenuScene(BaseMenuScene):
                 hardcore_button,
                 labyrinth_button,
                 training_button,
+                ranking_button,
                 guide_button,
                 settings_button,
-                ranking_button,
+                close_button,
             ],
             actions={
                 race_button: lambda: self.stack.replace(GameScene(self.stack, RaceMode())),
@@ -124,12 +151,33 @@ class MainMenuScene(BaseMenuScene):
                 guide_button: lambda: self.stack.push(GuideScene(self.stack)),
                 settings_button: lambda: self.stack.push(SettingsScene(self.stack)),
                 ranking_button: lambda: self.stack.push(LeaderboardScene(self.stack)),
+                close_button: self._quit,
             },
             on_cancel=self._quit,
         )
 
     def _register_main_menu_button_themes(self) -> None:
         button_themes: dict[str, dict] = {
+            "main_menu_title": {
+                "colours": {
+                    "normal_text": "#3aa8ff",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "72",
+                    "bold": "1",
+                },
+            },
+            "main_menu_subtitle": {
+                "colours": {
+                    "normal_text": "#ff4fcf",
+                },
+                "font": {
+                    "name": "noto_sans",
+                    "size": "148",
+                    "bold": "1",
+                },
+            },
             "race_button": {
                 "colours": {
                     "normal_bg": "#0a1f3e",
@@ -237,44 +285,6 @@ class MainMenuScene(BaseMenuScene):
                     "normal_border": "#49d4ff",
                     "hovered_border": "#86e5ff",
                     "selected_border": "#b6efff",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "guide_button": {
-                "colours": {
-                    "normal_bg": "#3f3805",
-                    "hovered_bg": "#5a5009",
-                    "selected_bg": "#75680c",
-                    "active_bg": "#908110",
-                    "normal_text": "#fff1a1",
-                    "hovered_text": "#fffbe1",
-                    "selected_text": "#fffbe1",
-                    "normal_border": "#f1dc3b",
-                    "hovered_border": "#f7e570",
-                    "selected_border": "#fbef9e",
-                },
-                "font": {
-                    "name": "noto_sans",
-                    "size": "16",
-                    "bold": "1",
-                },
-            },
-            "settings_button": {
-                "colours": {
-                    "normal_bg": "#35201d",
-                    "hovered_bg": "#4d2f2a",
-                    "selected_bg": "#664039",
-                    "active_bg": "#7f5148",
-                    "normal_text": "#ffd5cb",
-                    "hovered_text": "#ffefeb",
-                    "selected_text": "#ffefeb",
-                    "normal_border": "#ff9d85",
-                    "hovered_border": "#ffb59f",
-                    "selected_border": "#ffcfbf",
                 },
                 "font": {
                     "name": "noto_sans",
