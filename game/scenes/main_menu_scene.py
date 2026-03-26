@@ -70,14 +70,14 @@ class MainMenuScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        create_label(
-            LabelConfig(
-                text="SYNTH COMBAT ARENA",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 124), (520, 36)),
-                variant="subtitle",
-            ),
-            manager=self.ui_manager,
-        )
+        # create_label(
+        #     LabelConfig(
+        #         text="SYNTH COMBAT ARENA",
+        #         rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 124), (520, 36)),
+        #         variant="subtitle",
+        #     ),
+        #     manager=self.ui_manager,
+        # )
 
         # 2. Corner Buttons
         # Top Right: Exit

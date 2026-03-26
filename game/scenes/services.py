@@ -230,21 +230,6 @@ class CyberpunkMenuBackgroundRenderer:
                 blue = int(25 + (20 * t2))
             pygame.draw.line(screen, (min(255, red), min(255, green), min(255, blue)), (0, y), (width, y))
 
-        # Layered nebula haze to deepen the sky.
-        nebula = pygame.Surface((width, height), pygame.SRCALPHA)
-        nebula_specs = (
-            (0.18, 0.25, 0.42, 0.16, (86, 26, 118, 36), 0.18),
-            (0.73, 0.21, 0.38, 0.14, (42, 95, 160, 30), -0.14),
-            (0.48, 0.30, 0.46, 0.18, (255, 88, 160, 24), 0.09),
-        )
-        for cx_ratio, cy_ratio, w_ratio, h_ratio, color, phase in nebula_specs:
-            osc_x = math.sin(elapsed_time * 0.16 + phase) * width * 0.018
-            osc_y = math.cos(elapsed_time * 0.12 + phase * 1.8) * height * 0.01
-            center = (int(width * cx_ratio + osc_x), int(horizon_y * cy_ratio + osc_y))
-            size = (int(width * w_ratio), int(height * h_ratio))
-            pygame.draw.ellipse(nebula, color, pygame.Rect(center[0] - size[0] // 2, center[1] - size[1] // 2, size[0], size[1]))
-        screen.blit(nebula, (0, 0))
-
         # 2. STARS (Twinkling)
         sky_height = max(1, int(horizon_y * 0.9))
         self._ensure_star_layout(width, sky_height)
