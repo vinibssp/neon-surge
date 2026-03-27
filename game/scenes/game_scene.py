@@ -109,10 +109,18 @@ class GameScene(Scene):
         self._unregister_event_handlers()
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
+        input_settings = None
+        if self.stack.input_settings_manager is not None:
+            input_settings = self.stack.input_settings_manager.settings
+
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.stack.push(PauseScene(self.stack))
                 return
+            if event.type == pygame.JOYBUTTONDOWN:
+                if input_settings and event.button in input_settings.joy_pause:
+                    self.stack.push(PauseScene(self.stack))
+                    return
 
         if self.world.player is None:
             return

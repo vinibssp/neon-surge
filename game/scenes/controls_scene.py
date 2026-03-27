@@ -49,35 +49,42 @@ class ControlsScene(BaseMenuScene):
             manager=self.ui_manager,
         )
 
+        # (action_id, action_name, is_joystick_mapping)
         actions = [
-            ("up", "MOVER PARA CIMA"),
-            ("down", "MOVER PARA BAIXO"),
-            ("left", "MOVER PARA ESQUERDA"),
-            ("right", "MOVER PARA DIREITA"),
-            ("dash", "DASH / IMPULSO"),
-            ("parry", "PARRY / DEFESA"),
-            ("bomb", "BOMBA NUCLEAR"),
+            ("up", "TECLADO: CIMA", False),
+            ("down", "TECLADO: BAIXO", False),
+            ("left", "TECLADO: ESQUERDA", False),
+            ("right", "TECLADO: DIREITA", False),
+            ("dash", "TECLADO: DASH", False),
+            ("parry", "TECLADO: PARRY", False),
+            ("bomb", "TECLADO: BOMBA", False),
+            ("joy_dash", "CONTROLE: DASH", True),
+            ("joy_parry", "CONTROLE: PARRY", True),
+            ("joy_bomb", "CONTROLE: BOMBA", True),
         ]
 
-        y_offset = 20
-        for action_id, action_name in actions:
+        y_offset = 10
+        for action_id, action_name, is_joy in actions:
             create_label(
                 LabelConfig(
                     text=action_name,
-                    rect=pygame.Rect((40, y_offset), (300, 40)),
+                    rect=pygame.Rect((20, y_offset), (300, 30)),
                     variant="settings_label",
                 ),
                 manager=self.ui_manager,
                 container=self._controls_panel,
             )
 
-            current_keys = getattr(self._input_settings_manager.settings, action_id)
-            keys_text = ", ".join([pygame.key.name(k).upper() for k in current_keys])
+            current_val = getattr(self._input_settings_manager.settings, action_id)
+            if is_joy:
+                keys_text = ", ".join([f"BOTÃO {b}" for b in current_val])
+            else:
+                keys_text = ", ".join([pygame.key.name(k).upper() for k in current_val])
             
             label = create_label(
                 LabelConfig(
                     text=keys_text,
-                    rect=pygame.Rect((350, y_offset), (300, 40)),
+                    rect=pygame.Rect((330, y_offset), (350, 30)),
                     variant="value",
                 ),
                 manager=self.ui_manager,
@@ -87,8 +94,8 @@ class ControlsScene(BaseMenuScene):
 
             btn = create_button(
                 ButtonConfig(
-                    text="REMAREAR",
-                    rect=pygame.Rect((670, y_offset), (180, 40)),
+                    text="REMAPEAR",
+                    rect=pygame.Rect((700, y_offset), (150, 30)),
                     variant="primary",
                 ),
                 manager=self.ui_manager,
@@ -96,7 +103,7 @@ class ControlsScene(BaseMenuScene):
             )
             self._binding_buttons[action_id] = btn
             
-            y_offset += 55
+            y_offset += 40
 
         # Reset Button
         self._reset_button = create_button(
@@ -126,7 +133,6 @@ class ControlsScene(BaseMenuScene):
 
         for action_id, btn in self._binding_buttons.items():
             controls.append(btn)
-            # Use a default argument in lambda to capture the current action_id
             actions_map[btn] = lambda aid=action_id: self._start_binding(aid)
 
         controls.append(self._reset_button)
@@ -143,8 +149,7 @@ class ControlsScene(BaseMenuScene):
 
     def _start_binding(self, action_id: str) -> None:
         self._waiting_for_key = action_id
-        self._binding_labels[action_id].set_text("PRESSIONE UMA TECLA...")
-        # Disable navigation while waiting for key
+        self._binding_labels[action_id].set_text("PRESSIONE UMA TECLA/BOTÃO...")
         self.navigator.enabled = False
 
     def _reset_defaults(self) -> None:
@@ -155,8 +160,11 @@ class ControlsScene(BaseMenuScene):
 
     def _update_all_labels(self) -> None:
         for action_id, label in self._binding_labels.items():
-            current_keys = getattr(self._input_settings_manager.settings, action_id)
-            keys_text = ", ".join([pygame.key.name(k).upper() for k in current_keys])
+            current_val = getattr(self._input_settings_manager.settings, action_id)
+            if action_id.startswith("joy_"):
+                keys_text = ", ".join([f"BOTÃO {b}" for b in current_val])
+            else:
+                keys_text = ", ".join([pygame.key.name(k).upper() for k in current_val])
             label.set_text(keys_text)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
@@ -164,22 +172,27 @@ class ControlsScene(BaseMenuScene):
             for event in events:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        # If already binding, ESC cancels it
                         self._waiting_for_key = None
                         self._update_all_labels()
                         self.navigator.enabled = True
                         return
 
-                    # Rebind: for now, we replace the first key or just set it as the only key
-                    # To keep it simple, let's just set this as the ONLY key for that action
-                    # We could also append it to a list if we wanted multiple keys
-                    setattr(self._input_settings_manager.settings, self._waiting_for_key, [event.key])
-                    self._input_settings_manager.save()
-                    
-                    self._waiting_for_key = None
-                    self._update_all_labels()
-                    self.navigator.enabled = True
-                    return
+                    if not self._waiting_for_key.startswith("joy_"):
+                        setattr(self._input_settings_manager.settings, self._waiting_for_key, [event.key])
+                        self._input_settings_manager.save()
+                        self._waiting_for_key = None
+                        self._update_all_labels()
+                        self.navigator.enabled = True
+                        return
+
+                if event.type == pygame.JOYBUTTONDOWN:
+                    if self._waiting_for_key.startswith("joy_"):
+                        setattr(self._input_settings_manager.settings, self._waiting_for_key, [event.button])
+                        self._input_settings_manager.save()
+                        self._waiting_for_key = None
+                        self._update_all_labels()
+                        self.navigator.enabled = True
+                        return
             return
 
         super().handle_input(events)

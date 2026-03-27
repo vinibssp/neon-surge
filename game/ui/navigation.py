@@ -25,10 +25,54 @@ class PygameGUIEventAdapter:
         self._slider_moved_event = getattr(pygame_gui, "UI_HORIZONTAL_SLIDER_MOVED", None)
         self._text_entry_changed_event = getattr(pygame_gui, "UI_TEXT_ENTRY_CHANGED", None)
         self._text_entry_finished_event = getattr(pygame_gui, "UI_TEXT_ENTRY_FINISHED", None)
+        
+        # Navigation cooldown for joystick
+        self._last_nav_time = 0.0
+        self._nav_cooldown = 0.2  # Seconds
+        self._joy_deadzone = 0.5
 
     def process_event(self, event: pygame.event.Event) -> bool:
         if event.type == pygame.KEYDOWN:
             return self.navigator.on_keydown(event)
+
+        # Joystick Navigation
+        if event.type == pygame.JOYBUTTONDOWN:
+            if event.button == 0: # A / Cross
+                self.navigator.confirm_selected()
+                return True
+            if event.button == 1: # B / Circle
+                self.navigator.cancel()
+                return True
+
+        if event.type == pygame.JOYHATMOTION:
+            # D-pad navigation
+            hx, hy = event.value
+            if hx != 0 or hy != 0:
+                now = pygame.time.get_ticks() / 1000.0
+                if now - self._last_nav_time > self._nav_cooldown:
+                    if hy > 0: self.navigator.move_selection_spatial(0, -1) # Up
+                    elif hy < 0: self.navigator.move_selection_spatial(0, 1) # Down
+                    elif hx < 0: self.navigator.move_selection_spatial(-1, 0) # Left
+                    elif hx > 0: self.navigator.move_selection_spatial(1, 0) # Right
+                    self._last_nav_time = now
+                    return True
+
+        if event.type == pygame.JOYAXISMOTION:
+            # Left stick navigation
+            if event.axis in (0, 1): # Left stick X and Y
+                joy = pygame.joystick.Joystick(event.joy)
+                jx = joy.get_axis(0)
+                jy = joy.get_axis(1)
+                
+                if abs(jx) > self._joy_deadzone or abs(jy) > self._joy_deadzone:
+                    now = pygame.time.get_ticks() / 1000.0
+                    if now - self._last_nav_time > self._nav_cooldown:
+                        if jy < -self._joy_deadzone: self.navigator.move_selection_spatial(0, -1) # Up
+                        elif jy > self._joy_deadzone: self.navigator.move_selection_spatial(0, 1) # Down
+                        elif jx < -self._joy_deadzone: self.navigator.move_selection_spatial(-1, 0) # Left
+                        elif jx > self._joy_deadzone: self.navigator.move_selection_spatial(1, 0) # Right
+                        self._last_nav_time = now
+                        return True
 
         if event.type == pygame_gui.UI_BUTTON_ON_HOVERED:
             ui_element = event.ui_element
@@ -148,11 +192,17 @@ class UINavigator:
             return False
 
         key = event.key
-        if key in (pygame.K_UP, pygame.K_LEFT, pygame.K_w, pygame.K_a):
-            self.move_selection(-1)
+        if key in (pygame.K_UP, pygame.K_w):
+            self.move_selection_spatial(0, -1)
             return True
-        if key in (pygame.K_DOWN, pygame.K_RIGHT, pygame.K_s, pygame.K_d):
-            self.move_selection(1)
+        if key in (pygame.K_DOWN, pygame.K_s):
+            self.move_selection_spatial(0, 1)
+            return True
+        if key in (pygame.K_LEFT, pygame.K_a):
+            self.move_selection_spatial(-1, 0)
+            return True
+        if key in (pygame.K_RIGHT, pygame.K_d):
+            self.move_selection_spatial(1, 0)
             return True
         if key == pygame.K_TAB:
             direction = -1 if event.mod & pygame.KMOD_SHIFT else 1
@@ -181,6 +231,72 @@ class UINavigator:
             self.cancel()
             return True
         return False
+
+    def move_selection_spatial(self, dx: int, dy: int) -> None:
+        if not self.controls:
+            return
+
+        if self._selected_element is None:
+            self.select_first_active()
+            return
+
+        current_rect = self._get_rect(self._selected_element)
+        if current_rect is None:
+            # Fallback to linear
+            self.move_selection(dy if dy != 0 else dx)
+            return
+
+        current_center = pygame.Vector2(current_rect.center)
+        best_candidate = None
+        min_dist = float('inf')
+
+        for control in self.controls:
+            if control is self._selected_element or not self._is_active(control):
+                continue
+            
+            rect = self._get_rect(control)
+            if rect is None:
+                continue
+            
+            candidate_center = pygame.Vector2(rect.center)
+            diff = candidate_center - current_center
+            
+            # Strict direction check
+            if dx > 0 and diff.x <= 0: continue
+            if dx < 0 and diff.x >= 0: continue
+            if dy > 0 and diff.y <= 0: continue
+            if dy < 0 and diff.y >= 0: continue
+            
+            # Heuristic: squared distance with a penalty for off-axis deviation
+            # This makes it prefer items directly in the alignment of the direction
+            dist = diff.length_squared()
+            if dx != 0: # Horizontal movement: penalize vertical offset
+                dist += (diff.y * diff.y) * 4.0
+            if dy != 0: # Vertical movement: penalize horizontal offset
+                dist += (diff.x * diff.x) * 4.0
+                
+            if dist < min_dist:
+                min_dist = dist
+                best_candidate = control
+        
+        if best_candidate:
+            self._set_selected_element(best_candidate)
+
+    def _get_rect(self, element: UIControl) -> pygame.Rect | None:
+        # Try to get absolute rect from pygame_gui element
+        get_abs_rect = getattr(element, "get_abs_rect", None)
+        if callable(get_abs_rect):
+            return get_abs_rect()
+        
+        rect = getattr(element, "rect", None)
+        if isinstance(rect, pygame.Rect):
+            return rect
+            
+        relative_rect = getattr(element, "relative_rect", None)
+        if isinstance(relative_rect, pygame.Rect):
+            return relative_rect
+            
+        return None
 
     def _has_focused_text_entry(self) -> bool:
         for control in self.controls:

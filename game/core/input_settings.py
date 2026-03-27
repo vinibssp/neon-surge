@@ -9,6 +9,7 @@ import pygame
 
 @dataclass
 class InputSettings:
+    # Keyboard mappings
     up: list[int] = field(default_factory=lambda: [pygame.K_w, pygame.K_UP])
     down: list[int] = field(default_factory=lambda: [pygame.K_s, pygame.K_DOWN])
     left: list[int] = field(default_factory=lambda: [pygame.K_a, pygame.K_LEFT])
@@ -17,7 +18,16 @@ class InputSettings:
     parry: list[int] = field(default_factory=lambda: [pygame.K_j, pygame.K_z])
     bomb: list[int] = field(default_factory=lambda: [pygame.K_i, pygame.K_x])
 
-    def to_dict(self) -> dict[str, list[int]]:
+    # Joystick mappings (button indices)
+    joy_dash: list[int] = field(default_factory=lambda: [0, 1])  # Usually A/B or X/O
+    joy_parry: list[int] = field(default_factory=lambda: [2, 3]) # Usually X/Y or Square/Triangle
+    joy_bomb: list[int] = field(default_factory=lambda: [4, 5])  # Usually Bumpers/Triggers
+    joy_pause: list[int] = field(default_factory=lambda: [6, 7]) # Usually Select/Start or Share/Options
+
+    # Deadzone for axes
+    joy_deadzone: float = 0.2
+
+    def to_dict(self) -> dict:
         return {
             "up": self.up,
             "down": self.down,
@@ -26,10 +36,15 @@ class InputSettings:
             "dash": self.dash,
             "parry": self.parry,
             "bomb": self.bomb,
+            "joy_dash": self.joy_dash,
+            "joy_parry": self.joy_parry,
+            "joy_bomb": self.joy_bomb,
+            "joy_pause": self.joy_pause,
+            "joy_deadzone": self.joy_deadzone,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, list[int]]) -> InputSettings:
+    def from_dict(cls, data: dict) -> InputSettings:
         return cls(
             up=data.get("up", [pygame.K_w, pygame.K_UP]),
             down=data.get("down", [pygame.K_s, pygame.K_DOWN]),
@@ -38,6 +53,11 @@ class InputSettings:
             dash=data.get("dash", [pygame.K_SPACE, pygame.K_LSHIFT, pygame.K_RSHIFT]),
             parry=data.get("parry", [pygame.K_j, pygame.K_z]),
             bomb=data.get("bomb", [pygame.K_i, pygame.K_x]),
+            joy_dash=data.get("joy_dash", [0, 1]),
+            joy_parry=data.get("joy_parry", [2, 3]),
+            joy_bomb=data.get("joy_bomb", [4, 5]),
+            joy_pause=data.get("joy_pause", [6, 7]),
+            joy_deadzone=data.get("joy_deadzone", 0.2),
         )
 
 
