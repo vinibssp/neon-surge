@@ -65,9 +65,10 @@ class SurvivalMode(GameModeStrategy):
                 bomb_charges = bomb.charges
 
         return [
+            "Modo: Survival",
             f"Tempo vivo: {scene.elapsed_time:.1f}s",
             f"Moedas: {scene.session_stats.collectible_collected_total}",
-            f"Bomba [I]: {bomb_charges} carga(s)",
+            f"Bomba: {bomb_charges}",
         ]
 
     def create_retry_strategy(self) -> GameModeStrategy:
