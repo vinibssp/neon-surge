@@ -55,6 +55,7 @@ class GameOverScene(BaseMenuScene):
         self._local_table: RankingTable | None = None
         self._global_table: RankingTable | None = None
         self._status_table: TableView | None = None
+        self._rank_position_label = None
         
         self._retry_mode_instance = self.retry_strategy_factory()
         stats_for_breakdown = session_stats if session_stats is not None else GameSessionStats()
@@ -296,6 +297,15 @@ class GameOverScene(BaseMenuScene):
             manager=self.ui_manager,
             container=self.combat_panel,
         )
+        self._rank_position_label = create_label(
+            LabelConfig(
+                text="Posicao no ranking: Local -- | Global --",
+                rect=pygame.Rect((20, combat_rect.height - 62), (combat_rect.width - 40, 24)),
+                variant="value",
+            ),
+            manager=self.ui_manager,
+            container=self.combat_panel,
+        )
 
         self.set_navigator(
             buttons=[retry_button, menu_button],
@@ -316,10 +326,15 @@ class GameOverScene(BaseMenuScene):
         if self._ranking_sync_handle is None:
             self._local_table.show_empty("Nenhum dado local.")
             self._global_table.show_empty("Sem sincronizacao global.")
+            self._update_rank_position_label(local_position=None, global_position=None)
             return
 
         snapshot = self._ranking_sync_handle.get_snapshot()
         if snapshot.status == self._last_snapshot_status:
+            self._update_rank_position_label(
+                local_position=snapshot.local_position,
+                global_position=snapshot.global_position,
+            )
             return
         self._last_snapshot_status = snapshot.status
 
@@ -350,6 +365,11 @@ class GameOverScene(BaseMenuScene):
         else:
             self.sync_status_label.set_text("Status: sincronizando ranking global...")
 
+        self._update_rank_position_label(
+            local_position=snapshot.local_position,
+            global_position=snapshot.global_position,
+        )
+
     def update(self, dt: float) -> None:
         super().update(dt)
         self._apply_snapshot()
@@ -375,7 +395,17 @@ class GameOverScene(BaseMenuScene):
         lines.append(f"- Total: {self._format_metric_value(self._last_score)}")
         return lines
 
-    @staticmethod
+    def _update_rank_position_label(
+        self,
+        local_position: int | None,
+        global_position: int | None,
+    ) -> None:
+        if self._rank_position_label is None:
+            return
+        local_text = "--" if local_position is None else str(local_position)
+        global_text = "--" if global_position is None else str(global_position)
+        self._rank_position_label.set_text(f"Posicao no ranking: Local {local_text} | Global {global_text}")
+
     @staticmethod
     def _format_defeated_by_text(death_cause: str) -> str:
         enemy_name = GameOverScene._extract_enemy_name(death_cause)

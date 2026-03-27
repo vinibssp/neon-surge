@@ -109,6 +109,18 @@ class RankingService:
             scores = self.local_data.get("scores", {}).get(mode, [])
             return list(scores[:10])
 
+    def get_local_position(self, mode: str, entry_id: str) -> int | None:
+        with self._lock:
+            scores = self.local_data.get("scores", {}).get(mode, [])
+            if not isinstance(scores, list):
+                return None
+            for index, entry in enumerate(scores):
+                if not isinstance(entry, dict):
+                    continue
+                if str(entry.get("id", "")) == entry_id:
+                    return index + 1
+        return None
+
     def get_pending_entries(self) -> list[dict[str, Any]]:
         with self._lock:
             pending: list[dict[str, Any]] = []
@@ -227,6 +239,27 @@ class RankingService:
         except Exception as e:
             print(f"[RankingService] Erro ao buscar ranking: {e}")
             return []
+
+    def get_global_position_sync(self, mode: str, score: float, timeout: float = 3.0) -> int | None:
+        try:
+            mode_encoded = urllib.parse.quote(mode)
+            score_encoded = urllib.parse.quote(str(float(score)))
+            url = f"{SUPABASE_URL}?select=id&mode=eq.{mode_encoded}&score=gt.{score_encoded}&limit=1"
+            headers = dict(self.headers)
+            headers["Prefer"] = "count=exact"
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                content_range = response.headers.get("Content-Range", "")
+                if "/" not in content_range:
+                    return None
+                total_text = content_range.split("/")[-1]
+                if total_text == "*":
+                    return None
+                total_above = int(total_text)
+                return total_above + 1
+        except Exception as e:
+            print(f"[RankingService] Erro ao calcular posicao global: {e}")
+            return None
 
     def fetch_global_ranking(self, limit: int, mode: str, callback: Callable[[list[dict[str, Any]]], None]) -> None:
         def _run() -> None:

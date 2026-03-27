@@ -13,6 +13,8 @@ class RankingSyncSnapshot:
     local_entries: list[dict[str, Any]]
     global_entries: list[dict[str, Any]]
     synced_now: int
+    local_position: int | None
+    global_position: int | None
 
 
 class RankingSyncHandle:
@@ -31,6 +33,8 @@ class RankingSyncHandle:
                 local_entries=list(self._snapshot.local_entries),
                 global_entries=list(self._snapshot.global_entries),
                 synced_now=self._snapshot.synced_now,
+                local_position=self._snapshot.local_position,
+                global_position=self._snapshot.global_position,
             )
 
 
@@ -40,23 +44,29 @@ class RankingOrchestrator:
 
     def start(self, mode: str, score: float, limit: int = 10) -> RankingSyncHandle:
         player_name = self._service.get_player_name() or "Desconhecido"
-        self._service.save_local_score(player_name=player_name, mode=mode, score=score, synced=False)
+        entry_id = self._service.save_local_score(player_name=player_name, mode=mode, score=score, synced=False)
         initial_local = self._service.get_local_top_10(mode)
+        initial_local_position = self._service.get_local_position(mode=mode, entry_id=entry_id)
         handle = RankingSyncHandle(
             RankingSyncSnapshot(
                 status="syncing_global",
                 local_entries=initial_local,
                 global_entries=[],
                 synced_now=0,
+                local_position=initial_local_position,
+                global_position=None,
             )
         )
 
         def _run() -> None:
             synced_now = self._service.sync_pending_scores()
             local_after_sync = self._service.get_local_top_10(mode)
+            local_position = self._service.get_local_position(mode=mode, entry_id=entry_id)
             global_entries: list[dict[str, Any]] = []
+            global_position: int | None = None
             status = "degraded"
             if not self._service.get_pending_entries():
+                global_position = self._service.get_global_position_sync(mode=mode, score=score)
                 global_entries = self._service.fetch_global_ranking_sync(limit=limit, mode=mode)
                 status = "done" if global_entries else "degraded"
             handle.set_snapshot(
@@ -65,6 +75,8 @@ class RankingOrchestrator:
                     local_entries=local_after_sync,
                     global_entries=global_entries,
                     synced_now=synced_now,
+                    local_position=local_position,
+                    global_position=global_position,
                 )
             )
 
