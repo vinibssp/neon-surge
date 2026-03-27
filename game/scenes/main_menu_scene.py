@@ -22,13 +22,13 @@ from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_bu
 MODE_INFO = {
     "race": (
         "CORRIDA",
-        "Navegação em alta velocidade por portais de salto.",
-        "Objetivo: coletar núcleos e escapar antes do cronômetro.",
+        "Progressão por níveis com foco em rota eficiente e execução rápida.",
+        "Objetivo: coletar núcleos, abrir o portal e avançar no menor tempo possível.",
     ),
     "race_infinite": (
-        "INFINITO",
-        "Resistência contínua com pressão progressiva.",
-        "Objetivo: sobreviver o máximo possível em escalada sem fim.",
+        "CORRIDA INFINITA",
+        "Variante sem limite de níveis, com pressão crescente ao longo da run.",
+        "Objetivo: sobreviver e manter consistência por mais tempo, acumulando pontuação.",
     ),
     "survival": (
         "SOBREVIVÊNCIA",
@@ -36,19 +36,19 @@ MODE_INFO = {
         "Objetivo: manter-se vivo enquanto a arena se torna mais hostil.",
     ),
     "hardcore": (
-        "HARDCORE",
-        "Execução extrema sem margem para falhas.",
-        "Objetivo: avançar sem sofrer dano crítico único.",
+        "SOBREVIVÊNCIA HARDCORE",
+        "Sobrevivência com tuning mais punitivo e menor margem para erro.",
+        "Objetivo: sustentar a run sob alta pressão e buscar a maior pontuação.",
     ),
     "labyrinth": (
         "LABIRINTO",
-        "Infiltração tática em corredores de alta ameaça.",
-        "Objetivo: localizar e neutralizar torres de controle.",
+        "Níveis procedurais em grade com navegação tática e controle de espaço.",
+        "Objetivo: achar a chave, desbloquear a saída e concluir as fases de boss.",
     ),
     "training": (
         "TREINAMENTO",
-        "Simulação configurável para prática de builds e reflexo.",
-        "Objetivo: ajustar parâmetros e testar cenários específicos.",
+        "Simulação configurável para praticar matchups e execução mecânica.",
+        "Objetivo: definir spawns/eventos e repetir cenários específicos de treino.",
     ),
 }
 
