@@ -109,10 +109,16 @@ class CollectibleComponent(Component):
 
 
 @dataclass
+class EnemyKindComponent(Component):
+    kind: str
+
+
+@dataclass
 class BulletComponent(Component):
     owner_tag: str
     lifetime: float
     owner_entity_id: int | None = None
+    owner_kind: str | None = None
 
 
 @dataclass

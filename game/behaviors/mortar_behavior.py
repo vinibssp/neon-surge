@@ -6,6 +6,7 @@ from game.behaviors.advanced_helpers import predict_intercept_position
 from game.behaviors.behavior import Behavior
 from game.components.data_components import MovementComponent, TransformComponent, TurretComponent
 from game.config import ENEMY_MORTAR_BULLET_COLOR
+from game.core.enemy_names import enemy_kind_from_entity
 from game.ecs.entity import Entity
 from game.factories.bullet_factory import BulletFactory
 
@@ -46,6 +47,7 @@ class MortarBehavior(Behavior):
         )
         bullet_speed = 240.0
         explosion_radius = 40.0
+        owner_kind = enemy_kind_from_entity(entity)
         volley_double = self._volley_toggle.get(entity.id, False)
         self._volley_toggle[entity.id] = not volley_double
 
@@ -65,6 +67,7 @@ class MortarBehavior(Behavior):
                     radius=10.0,
                     explosion_radius=explosion_radius,
                     color=ENEMY_MORTAR_BULLET_COLOR,
+                    owner_kind=owner_kind,
                 )
             )
         direction = target - transform.position

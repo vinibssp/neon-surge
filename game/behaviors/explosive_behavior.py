@@ -10,6 +10,7 @@ from game.components.data_components import (
     MovementComponent,
     TransformComponent,
 )
+from game.core.enemy_names import enemy_kind_from_entity, format_enemy_name
 from game.core.events import ExplosionTriggered, PlayerDamaged, PlayerDied
 from game.ecs.entity import Entity
 
@@ -75,7 +76,8 @@ class ExplosiveBehavior(Behavior):
             blast_radius = max(18.0, explosive.blast_radius)
             world.event_bus.publish(ExplosionTriggered(position=Vector2(transform.position)))
             if self._collides(player_transform.position, player_collision.radius, transform.position, blast_radius):
-                self._kill_player(world, "Explosao de inimigo")
+                killer_name = format_enemy_name(enemy_kind_from_entity(entity))
+                self._kill_player(world, f"Explosao de {killer_name}")
 
             for angle in range(0, 360, 45):
                 world.spawn_enemy_bullet(

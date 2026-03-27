@@ -126,10 +126,11 @@ class GameOverScene(BaseMenuScene):
             next_row = 108
 
         if death_cause is not None and death_cause.strip() != "":
+            defeated_by_text = self._format_defeated_by_text(death_cause)
             _labels.append(
                 create_label(
                     LabelConfig(
-                        text=f"Causa da morte: {death_cause}",
+                        text=defeated_by_text,
                         rect=pygame.Rect((20, next_row), (400, 30)),
                         variant="value",
                     ),
@@ -352,6 +353,30 @@ class GameOverScene(BaseMenuScene):
         if not lines:
             return "<i>Sem detalhamento.</i>"
         return "<br>".join(lines)
+
+    @staticmethod
+    def _format_defeated_by_text(death_cause: str) -> str:
+        enemy_name = GameOverScene._extract_enemy_name(death_cause)
+        return f"Derrotado por {enemy_name}"
+
+    @staticmethod
+    def _extract_enemy_name(death_cause: str) -> str:
+        text = death_cause.strip()
+        if text == "":
+            return "Inimigo desconhecido"
+
+        lowered = text.lower()
+        prefixes = ("derrotado por ", "atingido por ", "explosao de ")
+        for prefix in prefixes:
+            if lowered.startswith(prefix):
+                name = text[len(prefix):].strip()
+                return name if name != "" else "Inimigo desconhecido"
+
+        hazard_causes = {"consumido pelo buraco negro", "queimado na lava"}
+        if lowered in hazard_causes:
+            return "Inimigo desconhecido"
+
+        return text
 
     def _retry(self) -> None:
         from game.scenes.game_scene import GameScene

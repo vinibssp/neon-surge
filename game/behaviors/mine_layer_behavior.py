@@ -6,6 +6,7 @@ from game.behaviors.advanced_helpers import normalized, predict_intercept_positi
 from game.behaviors.behavior import Behavior
 from game.components.data_components import MovementComponent, TransformComponent
 from game.config import ENEMY_MORTAR_BULLET_COLOR
+from game.core.enemy_names import enemy_kind_from_entity
 from game.ecs.entity import Entity
 from game.factories.bullet_factory import BulletFactory
 
@@ -46,6 +47,7 @@ class MineLayerBehavior(Behavior):
             projectile_speed=220.0,
             max_lead_time=0.6,
         )
+        owner_kind = enemy_kind_from_entity(entity)
         world.add_entity(
             BulletFactory.create_mortar_shell(
                 origin=transform.position,
@@ -54,6 +56,7 @@ class MineLayerBehavior(Behavior):
                 radius=9.0,
                 explosion_radius=44.0,
                 color=ENEMY_MORTAR_BULLET_COLOR,
+                owner_kind=owner_kind,
             )
         )
         travel_dir = target - transform.position

@@ -25,6 +25,7 @@ from game.core.events import (
     PortalEntered,
     SpawnPortalDestroyed,
 )
+from game.core.enemy_names import enemy_kind_from_entity, format_enemy_name
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.systems.world_queries import COLLIDABLE_QUERY, MORTAR_SHELL_QUERY
@@ -147,7 +148,11 @@ class CollisionSystem:
                     continue
 
                 if not is_player_invulnerable:
-                    cause = "Atingido por projetil" if entity.has_tag("bullet") else "Colisao com inimigo"
+                    if entity.has_tag("bullet"):
+                        bullet = entity.get_component(BulletComponent)
+                        cause = f"Atingido por {self._resolve_bullet_killer_name(bullet)}"
+                    else:
+                        cause = f"Derrotado por {format_enemy_name(enemy_kind_from_entity(entity))}"
                     self._kill_player(cause)
                     return
 
@@ -160,6 +165,7 @@ class CollisionSystem:
     ) -> bool:
         for shell_entity in self.world.query(MORTAR_SHELL_QUERY):
             shell = shell_entity.get_component(MortarShellComponent)
+            bullet = shell_entity.get_component(BulletComponent)
             shell_transform = shell_entity.get_component(TransformComponent)
             shell_collision = shell_entity.get_component(CollisionComponent)
             if shell is None or shell_transform is None:
@@ -185,7 +191,7 @@ class CollisionSystem:
             if is_player_invulnerable:
                 continue
             if self._collides(player_position, player_radius, shell.target_position, shell.explosion_radius):
-                self._kill_player("Explosao de morteiro")
+                self._kill_player(f"Explosao de {self._resolve_bullet_killer_name(bullet)}")
                 return True
         return False
 
@@ -224,6 +230,16 @@ class CollisionSystem:
             if entity.id == entity_id:
                 return entity
         return None
+
+    def _resolve_bullet_killer_name(self, bullet: BulletComponent | None) -> str:
+        if bullet is None:
+            return format_enemy_name(None)
+        if bullet.owner_kind is not None:
+            return format_enemy_name(bullet.owner_kind)
+        owner = self._find_entity_by_id(bullet.owner_entity_id)
+        if owner is None:
+            return format_enemy_name(None)
+        return format_enemy_name(enemy_kind_from_entity(owner))
 
     @staticmethod
     def _is_enemy_staggered(enemy: Entity) -> bool:

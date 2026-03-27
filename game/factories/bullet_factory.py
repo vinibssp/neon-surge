@@ -25,6 +25,7 @@ class BulletFactory:
         radius: float,
         color: tuple[int, int, int] | None = None,
         owner_entity_id: int | None = None,
+        owner_kind: str | None = None,
     ) -> Entity:
         bullet = Entity()
         bullet.add_tag("bullet")
@@ -42,6 +43,7 @@ class BulletFactory:
                 owner_tag="enemy",
                 lifetime=BULLET_LIFETIME,
                 owner_entity_id=owner_entity_id,
+                owner_kind=owner_kind,
             )
         )
         bullet.add_component(CollisionComponent(radius=radius, layer="bullet"))
@@ -67,6 +69,7 @@ class BulletFactory:
         radius: float,
         explosion_radius: float,
         color: tuple[int, int, int] | None = None,
+        owner_kind: str | None = None,
     ) -> Entity:
         shell = Entity()
         shell.add_tag("bullet")
@@ -80,7 +83,7 @@ class BulletFactory:
                 max_speed=speed,
             )
         )
-        shell.add_component(BulletComponent(owner_tag="enemy", lifetime=BULLET_LIFETIME))
+        shell.add_component(BulletComponent(owner_tag="enemy", lifetime=BULLET_LIFETIME, owner_kind=owner_kind))
         shell.add_component(
             MortarShellComponent(
                 target_position=Vector2(target),
@@ -129,12 +132,13 @@ class BulletFactory:
         radius: float,
         lifetime: float,
         color: tuple[int, int, int],
+        owner_kind: str | None = None,
     ) -> Entity:
         pool = Entity()
         pool.add_tag("bullet")
         pool.add_component(TransformComponent(position=Vector2(position)))
         pool.add_component(MovementComponent(velocity=Vector2(), input_direction=Vector2(), max_speed=0.0))
-        pool.add_component(BulletComponent(owner_tag="enemy", lifetime=lifetime))
+        pool.add_component(BulletComponent(owner_tag="enemy", lifetime=lifetime, owner_kind=owner_kind))
         pool.add_component(CollisionComponent(radius=radius, layer="bullet"))
         pool.add_component(
             RenderComponent(

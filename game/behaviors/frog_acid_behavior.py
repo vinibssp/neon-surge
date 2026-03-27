@@ -5,6 +5,7 @@ from pygame import Vector2
 from game.behaviors.advanced_helpers import normalized, predict_intercept_position
 from game.behaviors.behavior import Behavior
 from game.components.data_components import MovementComponent, TransformComponent, TurretComponent
+from game.core.enemy_names import enemy_kind_from_entity
 from game.ecs.entity import Entity
 from game.factories.bullet_factory import BulletFactory
 
@@ -59,6 +60,7 @@ class FrogAcidBehavior(Behavior):
         spit_cycle = self._spit_cycle.get(entity_id, 0)
         self._spit_cycle[entity_id] = (spit_cycle + 1) % 3
         offsets = (Vector2(),) if spit_cycle != 2 else (Vector2(), Vector2(28.0, 0.0), Vector2(-28.0, 0.0))
+        owner_kind = enemy_kind_from_entity(entity)
         for offset in offsets:
             world.add_entity(
                 BulletFactory.create_acid_pool(
@@ -66,6 +68,7 @@ class FrogAcidBehavior(Behavior):
                     radius=22.0,
                     lifetime=4.6,
                     color=(96, 224, 102),
+                    owner_kind=owner_kind,
                 )
             )
 

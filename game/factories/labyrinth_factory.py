@@ -5,6 +5,7 @@ from pygame import Vector2
 
 from game.components.data_components import (
     CollisionComponent,
+    EnemyKindComponent,
     LabyrinthExitComponent,
     LabyrinthKeyComponent,
     LabyrinthVirusComponent,
@@ -85,6 +86,7 @@ class LabyrinthFactory:
                 interception_seconds=0.7 if behavior_kind == "interceptor" else 0.45,
             )
         )
+        virus.add_component(EnemyKindComponent(kind=f"virus_{behavior_kind}"))
         color = (96, 222, 210) if behavior_kind == "chaser" else (234, 126, 184)
         core = (226, 235, 250)
         virus.add_component(RenderComponent(render_strategy=VirusGlitchRenderStrategy(color, core, radius=radius)))

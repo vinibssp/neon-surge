@@ -44,6 +44,7 @@ from game.components.data_components import (
     DashOnlyDefeatComponent,
     ExplosiveComponent,
     FollowComponent,
+    EnemyKindComponent,
     GhostComponent,
     KamehamehaComponent,
     LifetimeComponent,
@@ -295,7 +296,10 @@ class EnemyFactory:
         creator = cls._find_creator(kind)
         if creator is None:
             raise ValueError(f"Unknown enemy kind: {kind}")
-        return creator(position)
+        enemy = creator(position)
+        if enemy.has_tag("enemy") and enemy.get_component(EnemyKindComponent) is None:
+            enemy.add_component(EnemyKindComponent(kind=kind))
+        return enemy
 
     @classmethod
     def registered_enemy_kinds(cls) -> list[str]:

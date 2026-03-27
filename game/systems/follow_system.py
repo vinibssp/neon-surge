@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from game.components.data_components import BehaviorComponent, StaggeredComponent
+from game.core.enemy_names import enemy_kind_from_entity
 from game.core.world import GameWorld
 from game.systems.world_queries import ENEMY_BEHAVIOR_QUERY
 
@@ -18,7 +19,11 @@ class FollowSystem:
             if behavior_component is None:
                 continue
             self.world.runtime_state["current_enemy_shooter_id"] = entity.id
+            enemy_kind = enemy_kind_from_entity(entity)
+            if enemy_kind is not None:
+                self.world.runtime_state["current_enemy_shooter_kind"] = enemy_kind
             try:
                 behavior_component.behavior.update(entity, self.world, dt)
             finally:
                 self.world.runtime_state.pop("current_enemy_shooter_id", None)
+                self.world.runtime_state.pop("current_enemy_shooter_kind", None)
