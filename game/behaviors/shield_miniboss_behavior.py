@@ -22,14 +22,16 @@ class ShieldMinibossBehavior(Behavior):
     ORBIT_RADIUS_ADJUST_RATE = 0.08
     ORBIT_DIRECTION_SWITCH_INTERVAL = 2.6
     MOVE_RESPONSIVENESS = 0.16
-    DASH_SPEED = 430.0
-    DASH_DURATION = 0.42
-    DASH_COOLDOWN = 2.1
-    DASH_TRIGGER_DISTANCE = 250.0
-    RING_BURST_INTERVAL = 3.4
+    DASH_SPEED = 340.0
+    DASH_DURATION = 0.28
+    DASH_COOLDOWN = 2.8
+    DASH_TRIGGER_DISTANCE = 220.0
+    DASH_WINDUP_DURATION = 0.32
+    RING_BURST_INTERVAL = 4.2
 
     def __init__(self) -> None:
         self._dash_time_left = 0.0
+        self._dash_windup_left = 0.0
         self._dash_cooldown_left = 0.9
         self._dash_direction = Vector2(1, 0)
 
@@ -54,6 +56,7 @@ class ShieldMinibossBehavior(Behavior):
 
         turret.shot_timer += dt
         turret.burst_timer += dt
+        turret.spiral_angle += dt
         to_player = player_transform.position - transform.position
         distance_to_player = to_player.length()
 
@@ -71,13 +74,23 @@ class ShieldMinibossBehavior(Behavior):
                 movement.max_speed = max(1.0, movement.velocity.length())
             return
 
+        if self._dash_windup_left > 0.0:
+            self._dash_windup_left = max(0.0, self._dash_windup_left - dt)
+            movement.velocity *= 0.82
+            movement.input_direction = self._dash_direction
+            movement.max_speed = max(95.0, movement.velocity.length())
+            if self._dash_windup_left <= 0.0:
+                self._dash_time_left = self.DASH_DURATION
+                dash_velocity = self._dash_direction * self.DASH_SPEED
+                movement.velocity = dash_velocity
+                movement.input_direction = self._dash_direction
+                movement.max_speed = self.DASH_SPEED
+            return
+
         if self._dash_cooldown_left <= 0.0 and distance_to_player <= self.DASH_TRIGGER_DISTANCE:
             self._dash_direction = normalized(player_transform.position - transform.position, self._dash_direction)
-            self._dash_time_left = self.DASH_DURATION
-            dash_velocity = self._dash_direction * self.DASH_SPEED
-            movement.velocity = dash_velocity
-            movement.input_direction = self._dash_direction
-            movement.max_speed = self.DASH_SPEED
+            self._dash_windup_left = self.DASH_WINDUP_DURATION
+            turret.shot_direction = self._dash_direction
             return
 
         desired_orbit_radius = max(
@@ -86,8 +99,8 @@ class ShieldMinibossBehavior(Behavior):
         )
         orbit.radius += (desired_orbit_radius - orbit.radius) * smoothing_factor(self.ORBIT_RADIUS_ADJUST_RATE, dt)
 
-        if turret.burst_timer >= self.ORBIT_DIRECTION_SWITCH_INTERVAL:
-            turret.burst_timer = 0.0
+        if turret.spiral_angle >= self.ORBIT_DIRECTION_SWITCH_INTERVAL:
+            turret.spiral_angle = 0.0
             orbit.angular_speed *= -1.0
 
         angular_speed_abs = 1.2 + min(1.4, distance_to_player / 260.0)
@@ -96,22 +109,22 @@ class ShieldMinibossBehavior(Behavior):
 
         orbit_target = player_transform.position + Vector2(math.cos(orbit.angle), math.sin(orbit.angle)) * orbit.radius
         to_target = orbit_target - transform.position
-        desired_velocity = normalized(to_target) * (movement.max_speed * 1.18)
+        desired_velocity = normalized(to_target) * (movement.max_speed * 1.08)
         movement.velocity = movement.velocity.lerp(desired_velocity, smoothing_factor(self.MOVE_RESPONSIVENESS, dt))
         movement.input_direction = normalized(movement.velocity, normalized(to_player))
         movement.max_speed = max(1.0, movement.velocity.length())
 
-        shot_interval = 1.35 if distance_to_player > 165.0 else 0.95
+        shot_interval = 1.6 if distance_to_player > 175.0 else 1.15
         if turret.shot_timer < shot_interval:
             if turret.burst_timer < self.RING_BURST_INTERVAL:
                 return
             turret.burst_timer = 0.0
-            for angle in range(0, 360, 60):
+            for angle in range(0, 360, 72):
                 world.spawn_enemy_bullet(
                     transform.position,
                     Vector2(1, 0).rotate(float(angle)),
-                    speed=250.0,
-                    radius=6.0,
+                    speed=220.0,
+                    radius=5.0,
                     color=ENEMY_SHIELD_BULLET_COLOR,
                 )
             return
@@ -123,17 +136,17 @@ class ShieldMinibossBehavior(Behavior):
         world.spawn_enemy_bullet(
             transform.position,
             shot_direction,
-            speed=280.0,
-            radius=7.0,
+            speed=250.0,
+            radius=6.0,
             color=ENEMY_SHIELD_BULLET_COLOR,
         )
 
-        if distance_to_player <= 165.0:
+        if distance_to_player <= 130.0:
             world.spawn_enemy_bullet(
                 transform.position,
                 shot_direction,
-                speed=340.0,
-                radius=6.0,
+                speed=300.0,
+                radius=5.0,
                 color=ENEMY_SHIELD_BULLET_COLOR,
             )
 

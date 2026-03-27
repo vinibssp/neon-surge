@@ -866,21 +866,36 @@ class ShieldMinibossRenderStrategy:
         self.radius = radius
 
     def render(self, screen: pygame.Surface, entity, transform) -> None:
-        del entity
+        turret = entity.get_component(TurretComponent)
         now = time.time()
         center = (int(transform.position.x), int(transform.position.y))
-        pulse = abs(math.sin(now * 6.0)) * 4.0
+        pressure = 0.0
+        if turret is not None:
+            pressure = min(1.0, turret.burst_timer / 4.2)
+        pulse = abs(math.sin(now * 6.0)) * (3.0 + pressure * 3.0)
+        shell_radius = self.radius + (1.0 if pressure < 0.5 else 2.0)
+        bright_color = _brighten(self.base_color, gain=1.08, bias=18)
+        dark_color = _darken(self.base_color, 78)
         draw_neon_glow(
             surface=screen,
             color=self.base_color,
             center_x=center[0],
             center_y=center[1],
-            radius=max(1, int(self.radius + pulse * 0.5)),
-            layers=3,
+            radius=max(1, int(self.radius + pulse * 0.45)),
+            layers=4,
         )
-        _draw_rotmg_shell(screen, center, self.radius, self.base_color, sides=9)
+        _draw_rotmg_shell(screen, center, shell_radius, self.base_color, sides=9, rotation=now * 0.7)
+        pygame.draw.circle(screen, dark_color, center, int(self.radius + 4), 2)
+        pygame.draw.circle(screen, bright_color, center, int(self.radius + 8 + pressure * 3.0), 2)
+
+        orbit_radius = self.radius + 10.0
+        for index in range(3):
+            angle = now * (2.6 + pressure) + index * (math.pi * 2.0 / 3.0)
+            px = int(center[0] + math.cos(angle) * orbit_radius)
+            py = int(center[1] + math.sin(angle) * orbit_radius)
+            pygame.draw.circle(screen, bright_color, (px, py), 2)
+
         pygame.draw.circle(screen, (245, 245, 245), center, 5)
-        pygame.draw.circle(screen, (245, 245, 245), center, int(self.radius + 7), 2)
         _draw_pixel_eyes(screen, center, (245, 245, 245), spacing=max(4, int(self.radius * 0.28)))
 
 
