@@ -46,6 +46,20 @@ class SceneStack:
         self.audio_settings_manager: AudioSettingsManager | None = None
         self.input_settings_manager: InputSettingsManager | None = None
         self.localization_manager: LocalizationManager | None = None
+        self.joysticks: list[pygame.joystick.Joystick] = []
+        self._refresh_joysticks()
+
+    def _refresh_joysticks(self) -> None:
+        """Initialize and maintain joystick objects to ensure events are pumped."""
+        self.joysticks = []
+        for i in range(pygame.joystick.get_count()):
+            try:
+                joy = pygame.joystick.Joystick(i)
+                # In Pygame 2.x, creating the Joystick object is usually 
+                # enough to start receiving events for it.
+                self.joysticks.append(joy)
+            except pygame.error:
+                continue
 
     def push(self, scene: Scene) -> None:
         self._stack.append(scene)
@@ -72,6 +86,10 @@ class SceneStack:
         for event in events:
             if event.type == MUSIC_ENDED_EVENT:
                 self.event_bus.publish(AudioContextChanged(context="menu", reason="game_over_music_finished"))
+            
+            # Hot-plug support
+            if event.type in (pygame.JOYDEVICEADDED, pygame.JOYDEVICEREMOVED):
+                self._refresh_joysticks()
 
         scene = self.top()
         if scene is not None:

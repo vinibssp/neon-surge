@@ -23,10 +23,8 @@ from game.services.ranking_service import RankingService
 def main() -> None:
     pygame.init()
     pygame.joystick.init()
-    # Initialize all connected joysticks immediately
-    for i in range(pygame.joystick.get_count()):
-        joy = pygame.joystick.Joystick(i)
-        joy.init()
+    # Initial joystick count check
+    _ = pygame.joystick.get_count()
         
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption(WINDOW_TITLE)
