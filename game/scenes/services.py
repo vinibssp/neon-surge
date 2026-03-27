@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+from pathlib import Path
 from dataclasses import dataclass
 
 import pygame
@@ -77,38 +78,126 @@ class BackgroundRenderer:
 
 class HudRenderer:
     def __init__(self, font_size: int = 24, color: tuple[int, int, int] = (238, 242, 250)) -> None:
-        self.font = pygame.font.Font(None, font_size)
+        font_root = Path(__file__).resolve().parents[1] / "assets" / "ttf"
+        body_font_path = font_root / "FiraCode-Medium.ttf"
+        title_font_path = font_root / "FiraCode-Bold.ttf"
+        micro_font_path = font_root / "FiraCode-Regular.ttf"
+
+        try:
+            self.font = pygame.font.Font(str(body_font_path), max(16, font_size - 2))
+            self.title_font = pygame.font.Font(str(title_font_path), max(18, font_size))
+            self.micro_font = pygame.font.Font(str(micro_font_path), max(12, font_size - 10))
+        except FileNotFoundError:
+            self.font = pygame.font.Font(None, max(16, font_size - 2))
+            self.title_font = pygame.font.Font(None, max(18, font_size))
+            self.micro_font = pygame.font.Font(None, max(12, font_size - 10))
+
         self.color = color
-        self.panel_fill = (10, 16, 28, 150)
-        self.panel_border = (92, 162, 218, 190)
+        self.panel_fill = (16, 16, 18, 184)
+        self.panel_border = (198, 184, 132, 232)
+        self.header_fill = (46, 36, 26, 225)
+        self.header_text = (252, 238, 186)
+        self.label_color = (210, 206, 188)
+        self.value_color = (244, 244, 232)
+        self.grid_line = (112, 108, 94, 128)
+        self.accent = (255, 108, 108)
         self.padding_x = 12
         self.padding_y = 10
         self.gap = 6
+        self.row_height = self.font.get_height() + 4
 
-    def render_lines(self, screen: pygame.Surface, lines: list[str], x: int = 16, y: int = 12, line_height: int | None = None) -> None:
+    @staticmethod
+    def _parse_lines(lines: list[str]) -> tuple[str, list[tuple[str, str]]]:
+        mode_name = "Neon Surge"
+        stat_rows: list[tuple[str, str]] = []
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            if ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip()
+                value = value.strip()
+                if key.casefold() == "modo":
+                    mode_name = value or mode_name
+                    continue
+                stat_rows.append((key, value))
+            else:
+                stat_rows.append((line, "-"))
+        return mode_name, stat_rows
+
+    def render_lines(
+        self,
+        screen: pygame.Surface,
+        lines: list[str],
+        player=None,
+        x: int = 16,
+        y: int = 12,
+        line_height: int | None = None,
+    ) -> None:
         visible_lines = [line for line in lines if line.strip()]
         if not visible_lines:
             return
 
-        effective_line_height = line_height if line_height is not None else (self.font.get_height() + self.gap)
-        rendered = [self.font.render(line, True, self.color) for line in visible_lines]
-        panel_width = max(surface.get_width() for surface in rendered) + self.padding_x * 2
-        panel_height = (
-            self.padding_y * 2
-            + (len(rendered) * self.font.get_height())
-            + (max(0, len(rendered) - 1) * (effective_line_height - self.font.get_height()))
+        del line_height
+
+        mode_name, stat_rows = self._parse_lines(visible_lines)
+        del player
+
+        tempo_entry: tuple[str, str] | None = None
+        if "survival" in mode_name.casefold():
+            for index, (label, value) in enumerate(stat_rows):
+                if label.casefold().startswith("tempo"):
+                    tempo_entry = (label, value)
+                    del stat_rows[index]
+                    break
+
+        mode_surface = self.micro_font.render(mode_name.upper(), True, self.header_text)
+        mode_pad_x = 8
+        mode_pad_y = 4
+        mode_chip = pygame.Rect(
+            x,
+            y,
+            mode_surface.get_width() + mode_pad_x * 2,
+            mode_surface.get_height() + mode_pad_y * 2,
         )
+        pygame.draw.rect(screen, (30, 24, 18, 168), mode_chip, border_radius=6)
+        pygame.draw.rect(screen, self.panel_border, mode_chip, width=1, border_radius=6)
+        screen.blit(mode_surface, (mode_chip.left + mode_pad_x, mode_chip.top + mode_pad_y))
 
-        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        pygame.draw.rect(panel, self.panel_fill, panel.get_rect(), border_radius=10)
-        pygame.draw.rect(panel, self.panel_border, panel.get_rect(), width=1, border_radius=10)
-        screen.blit(panel, (x, y))
+        if tempo_entry is not None:
+            tempo_surface = self.title_font.render(tempo_entry[1], True, self.header_text)
+            tempo_padding_x = 12
+            tempo_padding_y = 5
+            tempo_chip = pygame.Rect(
+                0,
+                y,
+                tempo_surface.get_width() + (tempo_padding_x * 2),
+                tempo_surface.get_height() + (tempo_padding_y * 2),
+            )
+            tempo_chip.centerx = screen.get_width() // 2
+            pygame.draw.rect(screen, (24, 20, 16, 176), tempo_chip, border_radius=8)
+            pygame.draw.rect(screen, self.panel_border, tempo_chip, width=1, border_radius=8)
+            screen.blit(
+                tempo_surface,
+                (tempo_chip.left + tempo_padding_x, tempo_chip.top + tempo_padding_y),
+            )
 
-        current_y = y + self.padding_y
-        text_x = x + self.padding_x
-        for surface in rendered:
-            screen.blit(surface, (text_x, current_y))
-            current_y += effective_line_height
+        stats_y = mode_chip.bottom + 6
+        max_rows = 5
+        visible_rows = stat_rows[:max_rows]
+        for row_index, (label, value) in enumerate(visible_rows):
+            row_text = self.micro_font.render(f"{label}: {value}", True, self.value_color)
+            row_rect = pygame.Rect(
+                x,
+                stats_y + row_index * (row_text.get_height() + 4),
+                row_text.get_width() + 10,
+                row_text.get_height() + 4,
+            )
+            pygame.draw.rect(screen, (12, 14, 18, 136), row_rect, border_radius=4)
+            screen.blit(row_text, (row_rect.left + 5, row_rect.top + 2))
+
+        return
 
     def render_boss_card(
         self,

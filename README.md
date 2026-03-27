@@ -187,6 +187,7 @@ Para reduzir acoplamento e responsabilidades:
 - `SpawnDirector` (systems layer)
 - `SystemPipeline` com fases e prioridade explícita
 - card temporário de boss no HUD ao receber `EnemySpawned` com categoria `boss`, exibindo nome amigável do chefe
+- HUD de gameplay em painel composto (cabecalho + tabela de estatisticas + medidores segmentados de recursos) inspirado em legibilidade de MMORPG bullet-hell, sem mover regra de dominio para render
 
 `SystemPipeline` executa por etapa:
 

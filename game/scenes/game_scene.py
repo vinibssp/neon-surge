@@ -160,7 +160,7 @@ class GameScene(Scene):
         screen.fill((0, 0, 0))
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
-        self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self))
+        self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self), player=self.world.player)
         if self._boss_card_states:
             self._render_boss_cards(screen)
 
