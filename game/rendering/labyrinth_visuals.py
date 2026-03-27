@@ -31,41 +31,39 @@ PALETTE = LabyrinthVisualPalette()
 
 
 def render_boss_arena_background(screen: pygame.Surface, width: int, height: int, elapsed_time: float) -> None:
+    del elapsed_time
     for y in range(height):
         t = y / max(1, height - 1)
-        red = int(8 + 16 * t)
-        green = int(6 + 10 * t)
-        blue = int(20 + 22 * t)
+        red = int(6 + 8 * t)
+        green = int(8 + 10 * t)
+        blue = int(16 + 14 * t)
         pygame.draw.line(screen, (red, green, blue), (0, y), (width, y))
 
     # Pattern 2D em tela inteira: discreto para manter leitura de gameplay.
     pattern = pygame.Surface((width, height), pygame.SRCALPHA)
-    tile = 24
+    tile = 32
     for y in range(0, height, tile):
         for x in range(0, width, tile):
             variant = ((x // tile) + (y // tile)) % 2
-            alpha = 8 if variant == 0 else 4
-            pygame.draw.rect(pattern, (74, 54, 112, alpha), pygame.Rect(x, y, tile, tile))
+            alpha = 4 if variant == 0 else 2
+            pygame.draw.rect(pattern, (56, 52, 82, alpha), pygame.Rect(x, y, tile, tile))
     screen.blit(pattern, (0, 0))
 
     grid = pygame.Surface((width, height), pygame.SRCALPHA)
-    grid_step = 40
-    scroll_x = int((elapsed_time * 6.0) % grid_step)
-    scroll_y = int((elapsed_time * 4.0) % grid_step)
-    for x in range(-grid_step, width + grid_step, grid_step):
-        pygame.draw.line(grid, (108, 170, 228, 12), (x + scroll_x, 0), (x + scroll_x, height), 1)
-    for y in range(-grid_step, height + grid_step, grid_step):
-        pygame.draw.line(grid, (186, 96, 180, 10), (0, y + scroll_y), (width, y + scroll_y), 1)
+    grid_step = 56
+    for x in range(0, width + grid_step, grid_step):
+        pygame.draw.line(grid, (88, 114, 160, 8), (x, 0), (x, height), 1)
+    for y in range(0, height + grid_step, grid_step):
+        pygame.draw.line(grid, (88, 114, 160, 8), (0, y), (width, y), 1)
     screen.blit(grid, (0, 0))
 
     # Selo central baixo contraste para identidade da boss room sem poluir projeteis.
     sigil = pygame.Surface((width, height), pygame.SRCALPHA)
-    pulse = 0.5 + 0.5 * math.sin(elapsed_time * 2.4)
     center = (width // 2, height // 2)
     base_radius = int(min(width, height) * 0.18)
-    draw_neon_glow(sigil, (190, 86, 160), center[0], center[1], base_radius + 12, 2)
-    pygame.draw.circle(sigil, (206, 108, 174, int(44 + pulse * 18)), center, base_radius, 1)
-    pygame.draw.circle(sigil, (96, 184, 230, int(34 + pulse * 12)), center, int(base_radius * 0.65), 1)
+    draw_neon_glow(sigil, (120, 82, 150), center[0], center[1], base_radius + 8, 1)
+    pygame.draw.circle(sigil, (132, 94, 164, 22), center, base_radius, 1)
+    pygame.draw.circle(sigil, (96, 132, 170, 18), center, int(base_radius * 0.65), 1)
     screen.blit(sigil, (0, 0))
 
     scan = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -149,16 +147,16 @@ class BossArenaFloorTileRenderStrategy:
             max(1, round(self.height)),
         )
         tile_surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-        tile_surface.fill((*self.base_color, 150))
+        tile_surface.fill((*self.base_color, 96))
 
         step = 10
         for x in range(0, rect.width, step):
-            pygame.draw.line(tile_surface, (*self.grid_color, 12), (x, 0), (x, rect.height), 1)
+            pygame.draw.line(tile_surface, (*self.grid_color, 6), (x, 0), (x, rect.height), 1)
         for y in range(0, rect.height, step):
-            pygame.draw.line(tile_surface, (*self.grid_color, 10), (0, y), (rect.width, y), 1)
+            pygame.draw.line(tile_surface, (*self.grid_color, 5), (0, y), (rect.width, y), 1)
 
         pulse = 0.5 + 0.5 * math.sin((time.time() * 3.6) + (transform.position.x * 0.02) + (transform.position.y * 0.02))
-        rune_alpha = int(30 + pulse * 44)
+        rune_alpha = int(12 + pulse * 16)
         cx = rect.width // 2
         cy = rect.height // 2
         rune_radius = max(3, min(rect.width, rect.height) // 4)
@@ -183,7 +181,7 @@ class BossArenaFloorTileRenderStrategy:
                 1,
             )
 
-        pygame.draw.rect(tile_surface, (*self.grid_color, 58), tile_surface.get_rect(), width=1)
+        pygame.draw.rect(tile_surface, (*self.grid_color, 26), tile_surface.get_rect(), width=1)
         screen.blit(tile_surface, rect.topleft)
 
 
