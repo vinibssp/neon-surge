@@ -64,13 +64,10 @@ class TrainingMode(GameModeStrategy):
         total_planned = sum(self.spawn_plan.values())
         remaining_to_spawn = self._spawn_strategy.remaining_to_spawn if self._spawn_strategy is not None else 0
         active_enemies = scene.world.count_by_tag("enemy")
-        spawned = total_planned - remaining_to_spawn
-        defeated = max(0, spawned - active_enemies)
         return [
             "Modo: Treino",
             f"Tempo: {scene.elapsed_time:.2f}s",
             f"Planejados: {total_planned}",
-            f"Derrotados: {defeated}/{total_planned}",
             f"Restando no campo: {active_enemies}",
         ]
 

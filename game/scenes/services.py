@@ -154,7 +154,8 @@ class HudRenderer:
 
         tempo_entry: tuple[str, str] | None = None
         for index, (label, value) in enumerate(stat_rows):
-            if label.casefold().startswith("tempo"):
+            normalized_label = label.casefold()
+            if normalized_label.startswith("tempo") or normalized_label.startswith("time"):
                 tempo_entry = (label, value)
                 del stat_rows[index]
                 break
@@ -169,19 +170,21 @@ class HudRenderer:
         self._blit_with_shadow(screen, mode_surface_shadow, mode_x, mode_y)
         screen.blit(mode_surface, (mode_x, mode_y))
 
-        if tempo_entry is not None and "survival" in mode_name.casefold():
-            tempo_text = tempo_entry[1]
-            tempo_surface_shadow = self._render_text_with_alpha(self.title_font, tempo_text, (0, 0, 0), 88)
-            tempo_surface = self._render_text_with_alpha(self.title_font, tempo_text, (248, 232, 168), 190)
+        if tempo_entry is not None:
+            _, tempo_text = tempo_entry
+            pulse = 0.5 + 0.5 * math.sin(pygame.time.get_ticks() * 0.006)
+
+            tempo_surface_shadow = self._render_text_with_alpha(self.font, tempo_text, (0, 0, 0), 62)
+            tempo_surface = self._render_text_with_alpha(self.font, tempo_text, (220, 236, 248), 164)
+            tempo_glow = self._render_text_with_alpha(self.font, tempo_text, (108, 206, 242), int(28 + 18 * pulse))
+
             tempo_x = (screen.get_width() - tempo_surface.get_width()) // 2
-            tempo_y = y
+            tempo_y = y + 2
             self._blit_with_shadow(screen, tempo_surface_shadow, tempo_x, tempo_y)
+            screen.blit(tempo_glow, (tempo_x + 1, tempo_y))
             screen.blit(tempo_surface, (tempo_x, tempo_y))
 
         right_rows = stat_rows[:2]
-        if tempo_entry is not None and "survival" not in mode_name.casefold():
-            right_rows = [tempo_entry] + right_rows
-            right_rows = right_rows[:2]
 
         if right_rows:
             row_h = self.micro_font.get_height() + 3
