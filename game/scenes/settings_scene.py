@@ -34,10 +34,14 @@ class SettingsScene(BaseMenuScene):
         self._init_ui()
 
     def _init_ui(self) -> None:
+        current_language = "pt_BR"
+        if self.stack.localization_manager is not None:
+            current_language = self.stack.localization_manager.language
+
         # Header
         create_label(
             LabelConfig(
-                text="CONFIGURAÇÕES DE SISTEMA",
+                text=self.t("settings.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 30), (800, 70)),
                 variant="title",
             ),
@@ -55,7 +59,7 @@ class SettingsScene(BaseMenuScene):
 
         create_label(
             LabelConfig(
-                text="CONTROLE DE ÁUDIO",
+                text=self.t("settings.audio_header"),
                 rect=pygame.Rect((20, 10), (760, 40)),
                 variant="settings_header",
             ),
@@ -65,7 +69,7 @@ class SettingsScene(BaseMenuScene):
 
         # Music Row
         create_label(
-            LabelConfig(text="MÚSICA", rect=pygame.Rect((40, 65), (120, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.music"), rect=pygame.Rect((40, 65), (120, 40)), variant="settings_label"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._music_value_label = create_label(
@@ -87,7 +91,7 @@ class SettingsScene(BaseMenuScene):
 
         # SFX Row
         create_label(
-            LabelConfig(text="EFEITOS", rect=pygame.Rect((40, 130), (120, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.sfx"), rect=pygame.Rect((40, 130), (120, 40)), variant="settings_label"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._sfx_value_label = create_label(
@@ -118,7 +122,7 @@ class SettingsScene(BaseMenuScene):
         
         create_label(
             LabelConfig(
-                text="PREFERÊNCIAS DO OPERADOR",
+                text=self.t("settings.preferences_header"),
                 rect=pygame.Rect((20, 10), (760, 40)),
                 variant="settings_header",
             ),
@@ -128,7 +132,7 @@ class SettingsScene(BaseMenuScene):
 
         self._change_name_button = create_button(
             ButtonConfig(
-                text="ALTERAR NOME DO PILOTO",
+                text=self.t("settings.change_name"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 400, 450), (350, 40)),
                 variant="primary",
             ),
@@ -137,26 +141,58 @@ class SettingsScene(BaseMenuScene):
 
         self._controls_button = create_button(
             ButtonConfig(
-                text="AJUSTAR CONTROLES",
+                text=self.t("settings.controls"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 400, 520), (350, 40)),
                 variant="primary",
             ),
             manager=self.ui_manager,
         )
+
+        create_label(
+            LabelConfig(text=self.t("settings.language"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 585), (200, 40)), variant="settings_label"),
+            manager=self.ui_manager
+        )
+        self._language_status_label = create_label(
+            LabelConfig(
+                text=self.t(
+                    "settings.language.current",
+                    language=self._language_display_name(current_language),
+                ),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 240, 585), (220, 40)),
+                variant="value",
+            ),
+            manager=self.ui_manager,
+        )
+        self._language_pt_button = create_button(
+            ButtonConfig(
+                text=self.t("settings.language.pt"),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 470, 585), (135, 40)),
+                variant="primary" if current_language == "pt_BR" else "ghost",
+            ),
+            manager=self.ui_manager,
+        )
+        self._language_en_button = create_button(
+            ButtonConfig(
+                text=self.t("settings.language.en"),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 615, 585), (135, 40)),
+                variant="primary" if current_language == "en_US" else "ghost",
+            ),
+            manager=self.ui_manager,
+        )
         
         create_label(
-            LabelConfig(text="IDENTIDADE OPERACIONAL", rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 450), (300, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.identity"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 450), (300, 40)), variant="settings_label"),
             manager=self.ui_manager
         )
         create_label(
-            LabelConfig(text="CONFIGURAÇÃO DE INPUT", rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 520), (300, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.input"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 520), (300, 40)), variant="settings_label"),
             manager=self.ui_manager
         )
 
         # Back Button
         self._back_button = create_button(
             ButtonConfig(
-                text="VOLTAR AO MENU PRINCIPAL",
+                text=self.t("settings.back"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 200, 630), (400, 60)),
                 variant="danger",
             ),
@@ -169,6 +205,8 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_decrease_btn, self._sfx_increase_btn,
                 self._change_name_button,
                 self._controls_button,
+                self._language_pt_button,
+                self._language_en_button,
                 self._back_button,
             ],
             actions={
@@ -178,6 +216,8 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_increase_btn: lambda: self._step_sfx(0.05),
                 self._change_name_button: self._change_name,
                 self._controls_button: self._open_controls,
+                self._language_pt_button: lambda: self._set_language("pt_BR"),
+                self._language_en_button: lambda: self._set_language("en_US"),
                 self._back_button: self._close,
             },
             on_cancel=self._close,
@@ -221,6 +261,20 @@ class SettingsScene(BaseMenuScene):
 
     def _step_sfx(self, delta: float) -> None:
         self._set_sfx_volume(self._sfx_volume_value + delta)
+
+    def _set_language(self, language: str) -> None:
+        manager = self.stack.localization_manager
+        if manager is None:
+            return
+        manager.set_language(language)
+        self.ui_manager.clear_and_reset()
+        self._init_ui()
+
+    def _language_display_name(self, language: str) -> str:
+        manager = self.stack.localization_manager
+        if manager is None:
+            return language
+        return manager.display_language_name(language)
 
     @staticmethod
     def _format_percent(value: float) -> str:

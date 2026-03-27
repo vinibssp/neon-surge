@@ -19,39 +19,6 @@ from game.scenes.services import CyberpunkMenuBackgroundRenderer
 from game.services.ranking_service import RankingService
 from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_button, create_label, create_panel
 
-MODE_INFO = {
-    "race": (
-        "CORRIDA",
-        "Progressão por níveis com foco em rota eficiente e execução rápida.",
-        "Objetivo: coletar núcleos, abrir o portal e avançar no menor tempo possível.",
-    ),
-    "race_infinite": (
-        "CORRIDA INFINITA",
-        "Variante sem limite de níveis, com pressão crescente ao longo da run.",
-        "Objetivo: sobreviver e manter consistência por mais tempo, acumulando pontuação.",
-    ),
-    "survival": (
-        "SOBREVIVÊNCIA",
-        "Combate intenso contra ondas e eventos ambientais.",
-        "Objetivo: manter-se vivo enquanto a arena se torna mais hostil.",
-    ),
-    "hardcore": (
-        "SOBREVIVÊNCIA HARDCORE",
-        "Sobrevivência com tuning mais punitivo e menor margem para erro.",
-        "Objetivo: sustentar a run sob alta pressão e buscar a maior pontuação.",
-    ),
-    "labyrinth": (
-        "LABIRINTO",
-        "Níveis procedurais em grade com navegação tática e controle de espaço.",
-        "Objetivo: achar a chave, desbloquear a saída e concluir as fases de boss.",
-    ),
-    "training": (
-        "TREINAMENTO",
-        "Simulação configurável para praticar matchups e execução mecânica.",
-        "Objetivo: definir spawns/eventos e repetir cenários específicos de treino.",
-    ),
-}
-
 class MainMenuScene(BaseMenuScene):
     def __init__(self, stack) -> None:
         super().__init__(stack)
@@ -62,10 +29,46 @@ class MainMenuScene(BaseMenuScene):
         self._init_ui()
 
     def _init_ui(self) -> None:
+        self._btn_to_mode_tag.clear()
+        self._selected_mode_tag = None
+
+        mode_info = {
+            "race": (
+                self.t("mode.race"),
+                self.t("mode.race.desc"),
+                self.t("mode.race.meta"),
+            ),
+            "race_infinite": (
+                self.t("mode.race_infinite"),
+                self.t("mode.race_infinite.desc"),
+                self.t("mode.race_infinite.meta"),
+            ),
+            "survival": (
+                self.t("mode.survival"),
+                self.t("mode.survival.desc"),
+                self.t("mode.survival.meta"),
+            ),
+            "hardcore": (
+                self.t("mode.hardcore"),
+                self.t("mode.hardcore.desc"),
+                self.t("mode.hardcore.meta"),
+            ),
+            "labyrinth": (
+                self.t("mode.labyrinth"),
+                self.t("mode.labyrinth.desc"),
+                self.t("mode.labyrinth.meta"),
+            ),
+            "training": (
+                self.t("mode.training"),
+                self.t("mode.training.desc"),
+                self.t("mode.training.meta"),
+            ),
+        }
+
         # 1. Header
         create_label(
             LabelConfig(
-                text="NEON SURGE",
+                text=self.t("main.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 40), (800, 100)),
                 variant="title",
             ),
@@ -103,6 +106,14 @@ class MainMenuScene(BaseMenuScene):
             ButtonConfig(text="?", rect=pygame.Rect((SCREEN_WIDTH - 130, SCREEN_HEIGHT - 70), (50, 50)), variant="primary"),
             manager=self.ui_manager
         )
+        self._language_btn = create_button(
+            ButtonConfig(
+                text=self._language_button_text(),
+                rect=pygame.Rect((20, SCREEN_HEIGHT - 70), (80, 50)),
+                variant="ghost",
+            ),
+            manager=self.ui_manager,
+        )
 
         # 3. Mode Grid (Original Aesthetics - Centralized)
         btn_w, btn_h = 190, 60
@@ -113,12 +124,12 @@ class MainMenuScene(BaseMenuScene):
         start_y = 320
 
         modes_list = [
-            ("CORRIDA", "race", RaceMode(), "race"),
-            ("INFINITA", "race_infinite", RaceInfiniteMode(), "race_infinite"),
-            ("SOBREVIVÊNCIA", "survival", SurvivalMode(), "survival"),
-            ("HARDCORE", "hardcore", SurvivalHardcoreMode(), "hardcore"),
-            ("LABIRINTO", "labyrinth", LabyrinthMode(), "labyrinth"),
-            ("TREINO", "training", None, "training"),
+            (self.t("mode.race"), "race", RaceMode(), "race"),
+            (self.t("mode.race_infinite"), "race_infinite", RaceInfiniteMode(), "race_infinite"),
+            (self.t("mode.survival"), "survival", SurvivalMode(), "survival"),
+            (self.t("mode.hardcore"), "hardcore", SurvivalHardcoreMode(), "hardcore"),
+            (self.t("mode.labyrinth"), "labyrinth", LabyrinthMode(), "labyrinth"),
+            (self.t("mode.training"), "training", None, "training"),
         ]
 
         self._mode_btns = []
@@ -137,12 +148,12 @@ class MainMenuScene(BaseMenuScene):
             manager=self.ui_manager
         )
         self._info_title = create_label(
-            LabelConfig(text="SELECIONE UMA OPERAÇÃO", rect=pygame.Rect((20, 15), (860, 30)), variant="header"),
+            LabelConfig(text=self.t("main.info.select"), rect=pygame.Rect((20, 15), (860, 30)), variant="header"),
             manager=self.ui_manager, container=self._info_panel
         )
         self._info_desc = create_label(
             LabelConfig(
-                text="Navegue pelos módulos acima para ver os detalhes técnicos da simulação.",
+                text=self.t("main.info.default_desc"),
                 rect=pygame.Rect((20, 50), (860, 70)),
                 variant="guide_body"
             ),
@@ -150,7 +161,7 @@ class MainMenuScene(BaseMenuScene):
         )
         self._info_meta = create_label(
             LabelConfig(
-                text="Selecione um módulo para iniciar.",
+                text=self.t("main.info.default_meta"),
                 rect=pygame.Rect((20, 105), (860, 24)),
                 variant="guide_accent"
             ),
@@ -160,7 +171,7 @@ class MainMenuScene(BaseMenuScene):
         # 5. Global Ranking (Center Bottom)
         self._ranking_btn = create_button(
             ButtonConfig(
-                text="RANKING",
+                text=self.t("main.ranking"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 200, 580), (400, 50)),
                 variant="primary"
             ),
@@ -175,6 +186,7 @@ class MainMenuScene(BaseMenuScene):
             self._ranking_btn: lambda: self.stack.push(LeaderboardScene(self.stack)),
             self._guide_btn: lambda: self.stack.push(GuideScene(self.stack)),
             self._settings_btn: lambda: self.stack.push(SettingsScene(self.stack)),
+            self._language_btn: self._toggle_language,
             self._exit_btn: self._quit,
         }
         for btn, mode_obj, tag in self._mode_btns:
@@ -183,22 +195,24 @@ class MainMenuScene(BaseMenuScene):
             else:
                 actions[btn] = lambda m=mode_obj: self.stack.replace(GameScene(self.stack, m))
 
+        controls.append(self._language_btn)
         self.set_navigator(controls=controls, actions=actions, on_cancel=self._quit)
+        self._mode_info = mode_info
         self._sync_info_card_with_navigator()
 
     def _update_info_card(self, tag: str | None) -> None:
         if tag == self._selected_mode_tag:
             return
-        if tag in MODE_INFO:
-            title, desc, meta = MODE_INFO[tag]
+        if tag in self._mode_info:
+            title, desc, meta = self._mode_info[tag]
             self._info_title.set_text(title)
             self._info_desc.set_text(desc)
             self._info_meta.set_text(meta)
             self._selected_mode_tag = tag
         else:
-            self._info_title.set_text("SISTEMA DE INTERFACE")
-            self._info_desc.set_text("Pronto para iniciar. Selecione um módulo de simulação para prosseguir.")
-            self._info_meta.set_text("Use mouse, teclado ou gamepad para navegar.")
+            self._info_title.set_text(self.t("main.info.ui_title"))
+            self._info_desc.set_text(self.t("main.info.ui_desc"))
+            self._info_meta.set_text(self.t("main.info.ui_meta"))
             self._selected_mode_tag = None
 
     def _sync_info_card_with_navigator(self) -> None:
@@ -235,9 +249,23 @@ class MainMenuScene(BaseMenuScene):
     def _quit(self) -> None:
         self.stack.pop()
 
-    @staticmethod
-    def _resolve_player_name() -> str:
-        player_name = (RankingService().get_player_name() or "Desconhecido").strip()
+    def _toggle_language(self) -> None:
+        manager = self.stack.localization_manager
+        if manager is None:
+            return
+        new_language = "en_US" if manager.language == "pt_BR" else "pt_BR"
+        manager.set_language(new_language)
+        self.ui_manager.clear_and_reset()
+        self._init_ui()
+
+    def _language_button_text(self) -> str:
+        manager = self.stack.localization_manager
+        if manager is None:
+            return "PT"
+        return "PT" if manager.language == "pt_BR" else "EN"
+
+    def _resolve_player_name(self) -> str:
+        player_name = (RankingService().get_player_name() or self.t("main.unknown_player")).strip()
         if not player_name:
-            return "Desconhecido"
+            return self.t("main.unknown_player")
         return player_name[:24]

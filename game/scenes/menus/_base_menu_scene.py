@@ -17,6 +17,12 @@ class BaseMenuScene(Scene):
         self.navigator: UINavigator | None = None
         self.ui_event_adapter: PygameGUIEventAdapter | None = None
 
+    def t(self, key: str, **kwargs: object) -> str:
+        manager = self.stack.localization_manager
+        if manager is None:
+            return key
+        return manager.t(key, **kwargs)
+
     def set_navigator(
         self,
         controls: list[UIControl] | None = None,

@@ -11,6 +11,7 @@ from game.core.events import AudioContextChanged, EventBus
 if TYPE_CHECKING:
     from game.audio.audio_settings_manager import AudioSettingsManager
     from game.core.input_settings import InputSettingsManager
+    from game.core.localization import LocalizationManager
 
 
 class Scene(ABC):
@@ -44,6 +45,7 @@ class SceneStack:
         self.event_bus = EventBus()
         self.audio_settings_manager: AudioSettingsManager | None = None
         self.input_settings_manager: InputSettingsManager | None = None
+        self.localization_manager: LocalizationManager | None = None
 
     def push(self, scene: Scene) -> None:
         self._stack.append(scene)

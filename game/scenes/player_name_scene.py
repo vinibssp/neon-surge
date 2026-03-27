@@ -16,7 +16,7 @@ class PlayerNameScene(BaseMenuScene):
         
         create_label(
             LabelConfig(
-                text="BEM-VINDO AO SURGE" if is_first_time else "ALTERAR NOME DE JOGADOR", 
+                text=self.t("player_name.welcome") if is_first_time else self.t("player_name.change"), 
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 350, 100), (700, 75)), 
                 variant="title"
             ),
@@ -25,7 +25,7 @@ class PlayerNameScene(BaseMenuScene):
         
         create_label(
             LabelConfig(
-                text="Insira seu nome (Max 12 letras):", 
+                text=self.t("player_name.prompt"), 
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 200, 220), (400, 40)), 
                 variant="subtitle"
             ),
@@ -45,7 +45,7 @@ class PlayerNameScene(BaseMenuScene):
         
         confirm_btn = create_button(
             ButtonConfig(
-                text="CONFIRMAR", 
+                text=self.t("player_name.confirm"), 
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 100, 370), (200, 50)), 
                 variant="primary"
             ),
@@ -62,7 +62,7 @@ class PlayerNameScene(BaseMenuScene):
         if not is_first_time:
             cancel_btn = create_button(
                 ButtonConfig(
-                    text="CANCELAR", 
+                    text=self.t("player_name.cancel"), 
                     rect=pygame.Rect((SCREEN_WIDTH // 2 - 100, 440), (200, 50)), 
                     variant="danger"
                 ),

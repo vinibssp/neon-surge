@@ -16,7 +16,7 @@ class PauseScene(BaseMenuScene):
 
         title = create_label(
             LabelConfig(
-                text="PAUSADO",
+                text=self.t("pause.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 160, 164), (320, 66)),
                 variant="title",
             ),
@@ -26,7 +26,7 @@ class PauseScene(BaseMenuScene):
 
         resume_button = create_button(
             ButtonConfig(
-                text="Continuar",
+                text=self.t("pause.resume"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 280), (280, 56)),
                 variant="primary",
             ),
@@ -34,7 +34,7 @@ class PauseScene(BaseMenuScene):
         )
         settings_button = create_button(
             ButtonConfig(
-                text="Configuracoes",
+                text=self.t("pause.settings"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 350), (280, 56)),
                 variant="primary",
             ),
@@ -42,7 +42,7 @@ class PauseScene(BaseMenuScene):
         )
         menu_button = create_button(
             ButtonConfig(
-                text="Menu Principal",
+                text=self.t("pause.main_menu"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, 420), (280, 56)),
                 variant="danger",
             ),

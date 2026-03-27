@@ -24,39 +24,39 @@ class GuideScene(BaseMenuScene):
         
         self._sections: tuple[GuideSection, ...] = (
             GuideSection(
-                title="SISTEMA DE MOVIMENTAÇÃO",
+                title=self.t("guide.section.1.title"),
                 content=[
-                    "WASD ou SETAS: Navegar pelo espaço.",
-                    "SHIFT ESQUERDO: Dash tático (invulnerabilidade curta).",
-                    "ESPAÇO: Ativar campo de PARRY.",
-                    "DICA: Dash consome energia, use com sabedoria.",
+                    self.t("guide.section.1.line.1"),
+                    self.t("guide.section.1.line.2"),
+                    self.t("guide.section.1.line.3"),
+                    self.t("guide.section.1.line.4"),
                 ],
             ),
             GuideSection(
-                title="MECÂNICAS DE COMBATE",
+                title=self.t("guide.section.2.title"),
                 content=[
-                    "PARRY: Reflete projéteis e atordoa (stagger) inimigos.",
-                    "STAGGER: Inimigos atordoados não causam dano por contato.",
-                    "COMBO: Eliminar inimigos em sequência aumenta o multiplicador.",
-                    "DICA: O parry é sua principal ferramenta de defesa.",
+                    self.t("guide.section.2.line.1"),
+                    self.t("guide.section.2.line.2"),
+                    self.t("guide.section.2.line.3"),
+                    self.t("guide.section.2.line.4"),
                 ],
             ),
             GuideSection(
-                title="MODOS DE SIMULAÇÃO",
+                title=self.t("guide.section.3.title"),
                 content=[
-                    "CORRIDA: Atravesse portais para avançar de nível.",
-                    "SOBREVIVÊNCIA: Resista a hordas infinitas e eventos.",
-                    "TREINO: Configure hordas personalizadas para praticar.",
-                    "DICA: Use o treino para aprender padrões de chefes.",
+                    self.t("guide.section.3.line.1"),
+                    self.t("guide.section.3.line.2"),
+                    self.t("guide.section.3.line.3"),
+                    self.t("guide.section.3.line.4"),
                 ],
             ),
             GuideSection(
-                title="INTERFACE E ATALHOS",
+                title=self.t("guide.section.4.title"),
                 content=[
-                    "ESC: Abrir menu de pausa ou voltar.",
-                    "1 / 2 / 3 / 4: Trocar abas em menus complexos.",
-                    "Q / E: Alternar entre seções adjacentes.",
-                    "MOUSE WHEEL: Rolar listas e trocar páginas.",
+                    self.t("guide.section.4.line.1"),
+                    self.t("guide.section.4.line.2"),
+                    self.t("guide.section.4.line.3"),
+                    self.t("guide.section.4.line.4"),
                 ],
             ),
         )
@@ -69,7 +69,7 @@ class GuideScene(BaseMenuScene):
         # Header
         create_label(
             LabelConfig(
-                text="MANUAL DO OPERADOR",
+                text=self.t("guide.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 40), (800, 80)),
                 variant="title",
             ),
@@ -111,7 +111,7 @@ class GuideScene(BaseMenuScene):
         # Footer / Navigation
         self._prev_button = create_button(
             ButtonConfig(
-                text="ANTERIOR (Q)",
+                text=self.t("guide.prev"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 350, 530), (200, 50)),
                 variant="ghost",
             ),
@@ -129,7 +129,7 @@ class GuideScene(BaseMenuScene):
 
         self._next_button = create_button(
             ButtonConfig(
-                text="PRÓXIMO (E)",
+                text=self.t("guide.next"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 + 150, 530), (200, 50)),
                 variant="ghost",
             ),
@@ -138,7 +138,7 @@ class GuideScene(BaseMenuScene):
 
         self._back_button = create_button(
             ButtonConfig(
-                text="VOLTAR AO MENU",
+                text=self.t("guide.back"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 620), (300, 60)),
                 variant="danger",
             ),
@@ -163,7 +163,9 @@ class GuideScene(BaseMenuScene):
             if i < len(self._content_labels):
                 self._content_labels[i].set_text(text)
         
-        self._section_counter_label.set_text(f"MÓDULO {self._active_index + 1} / {len(self._sections)}")
+        self._section_counter_label.set_text(
+            self.t("guide.module_counter", index=self._active_index + 1, total=len(self._sections))
+        )
 
     def _change_section(self, delta: int) -> None:
         self._active_index = (self._active_index + delta) % len(self._sections)

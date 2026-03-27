@@ -69,16 +69,16 @@ class GameOverScene(BaseMenuScene):
         
         # Display name mapping
         self._modes_display = {
-            "Race": "CORRIDA",
-            "RaceInfinite": "INFINITA",
-            "Survival": "SOBREVIVÊNCIA",
-            "SurvivalHardcore": "HARDCORE",
-            "Labyrinth": "LABIRINTO"
+            "Race": self.t("mode.race"),
+            "RaceInfinite": self.t("mode.race_infinite"),
+            "Survival": self.t("mode.survival"),
+            "SurvivalHardcore": self.t("mode.hardcore"),
+            "Labyrinth": self.t("mode.labyrinth")
         }
         title_variant = "title" if len(title) <= 18 else "subtitle"
         mode_display = self._modes_display.get(self._mode_key, self._mode_key)
         subtitle_text = subtitle.strip()
-        subtitle_is_redundant = subtitle_text.lower().startswith("tempo:") or subtitle_text.lower().startswith("nivel alcancado:")
+        subtitle_is_redundant = subtitle_text.lower().startswith("tempo:") or subtitle_text.lower().startswith("nivel alcancado:") or subtitle_text.lower().startswith("time:") or subtitle_text.lower().startswith("level reached:")
 
         summary_rect = pygame.Rect((30, 40), (440, SCREEN_HEIGHT - 80))
         combat_rect = pygame.Rect((490, 40), (SCREEN_WIDTH - 520, SCREEN_HEIGHT - 80))
@@ -149,17 +149,17 @@ class GameOverScene(BaseMenuScene):
             next_row += 34
 
 
-        status_rows: list[tuple[str, str]] = [("Nivel", str(reached_level))]
+        status_rows: list[tuple[str, str]] = [(self.t("hud.key.level"), str(reached_level))]
         if elapsed_time is not None:
-            status_rows.append(("Tempo", f"{elapsed_time:.1f}s"))
+            status_rows.append((self.t("hud.key.time"), f"{elapsed_time:.1f}s"))
         if session_stats is not None:
             status_rows.extend(
                 [
-                    ("Coletaveis", str(session_stats.collectible_collected_total)),
+                    (self.t("score.collectibles"), str(session_stats.collectible_collected_total)),
                     ("Dashes", str(session_stats.dash_started_total)),
-                    ("Parry", str(session_stats.parry_landed_total)),
-                    ("Portais", str(session_stats.spawn_portal_destroyed_total)),
-                    ("Inimigos", str(session_stats.enemy_spawned_total)),
+                    (self.t("score.parry"), str(session_stats.parry_landed_total)),
+                    (self.t("score.portals"), str(session_stats.spawn_portal_destroyed_total)),
+                    (self.t("score.enemies"), str(session_stats.enemy_spawned_total)),
                 ]
             )
 
@@ -178,8 +178,8 @@ class GameOverScene(BaseMenuScene):
         status_value_col_width = 148
         status_item_col_width = max(180, status_inner_width - status_column_gap - status_value_col_width)
         status_columns = (
-            TableColumn(title="ITEM", width=status_item_col_width),
-            TableColumn(title="VALOR", width=status_value_col_width),
+            TableColumn(title=self.t("game_over.item"), width=status_item_col_width),
+            TableColumn(title=self.t("game_over.value"), width=status_value_col_width),
         )
         status_table_rows = tuple(
             TableRow(
@@ -194,7 +194,7 @@ class GameOverScene(BaseMenuScene):
         next_row += status_table_height + 6
 
         create_label(
-            LabelConfig(text="DETALHE DA PONTUACAO", rect=pygame.Rect((content_x, next_row), (content_width, 28)), variant="subtitle"),
+            LabelConfig(text=self.t("game_over.score_detail"), rect=pygame.Rect((content_x, next_row), (content_width, 28)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.summary_panel,
         )
@@ -224,7 +224,7 @@ class GameOverScene(BaseMenuScene):
 
         retry_button = create_button(
             ButtonConfig(
-                text="Tentar Novamente",
+                text=self.t("game_over.retry"),
                 rect=pygame.Rect((btn_x, buttons_y), (280, button_height)),
                 variant="primary",
             ),
@@ -233,7 +233,7 @@ class GameOverScene(BaseMenuScene):
         )
         menu_button = create_button(
             ButtonConfig(
-                text="Menu Principal",
+                text=self.t("game_over.main_menu"),
                 rect=pygame.Rect((btn_x, buttons_y + button_height + button_gap), (280, button_height)),
                 variant="danger",
             ),
@@ -242,12 +242,12 @@ class GameOverScene(BaseMenuScene):
         )
 
         create_label(
-            LabelConfig(text="LOCAL", rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=self.t("game_over.local"), rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
         create_label(
-            LabelConfig(text="GLOBAL", rect=pygame.Rect((combat_rect.width // 2 + 10, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=self.t("game_over.global"), rect=pygame.Rect((combat_rect.width // 2 + 10, 20), (320, 40)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
@@ -289,17 +289,17 @@ class GameOverScene(BaseMenuScene):
                 show_sync_column=False,
             ),
         )
-        self._local_table.show_loading("Carregando ranking local...")
-        self._global_table.show_loading("Sincronizando com a rede...")
+        self._local_table.show_loading(self.t("game_over.loading.local"))
+        self._global_table.show_loading(self.t("game_over.loading.global"))
 
         self.sync_status_label = create_label(
-            LabelConfig(text="Status: sincronizando...", rect=pygame.Rect((20, combat_rect.height - 36), (combat_rect.width - 40, 24)), variant="muted"),
+            LabelConfig(text=self.t("game_over.sync.running"), rect=pygame.Rect((20, combat_rect.height - 36), (combat_rect.width - 40, 24)), variant="muted"),
             manager=self.ui_manager,
             container=self.combat_panel,
         )
         self._rank_position_label = create_label(
             LabelConfig(
-                text="Posicao no ranking: Local -- | Global --",
+                text=self.t("game_over.rank_position", local="--", **{"global": "--"}),
                 rect=pygame.Rect((20, combat_rect.height - 62), (combat_rect.width - 40, 24)),
                 variant="value",
             ),
@@ -324,8 +324,8 @@ class GameOverScene(BaseMenuScene):
         if self._local_table is None or self._global_table is None:
             return
         if self._ranking_sync_handle is None:
-            self._local_table.show_empty("Nenhum dado local.")
-            self._global_table.show_empty("Sem sincronizacao global.")
+            self._local_table.show_empty(self.t("game_over.no_local"))
+            self._global_table.show_empty(self.t("game_over.no_global"))
             self._update_rank_position_label(local_position=None, global_position=None)
             return
 
@@ -345,7 +345,7 @@ class GameOverScene(BaseMenuScene):
                 is_highlight=self._is_current_entry,
             )
         else:
-            self._local_table.show_empty("Nenhum registro local.")
+            self._local_table.show_empty(self.t("game_over.no_local_entries"))
 
         if snapshot.global_entries:
             self._global_table.set_entries(
@@ -354,16 +354,16 @@ class GameOverScene(BaseMenuScene):
                 is_highlight=self._is_current_entry,
             )
         elif snapshot.status == "degraded":
-            self._global_table.show_empty("Falha na sincronizacao global.")
+            self._global_table.show_empty(self.t("game_over.sync_failed"))
         else:
-            self._global_table.show_loading("Sincronizando com a rede...")
+            self._global_table.show_loading(self.t("game_over.sync.running_table"))
 
         if snapshot.status == "done":
-            self.sync_status_label.set_text(f"Status: sincronizado ({snapshot.synced_now} item(ns) enviados)")
+            self.sync_status_label.set_text(self.t("game_over.sync.done", count=snapshot.synced_now))
         elif snapshot.status == "degraded":
-            self.sync_status_label.set_text("Status: pendencias locais aguardando proxima sincronizacao")
+            self.sync_status_label.set_text(self.t("game_over.sync.degraded"))
         else:
-            self.sync_status_label.set_text("Status: sincronizando ranking global...")
+            self.sync_status_label.set_text(self.t("game_over.sync.progress"))
 
         self._update_rank_position_label(
             local_position=snapshot.local_position,
@@ -380,19 +380,20 @@ class GameOverScene(BaseMenuScene):
         return abs(entry_score - self._last_score) < 0.01
 
     def _metric_label(self) -> str:
-        return "Score"
+        return self.t("leaderboard.metric.score")
 
     def _format_metric_value(self, value: float) -> str:
         return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
 
     def _format_score_breakdown_lines(self, breakdown: list[tuple[str, float]]) -> list[str]:
         if not breakdown:
-            return [f"Total: {self._format_metric_value(self._last_score)}"]
+            return [f"{self.t('score.total')}: {self._format_metric_value(self._last_score)}"]
         lines: list[str] = []
         for label, points in breakdown:
             points_prefix = "+" if points >= 0 else ""
-            lines.append(f"- {label}: {points_prefix}{self._format_metric_value(points)}")
-        lines.append(f"- Total: {self._format_metric_value(self._last_score)}")
+            localized_label = self.stack.localization_manager.localize_score_label(label) if self.stack.localization_manager is not None else label
+            lines.append(f"- {localized_label}: {points_prefix}{self._format_metric_value(points)}")
+        lines.append(f"- {self.t('score.total')}: {self._format_metric_value(self._last_score)}")
         return lines
 
     def _update_rank_position_label(
@@ -404,12 +405,13 @@ class GameOverScene(BaseMenuScene):
             return
         local_text = "--" if local_position is None else str(local_position)
         global_text = "--" if global_position is None else str(global_position)
-        self._rank_position_label.set_text(f"Posicao no ranking: Local {local_text} | Global {global_text}")
+        self._rank_position_label.set_text(
+            self.t("game_over.rank_position", local=local_text, **{"global": global_text})
+        )
 
-    @staticmethod
-    def _format_defeated_by_text(death_cause: str) -> str:
+    def _format_defeated_by_text(self, death_cause: str) -> str:
         enemy_name = GameOverScene._extract_enemy_name(death_cause)
-        return f"Derrotado por {enemy_name}"
+        return self.t("game_over.defeated_by", enemy=enemy_name)
 
     @staticmethod
     def _extract_enemy_name(death_cause: str) -> str:

@@ -142,6 +142,10 @@ Resiliência operacional:
 - Componentes devem ser criados por factories declarativas (`ButtonConfig`, `LabelConfig`, `PanelConfig`, `SliderConfig`, `CheckboxConfig`, `TextInputConfig`, `StatusBarConfig`)
 - Decisões de tema/estilo centralizadas e desacopladas da regra de fluxo
 - Componentes visuais não devem conter regra de domínio
+- Textos visíveis devem usar catálogo de localização por chave (`LocalizationManager`), evitando literais hardcoded em cenas
+- Troca de idioma deve ser persistida em settings dedicados e aplicada imediatamente nas cenas de menu
+- Idioma suportado: `pt_BR` e `en_US`
+- Nomes amigáveis de inimigos não devem variar com idioma; manter contrato em `enemy_names`
 
 ### Navegação de UI
 

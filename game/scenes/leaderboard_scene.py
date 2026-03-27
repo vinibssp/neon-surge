@@ -50,7 +50,7 @@ class LeaderboardScene(BaseMenuScene):
 
         self._title = create_label(
             LabelConfig(
-                text="CLASSIFICAÇÃO",
+                text=self.t("leaderboard.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 350, 20), (700, 70)),
                 variant="title",
             ),
@@ -115,12 +115,12 @@ class LeaderboardScene(BaseMenuScene):
                 max_rows=10,
             ),
         )
-        self._local_table.show_loading("Carregando ranking local...")
-        self._global_table.show_loading("Carregando ranking global...")
+        self._local_table.show_loading(self.t("leaderboard.loading.local"))
+        self._global_table.show_loading(self.t("leaderboard.loading.global"))
 
         self.voltar_btn = create_button(
             ButtonConfig(
-                text="Voltar",
+                text=self.t("leaderboard.back"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT - 90), (280, 56)),
                 variant="danger",
             ),
@@ -180,7 +180,7 @@ class LeaderboardScene(BaseMenuScene):
             return
 
         if not self._local_data:
-            self._local_table.show_empty("Nenhum registro local.")
+            self._local_table.show_empty(self.t("leaderboard.empty.local"))
             return
 
         self._local_table.set_entries(
@@ -195,7 +195,7 @@ class LeaderboardScene(BaseMenuScene):
             return
 
         if not self._global_data:
-            self._global_table.show_empty("Nenhum registro global.")
+            self._global_table.show_empty(self.t("leaderboard.empty.global"))
             return
 
         self._global_table.set_entries(
@@ -213,8 +213,8 @@ class LeaderboardScene(BaseMenuScene):
 
     def _metric_label(self) -> str:
         if self._mode_key in self._time_based_modes:
-            return "Tempo"
-        return "Score"
+            return self.t("leaderboard.metric.time")
+        return self.t("leaderboard.metric.score")
 
     def _format_metric_value(self, value: float) -> str:
         if self._mode_key in self._time_based_modes:

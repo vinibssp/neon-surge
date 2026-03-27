@@ -35,7 +35,7 @@ class ControlsScene(BaseMenuScene):
         # Header
         create_label(
             LabelConfig(
-                text="CONFIGURAÇÕES DE CONTROLES",
+                text=self.t("controls.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 20), (800, 60)),
                 variant="title",
             ),
@@ -47,7 +47,7 @@ class ControlsScene(BaseMenuScene):
         tab_height = 50
         self._tab_keyboard_btn = create_button(
             ButtonConfig(
-                text="TECLADO",
+                text=self.t("controls.tab.keyboard"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - tab_width - 5, 90), (tab_width, tab_height)),
                 variant="primary" if self._current_tab == "KEYBOARD" else "ghost",
             ),
@@ -55,7 +55,7 @@ class ControlsScene(BaseMenuScene):
         )
         self._tab_joystick_btn = create_button(
             ButtonConfig(
-                text="JOYSTICK",
+                text=self.t("controls.tab.joystick"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 + 5, 90), (tab_width, tab_height)),
                 variant="primary" if self._current_tab == "JOYSTICK" else "ghost",
             ),
@@ -79,7 +79,7 @@ class ControlsScene(BaseMenuScene):
         # Back Button
         self._back_button = create_button(
             ButtonConfig(
-                text="VOLTAR",
+                text=self.t("controls.back"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 650), (300, 50)),
                 variant="danger",
             ),
@@ -90,7 +90,7 @@ class ControlsScene(BaseMenuScene):
 
     def _build_keyboard_tab(self) -> None:
         create_label(
-            LabelConfig(text="CONTROLES DO TECLADO", rect=pygame.Rect((20, 10), (860, 40)), variant="settings_header"),
+            LabelConfig(text=self.t("controls.keyboard.header"), rect=pygame.Rect((20, 10), (860, 40)), variant="settings_header"),
             manager=self.ui_manager, container=self._content_panel
         )
 
@@ -98,13 +98,13 @@ class ControlsScene(BaseMenuScene):
         self._binding_buttons.clear()
 
         actions = [
-            ("up", "MOVER PARA CIMA"),
-            ("down", "MOVER PARA BAIXO"),
-            ("left", "MOVER PARA ESQUERDA"),
-            ("right", "MOVER PARA DIREITA"),
-            ("dash", "DASH / IMPULSO"),
-            ("parry", "PARRY / DEFESA"),
-            ("bomb", "BOMBA NUCLEAR"),
+            ("up", self.t("controls.action.up")),
+            ("down", self.t("controls.action.down")),
+            ("left", self.t("controls.action.left")),
+            ("right", self.t("controls.action.right")),
+            ("dash", self.t("controls.action.dash")),
+            ("parry", self.t("controls.action.parry")),
+            ("bomb", self.t("controls.action.bomb")),
         ]
 
         y_offset = 60
@@ -124,20 +124,20 @@ class ControlsScene(BaseMenuScene):
             self._binding_labels[action_id] = label
 
             btn = create_button(
-                ButtonConfig(text="REMAPEAR", rect=pygame.Rect((670, y_offset), (180, 30)), variant="primary"),
+                ButtonConfig(text=self.t("controls.remap"), rect=pygame.Rect((670, y_offset), (180, 30)), variant="primary"),
                 manager=self.ui_manager, container=self._content_panel
             )
             self._binding_buttons[action_id] = btn
             y_offset += 45
 
         self._reset_btn = create_button(
-            ButtonConfig(text="RESTAURAR PADRÕES", rect=pygame.Rect((300, 420), (300, 40)), variant="ghost"),
+            ButtonConfig(text=self.t("controls.reset"), rect=pygame.Rect((300, 420), (300, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._content_panel
         )
 
     def _build_joystick_tab(self) -> None:
         create_label(
-            LabelConfig(text="CONTROLES DO JOYSTICK", rect=pygame.Rect((20, 10), (860, 40)), variant="settings_header"),
+            LabelConfig(text=self.t("controls.joystick.header"), rect=pygame.Rect((20, 10), (860, 40)), variant="settings_header"),
             manager=self.ui_manager, container=self._content_panel
         )
 
@@ -145,10 +145,10 @@ class ControlsScene(BaseMenuScene):
         self._binding_buttons.clear()
 
         actions = [
-            ("joy_dash", "DASH / IMPULSO"),
-            ("joy_parry", "PARRY / DEFESA"),
-            ("joy_bomb", "BOMBA NUCLEAR"),
-            ("joy_pause", "PAUSAR JOGO"),
+            ("joy_dash", self.t("controls.action.joy_dash")),
+            ("joy_parry", self.t("controls.action.joy_parry")),
+            ("joy_bomb", self.t("controls.action.joy_bomb")),
+            ("joy_pause", self.t("controls.action.joy_pause")),
         ]
 
         y_offset = 60
@@ -159,7 +159,8 @@ class ControlsScene(BaseMenuScene):
             )
 
             current_val = getattr(self._input_settings_manager.settings, action_id)
-            keys_text = ", ".join([f"BOTÃO {b}" for b in current_val])
+            button_prefix = self.t("controls.button_prefix")
+            keys_text = ", ".join([f"{button_prefix} {b}" for b in current_val])
             
             label = create_label(
                 LabelConfig(text=keys_text, rect=pygame.Rect((350, y_offset), (300, 30)), variant="value"),
@@ -168,14 +169,14 @@ class ControlsScene(BaseMenuScene):
             self._binding_labels[action_id] = label
 
             btn = create_button(
-                ButtonConfig(text="REMAPEAR", rect=pygame.Rect((670, y_offset), (180, 30)), variant="primary"),
+                ButtonConfig(text=self.t("controls.remap"), rect=pygame.Rect((670, y_offset), (180, 30)), variant="primary"),
                 manager=self.ui_manager, container=self._content_panel
             )
             self._binding_buttons[action_id] = btn
             y_offset += 50
 
         self._reset_btn = create_button(
-            ButtonConfig(text="RESTAURAR PADRÕES", rect=pygame.Rect((300, 420), (300, 40)), variant="ghost"),
+            ButtonConfig(text=self.t("controls.reset"), rect=pygame.Rect((300, 420), (300, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._content_panel
         )
 
@@ -218,7 +219,7 @@ class ControlsScene(BaseMenuScene):
     def _start_binding(self, action_id: str) -> None:
         self._waiting_for_key = action_id
         if action_id in self._binding_labels:
-            self._binding_labels[action_id].set_text("PRESSIONE INPUT...")
+            self._binding_labels[action_id].set_text(self.t("controls.waiting"))
         self.navigator.enabled = False
 
     def _reset_controls(self) -> None:
@@ -231,7 +232,8 @@ class ControlsScene(BaseMenuScene):
         for aid, label in self._binding_labels.items():
             current_val = getattr(self._input_settings_manager.settings, aid)
             is_joy = aid.startswith("joy_")
-            keys_text = ", ".join([f"BOTÃO {b}" if is_joy else pygame.key.name(k).upper() for k in current_val])
+            button_prefix = self.t("controls.button_prefix")
+            keys_text = ", ".join([f"{button_prefix} {b}" if is_joy else pygame.key.name(k).upper() for k in current_val])
             label.set_text(keys_text)
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:

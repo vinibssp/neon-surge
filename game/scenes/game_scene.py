@@ -160,7 +160,11 @@ class GameScene(Scene):
         screen.fill((0, 0, 0))
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
-        self.hud_renderer.render_lines(screen, self.mode.build_hud_lines(self), player=self.world.player)
+        hud_lines = self.mode.build_hud_lines(self)
+        localizer = self.stack.localization_manager
+        if localizer is not None:
+            hud_lines = [localizer.localize_hud_line(line) for line in hud_lines]
+        self.hud_renderer.render_lines(screen, hud_lines, player=self.world.player)
         if self._boss_card_states:
             self._render_boss_cards(screen)
 
@@ -688,6 +692,10 @@ class GameScene(Scene):
             else float(self.mode.calcular_ranking(self.elapsed_time, self.world.level, self.session_stats))
         )
         resolved_mode_key = self.mode.mode_key() if mode_key is None else mode_key
+        localizer = self.stack.localization_manager
+        if localizer is not None:
+            title = localizer.t("runtime.game_over") if title.strip().upper() == "GAME OVER" else title
+            subtitle = localizer.localize_runtime_subtitle(subtitle)
         self._pending_game_over_transition = PendingGameOverTransition(
             title=title,
             subtitle=subtitle,

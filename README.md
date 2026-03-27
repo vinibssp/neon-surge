@@ -233,6 +233,15 @@ Transições pesadas de UI (ex.: abertura de `GameOverScene`) são efetivadas fo
 - componentes reutilizáveis (ex.: tabs) encapsulam estado de UI e expõem API declarativa para cena
 - `TrainingSetupScene` organiza roster completo em abas (`inimigos`, `minibosses`, `bosses`) com ajuste de quantidade por tipo
 
+### 9.1) Internacionalizacao (i18n)
+
+- Localizacao centralizada em `game/core/localization.py` com catálogo por chave e fallback
+- `LocalizationManager` persiste idioma em `game/assets/localization_settings.json`
+- Idiomas suportados: `pt_BR`, `en_US`
+- Cenas de menu devem obter textos via `BaseMenuScene.t(...)` (sem strings hardcoded para UI)
+- Troca de idioma acontece em `SettingsScene` e aplica imediatamente no menu atual
+- Nomes de inimigos permanecem estáveis e nao sao traduzidos por idioma
+
 #### Regras para Menu Scenes
 
 - menu scene não concentra detalhe de composição de widget em cascata
