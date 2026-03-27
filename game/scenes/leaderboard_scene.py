@@ -144,6 +144,9 @@ class LeaderboardScene(BaseMenuScene):
         if self._mode_key != mode_key:
             self._mode_key = mode_key
             self._setup_ui()
+            # Maintain focus on the selected mode button
+            if self._mode_key in self.mode_buttons:
+                self.navigator.select_control(self.mode_buttons[self._mode_key])
             self._fetch_data()
 
     def _fetch_data(self) -> None:

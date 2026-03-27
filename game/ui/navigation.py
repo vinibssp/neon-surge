@@ -313,6 +313,13 @@ class UINavigator:
             return
         self.select_index(next_index)
 
+    def select_control(self, element: UIControl) -> None:
+        if self._index_for(element) < 0:
+            return
+        if not self._is_active(element):
+            return
+        self._set_selected_element(element)
+
     def select_index(self, index: int) -> None:
         if not self.controls:
             return
