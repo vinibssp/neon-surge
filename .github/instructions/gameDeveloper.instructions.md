@@ -52,7 +52,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Ordem determinada por prioridade explícita
 - Mudanças de cena disparadas durante handlers/eventos devem ser aplicadas fora do loop crítico de systems para evitar hitch na simulação
 - Entidades hostis recem-spawnadas devem ter janela curta de inatividade (`stagger`) para evitar contato/ataque instantaneo injusto no frame de surgimento
-- HUD de gameplay deve permanecer em composição de render (`HudRenderer`) com painel de leitura segmentado (cabecalho, estatísticas e medidores de recurso), sem acoplamento com regra de gameplay
+- HUD de gameplay deve permanecer em composição de render (`HudRenderer`) com layout minimalista ancorado nas bordas (modo + estatísticas), preservando o centro da arena livre; em `Survival`, o tempo deve ter destaque no topo central
 
 ### Event Bus de Domínio
 

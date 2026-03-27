@@ -93,14 +93,6 @@ class HudRenderer:
             self.micro_font = pygame.font.Font(None, max(12, font_size - 10))
 
         self.color = color
-        self.panel_fill = (16, 16, 18, 184)
-        self.panel_border = (198, 184, 132, 232)
-        self.header_fill = (46, 36, 26, 225)
-        self.header_text = (252, 238, 186)
-        self.label_color = (210, 206, 188)
-        self.value_color = (244, 244, 232)
-        self.grid_line = (112, 108, 94, 128)
-        self.accent = (255, 108, 108)
         self.padding_x = 12
         self.padding_y = 10
         self.gap = 6
@@ -126,6 +118,21 @@ class HudRenderer:
                 stat_rows.append((line, "-"))
         return mode_name, stat_rows
 
+    @staticmethod
+    def _blit_with_shadow(screen: pygame.Surface, surface: pygame.Surface, x: int, y: int) -> None:
+        screen.blit(surface, (x + 1, y + 1))
+
+    @staticmethod
+    def _render_text_with_alpha(
+        font: pygame.font.Font,
+        text: str,
+        color: tuple[int, int, int],
+        alpha: int,
+    ) -> pygame.Surface:
+        surface = font.render(text, True, color)
+        surface.set_alpha(max(0, min(255, alpha)))
+        return surface
+
     def render_lines(
         self,
         screen: pygame.Surface,
@@ -136,66 +143,58 @@ class HudRenderer:
         line_height: int | None = None,
     ) -> None:
         visible_lines = [line for line in lines if line.strip()]
-        if not visible_lines:
-            return
-
         del line_height
 
         mode_name, stat_rows = self._parse_lines(visible_lines)
         del player
 
+        if not visible_lines:
+            mode_name = "Neon Surge"
+            stat_rows = []
+
         tempo_entry: tuple[str, str] | None = None
-        if "survival" in mode_name.casefold():
-            for index, (label, value) in enumerate(stat_rows):
-                if label.casefold().startswith("tempo"):
-                    tempo_entry = (label, value)
-                    del stat_rows[index]
-                    break
+        for index, (label, value) in enumerate(stat_rows):
+            if label.casefold().startswith("tempo"):
+                tempo_entry = (label, value)
+                del stat_rows[index]
+                break
 
-        mode_surface = self.micro_font.render(mode_name.upper(), True, self.header_text)
-        mode_pad_x = 8
-        mode_pad_y = 4
-        mode_chip = pygame.Rect(
-            x,
-            y,
-            mode_surface.get_width() + mode_pad_x * 2,
-            mode_surface.get_height() + mode_pad_y * 2,
-        )
-        pygame.draw.rect(screen, (30, 24, 18, 168), mode_chip, border_radius=6)
-        pygame.draw.rect(screen, self.panel_border, mode_chip, width=1, border_radius=6)
-        screen.blit(mode_surface, (mode_chip.left + mode_pad_x, mode_chip.top + mode_pad_y))
+        # Ghost HUD: texto leve, sem painéis sólidos, para não competir com a arena.
+        mode_surface_shadow = self._render_text_with_alpha(self.micro_font, mode_name.upper(), (0, 0, 0), 80)
+        mode_surface = self._render_text_with_alpha(self.micro_font, mode_name.upper(), (170, 255, 245), 178)
+        mode_x = x
+        mode_y = y
+        mode_bg = pygame.Rect(mode_x - 2, mode_y - 1, mode_surface.get_width() + 4, mode_surface.get_height() + 2)
+        pygame.draw.rect(screen, (8, 8, 12, 52), mode_bg, border_radius=3)
+        self._blit_with_shadow(screen, mode_surface_shadow, mode_x, mode_y)
+        screen.blit(mode_surface, (mode_x, mode_y))
 
-        if tempo_entry is not None:
-            tempo_surface = self.title_font.render(tempo_entry[1], True, self.header_text)
-            tempo_padding_x = 12
-            tempo_padding_y = 5
-            tempo_chip = pygame.Rect(
-                0,
-                y,
-                tempo_surface.get_width() + (tempo_padding_x * 2),
-                tempo_surface.get_height() + (tempo_padding_y * 2),
-            )
-            tempo_chip.centerx = screen.get_width() // 2
-            pygame.draw.rect(screen, (24, 20, 16, 176), tempo_chip, border_radius=8)
-            pygame.draw.rect(screen, self.panel_border, tempo_chip, width=1, border_radius=8)
-            screen.blit(
-                tempo_surface,
-                (tempo_chip.left + tempo_padding_x, tempo_chip.top + tempo_padding_y),
-            )
+        if tempo_entry is not None and "survival" in mode_name.casefold():
+            tempo_text = tempo_entry[1]
+            tempo_surface_shadow = self._render_text_with_alpha(self.title_font, tempo_text, (0, 0, 0), 88)
+            tempo_surface = self._render_text_with_alpha(self.title_font, tempo_text, (248, 232, 168), 190)
+            tempo_x = (screen.get_width() - tempo_surface.get_width()) // 2
+            tempo_y = y
+            self._blit_with_shadow(screen, tempo_surface_shadow, tempo_x, tempo_y)
+            screen.blit(tempo_surface, (tempo_x, tempo_y))
 
-        stats_y = mode_chip.bottom + 6
-        max_rows = 5
-        visible_rows = stat_rows[:max_rows]
-        for row_index, (label, value) in enumerate(visible_rows):
-            row_text = self.micro_font.render(f"{label}: {value}", True, self.value_color)
-            row_rect = pygame.Rect(
-                x,
-                stats_y + row_index * (row_text.get_height() + 4),
-                row_text.get_width() + 10,
-                row_text.get_height() + 4,
-            )
-            pygame.draw.rect(screen, (12, 14, 18, 136), row_rect, border_radius=4)
-            screen.blit(row_text, (row_rect.left + 5, row_rect.top + 2))
+        right_rows = stat_rows[:2]
+        if tempo_entry is not None and "survival" not in mode_name.casefold():
+            right_rows = [tempo_entry] + right_rows
+            right_rows = right_rows[:2]
+
+        if right_rows:
+            row_h = self.micro_font.get_height() + 3
+            panel_x = screen.get_width() - 14
+            panel_y = y
+            for row_index, (label, value) in enumerate(right_rows):
+                row_top = panel_y + (row_h * row_index)
+                row_text = f"{label}: {value}"
+                value_shadow = self._render_text_with_alpha(self.micro_font, row_text, (0, 0, 0), 76)
+                value_surface = self._render_text_with_alpha(self.micro_font, row_text, (188, 220, 255), 168)
+                value_x = panel_x - value_surface.get_width()
+                self._blit_with_shadow(screen, value_shadow, value_x, row_top + 2)
+                screen.blit(value_surface, (value_x, row_top + 2))
 
         return
 
