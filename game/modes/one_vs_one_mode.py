@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from game.core.enemy_names import format_enemy_name
 from game.core.world import GameWorld
 from game.factories.enemy_factory import EnemyFactory
 from game.modes.game_mode_strategy import GameModeStrategy
@@ -87,7 +88,7 @@ class OneVsOneMode(GameModeStrategy):
         if self._progression is not None:
             enemy_kind = self._progression.current_enemy_kind
             if enemy_kind is not None:
-                current_name = _format_enemy_name(enemy_kind)
+                current_name = format_enemy_name(enemy_kind)
             current_round = max(1, min(self._progression.current_enemy_index + 1, total if total > 0 else 1))
             time_left = self._progression.round_time_left
 
@@ -119,6 +120,3 @@ class OneVsOneMode(GameModeStrategy):
             SystemSpec(system=CollisionSystem(world), phase=PipelinePhase.POST_UPDATE, priority=10),
         ]
 
-
-def _format_enemy_name(kind: str) -> str:
-    return kind.replace("_", " ").title()

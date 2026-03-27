@@ -5,6 +5,7 @@ from typing import Callable
 import pygame
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.enemy_names import format_enemy_name
 from game.core.events import AudioContextChanged
 from game.core.session_stats import GameSessionStats
 from game.modes.game_mode_strategy import GameModeStrategy
@@ -384,18 +385,18 @@ class GameOverScene(BaseMenuScene):
     def _extract_enemy_name(death_cause: str) -> str:
         text = death_cause.strip()
         if text == "":
-            return "Inimigo desconhecido"
+            return format_enemy_name(None)
 
         lowered = text.lower()
         prefixes = ("derrotado por ", "atingido por ", "explosao de ")
         for prefix in prefixes:
             if lowered.startswith(prefix):
                 name = text[len(prefix):].strip()
-                return name if name != "" else "Inimigo desconhecido"
+                return name if name != "" else format_enemy_name(None)
 
         hazard_causes = {"consumido pelo buraco negro", "queimado na lava"}
         if lowered in hazard_causes:
-            return "Inimigo desconhecido"
+            return format_enemy_name(None)
 
         return text
 

@@ -7,6 +7,7 @@ import pygame
 import pygame_gui
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.enemy_names import format_enemy_name
 from game.factories.enemy_factory import EnemyFactory
 from game.modes.mode_config import TrainingConfig
 from game.modes.training_mode import TrainingMode
@@ -359,7 +360,7 @@ class TrainingSetupScene(BaseMenuScene):
                 if is_active: m_btn.disable()
                 p_btn.hide()
             else:
-                n_lbl.set_text(kind.replace("_", " ").title())
+                n_lbl.set_text(format_enemy_name(kind))
                 d_lbl.set_text(ENEMY_DESCRIPTIONS.get(kind, ""))
                 d_lbl.change_object_id(build_component_object_id("label", None))
                 count = self._selected_counts.get(kind, 0)

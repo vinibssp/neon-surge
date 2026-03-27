@@ -10,6 +10,7 @@ from pygame import Vector2
 
 from game.components.data_components import BossComponent, InvulnerabilityComponent, TransformComponent
 from game.config import PLAYER_RESPAWN_INVULN, SCREEN_HEIGHT, SCREEN_WIDTH
+from game.core.enemy_names import format_enemy_name
 from game.core.events import (
     AudioContextChanged,
     BulletExpired,
@@ -799,7 +800,7 @@ class GameScene(Scene):
             alive_bosses.append(
                 BossCardState(
                     entity_id=entity.id,
-                    boss_name=_format_enemy_name(boss_component.boss_kind),
+                    boss_name=format_enemy_name(boss_component.boss_kind),
                 )
             )
         alive_bosses.sort(key=lambda boss: boss.entity_id)
@@ -827,16 +828,3 @@ class GameScene(Scene):
             int(random.uniform(-amplitude, amplitude)),
         )
 
-
-def _format_enemy_name(kind: str) -> str:
-    boss_names = {
-        "boss": "Boss Prime",
-        "boss_artilharia": "Boss Artilharia",
-        "boss_caotico": "Boss Caotico",
-        "boss_colosso_laser": "Boss Colosso Laser",
-        "boss_druida_toxico": "Boss Druida Toxico",
-        "boss_soberano_espectral": "Boss Soberano Espectral",
-    }
-    if kind in boss_names:
-        return boss_names[kind]
-    return kind.replace("_", " ").title()
