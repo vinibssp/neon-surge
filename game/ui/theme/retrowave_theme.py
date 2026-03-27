@@ -343,6 +343,17 @@ THEME_DATA = {
         }
     },
 
+    "label.guide_accent": {
+        "colours": {
+            "normal_text": "#8defff"
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
+        }
+    },
+
     "label.settings_header": {
         "colours": {
             "normal_text": ACCENT_BLUE

@@ -16,6 +16,7 @@ from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.scenes.settings_scene import SettingsScene
 from game.scenes.training_setup_scene import TrainingSetupScene
 from game.scenes.services import CyberpunkMenuBackgroundRenderer
+from game.services.ranking_service import RankingService
 from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_button, create_label, create_panel
 
 MODE_INFO = {
@@ -70,14 +71,21 @@ class MainMenuScene(BaseMenuScene):
             ),
             manager=self.ui_manager,
         )
-        # create_label(
-        #     LabelConfig(
-        #         text="SYNTH COMBAT ARENA",
-        #         rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 124), (520, 36)),
-        #         variant="subtitle",
-        #     ),
-        #     manager=self.ui_manager,
-        # )
+
+        self._player_panel = create_panel(
+            PanelConfig(rect=pygame.Rect((20, 20), (300, 68)), variant="hud"),
+            manager=self.ui_manager,
+        )
+
+        create_label(
+            LabelConfig(
+                text=self._resolve_player_name(),
+                rect=pygame.Rect((14, 18), (272, 28)),
+                variant="value",
+            ),
+            manager=self.ui_manager,
+            container=self._player_panel,
+        )
 
         # 2. Corner Buttons
         # Top Right: Exit
@@ -226,3 +234,10 @@ class MainMenuScene(BaseMenuScene):
 
     def _quit(self) -> None:
         self.stack.pop()
+
+    @staticmethod
+    def _resolve_player_name() -> str:
+        player_name = (RankingService().get_player_name() or "Desconhecido").strip()
+        if not player_name:
+            return "Desconhecido"
+        return player_name[:24]
