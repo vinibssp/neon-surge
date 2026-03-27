@@ -384,7 +384,7 @@ class TrainingSetupScene(BaseMenuScene):
         filtered = []
         for e in events:
             if e.type == pygame.MOUSEWHEEL: self._change_page(-e.y); continue
-            if e.type == pygame.USEREVENT and e.user_type == pygame_gui.UI_BUTTON_ON_HOVERED:
+            if e.type == pygame_gui.UI_BUTTON_ON_HOVERED:
                 if self.navigator and e.ui_element in self.navigator.controls: self.navigator.select_index(self.navigator.controls.index(e.ui_element))
             if e.type == pygame.MOUSEBUTTONDOWN and e.button == 3: self._handle_right_click(e.pos); continue
             if e.type == pygame.KEYDOWN and self._handle_shortcuts(e.key): continue

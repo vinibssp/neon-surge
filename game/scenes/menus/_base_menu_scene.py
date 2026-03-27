@@ -50,6 +50,8 @@ class BaseMenuScene(Scene):
             self.ui_manager.process_events(event)
 
     def update(self, dt: float) -> None:
+        if self.ui_event_adapter is not None:
+            self.ui_event_adapter.update(dt)
         self.ui_manager.update(dt)
         self.on_menu_update(dt)
 

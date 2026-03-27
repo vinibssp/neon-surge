@@ -225,7 +225,7 @@ class MainMenuScene(BaseMenuScene):
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
             # Update on Hover
-            if event.type == pygame.USEREVENT and event.user_type == pygame_gui.UI_BUTTON_ON_HOVERED:
+            if event.type == pygame_gui.UI_BUTTON_ON_HOVERED:
                 self._update_info_card(self._btn_to_mode_tag.get(event.ui_element))
 
         super().handle_input(events)
