@@ -145,7 +145,7 @@ class LabyrinthLayout:
         labyrinth_height = grid_height * cell_size
         origin_x = (screen_width - labyrinth_width) * 0.5
         origin_y = (screen_height - labyrinth_height) * 0.5
-        wall_thickness = max(5.0, cell_size * 0.13)
+        wall_thickness = float(max(5, round(cell_size * 0.13)))
         return LabyrinthGeometry(
             origin=Vector2(origin_x, origin_y),
             cell_size=cell_size,
@@ -197,13 +197,14 @@ class LabyrinthLayout:
         border_exit_cell: CellCoord,
     ) -> list[Rect]:
         wall_rects: list[Rect] = []
-        layout_bounds = Rect(
-            int(geometry.origin.x),
-            int(geometry.origin.y),
-            int(width * geometry.cell_size),
-            int(height * geometry.cell_size),
+        layout_bounds = _rect_from_edges(
+            geometry.origin.x,
+            geometry.origin.y,
+            geometry.origin.x + (width * geometry.cell_size),
+            geometry.origin.y + (height * geometry.cell_size),
         )
         opened_border_direction = cls._border_open_direction(border_exit_cell, width, height)
+        wall_half = geometry.wall_thickness * 0.5
 
         for y in range(height):
             for x in range(width):
@@ -217,20 +218,20 @@ class LabyrinthLayout:
 
                 if not (mask & NORTH) and not (cell == border_exit_cell and opened_border_direction == NORTH):
                     wall_rects.append(
-                        Rect(
-                            int(left - geometry.wall_thickness * 0.5),
-                            int(top - geometry.wall_thickness * 0.5),
-                            int(geometry.cell_size + geometry.wall_thickness),
-                            int(geometry.wall_thickness),
+                        _rect_from_edges(
+                            left - wall_half,
+                            top - wall_half,
+                            right + wall_half,
+                            top + wall_half,
                         )
                     )
                 if not (mask & WEST) and not (cell == border_exit_cell and opened_border_direction == WEST):
                     wall_rects.append(
-                        Rect(
-                            int(left - geometry.wall_thickness * 0.5),
-                            int(top - geometry.wall_thickness * 0.5),
-                            int(geometry.wall_thickness),
-                            int(geometry.cell_size + geometry.wall_thickness),
+                        _rect_from_edges(
+                            left - wall_half,
+                            top - wall_half,
+                            left + wall_half,
+                            bottom + wall_half,
                         )
                     )
 
@@ -238,22 +239,22 @@ class LabyrinthLayout:
                     cell == border_exit_cell and opened_border_direction == SOUTH
                 ):
                     wall_rects.append(
-                        Rect(
-                            int(left - geometry.wall_thickness * 0.5),
-                            int(bottom - geometry.wall_thickness * 0.5),
-                            int(geometry.cell_size + geometry.wall_thickness),
-                            int(geometry.wall_thickness),
+                        _rect_from_edges(
+                            left - wall_half,
+                            bottom - wall_half,
+                            right + wall_half,
+                            bottom + wall_half,
                         )
                     )
                 if x == width - 1 and not (mask & EAST) and not (
                     cell == border_exit_cell and opened_border_direction == EAST
                 ):
                     wall_rects.append(
-                        Rect(
-                            int(right - geometry.wall_thickness * 0.5),
-                            int(top - geometry.wall_thickness * 0.5),
-                            int(geometry.wall_thickness),
-                            int(geometry.cell_size + geometry.wall_thickness),
+                        _rect_from_edges(
+                            right - wall_half,
+                            top - wall_half,
+                            right + wall_half,
+                            bottom + wall_half,
                         )
                     )
 
@@ -444,3 +445,11 @@ def _dedupe_rects(rects: list[Rect]) -> list[Rect]:
         key = (rect.left, rect.top, rect.width, rect.height)
         unique[key] = rect
     return list(unique.values())
+
+
+def _rect_from_edges(left: float, top: float, right: float, bottom: float) -> Rect:
+    x0 = math.floor(left)
+    y0 = math.floor(top)
+    x1 = math.ceil(right)
+    y1 = math.ceil(bottom)
+    return Rect(x0, y0, max(1, x1 - x0), max(1, y1 - y0))

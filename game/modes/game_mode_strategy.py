@@ -77,3 +77,10 @@ class GameModeStrategy(ABC):
     @abstractmethod
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         ...
+
+    def render_background(self, scene: "GameScene", screen, width: int, height: int) -> bool:
+        del scene
+        del screen
+        del width
+        del height
+        return False

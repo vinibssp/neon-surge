@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import math
 import random
 from typing import TYPE_CHECKING
 
+from pygame import Rect
 from pygame import Vector2
 
 from game.components.data_components import MovementComponent, TransformComponent
@@ -15,6 +17,7 @@ from game.modes.labyrinth_layout import LabyrinthLayout, LabyrinthRuntimeState, 
 from game.modes.level_progression_strategy import LabyrinthLevelProgressionStrategy, LevelProgressionStrategy
 from game.modes.mode_config import LabyrinthConfig
 from game.modes.spawn_strategy import LabyrinthSpawnStrategy, SpawnStrategy
+from game.rendering.labyrinth_visuals import render_boss_arena_background
 from game.systems.collision_system import CollisionSystem
 from game.systems.dash_system import DashSystem
 from game.systems.follow_system import FollowSystem
@@ -82,11 +85,29 @@ class LabyrinthMode(GameModeStrategy):
 
         self._position_player(scene, level, layout)
 
+        for y in range(layout.height):
+            for x in range(layout.width):
+                cell = (x, y)
+                scene.world.add_entity(
+                    LabyrinthFactory.create_floor_tile(
+                        position=layout.cell_center(cell),
+                        size=layout.geometry.cell_size,
+                        checker_variant=((x + y) % 2 == 0),
+                        boss_arena=False,
+                    )
+                )
+
         player_cell = self._player_cell(layout, scene)
         key_cell = self._choose_key_cell(layout, player_cell)
+        layout_bounds = self._layout_bounds(layout)
 
         for wall_rect in layout.wall_rects:
-            scene.world.add_entity(LabyrinthFactory.create_wall_visual(wall_rect=wall_rect))
+            scene.world.add_entity(
+                LabyrinthFactory.create_wall_visual(
+                    wall_rect=wall_rect,
+                    is_outer_border=self._is_outer_border_wall(wall_rect, layout_bounds),
+                )
+            )
 
         key_position = layout.cell_center(key_cell)
         scene.world.add_entity(LabyrinthFactory.create_key(key_position))
@@ -150,6 +171,13 @@ class LabyrinthMode(GameModeStrategy):
     def create_retry_strategy(self) -> GameModeStrategy:
         return LabyrinthMode(config=self.config)
 
+    def render_background(self, scene: "GameScene", screen, width: int, height: int) -> bool:
+        runtime = self._runtime_state
+        if runtime is None or not runtime.is_boss_level:
+            return False
+        render_boss_arena_background(screen=screen, width=width, height=height, elapsed_time=scene.elapsed_time)
+        return True
+
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         runtime_provider = self._get_runtime_state
         return [
@@ -193,6 +221,18 @@ class LabyrinthMode(GameModeStrategy):
             boss_keys_collected=0,
         )
         self._position_player_in_arena(scene)
+
+        for y in range(layout.height):
+            for x in range(layout.width):
+                cell = (x, y)
+                scene.world.add_entity(
+                    LabyrinthFactory.create_floor_tile(
+                        position=layout.cell_center(cell),
+                        size=layout.geometry.cell_size,
+                        checker_variant=((x + y) % 2 == 0),
+                        boss_arena=True,
+                    )
+                )
 
         boss_kind = EnemyFactory.choose_random_boss_kind()
         boss = EnemyFactory.create_by_kind(boss_kind, Vector2(scene.world.width * 0.5, scene.world.height * 0.5))
@@ -256,6 +296,25 @@ class LabyrinthMode(GameModeStrategy):
                     best_distance = distance_sq
                     best_cell = cell
         return best_cell
+
+    @staticmethod
+    def _layout_bounds(layout: LabyrinthLayout) -> Rect:
+        left = math.floor(layout.geometry.origin.x)
+        top = math.floor(layout.geometry.origin.y)
+        right = math.ceil(layout.geometry.origin.x + (layout.width * layout.geometry.cell_size))
+        bottom = math.ceil(layout.geometry.origin.y + (layout.height * layout.geometry.cell_size))
+        return Rect(left, top, max(1, right - left), max(1, bottom - top))
+
+    @staticmethod
+    def _is_outer_border_wall(wall_rect: Rect, layout_bounds: Rect) -> bool:
+        is_horizontal = wall_rect.width >= wall_rect.height
+        is_vertical = wall_rect.height > wall_rect.width
+        touches_top_or_bottom = wall_rect.top <= layout_bounds.top or wall_rect.bottom >= layout_bounds.bottom
+        touches_left_or_right = wall_rect.left <= layout_bounds.left or wall_rect.right >= layout_bounds.right
+        return (
+            (is_horizontal and touches_top_or_bottom)
+            or (is_vertical and touches_left_or_right)
+        )
 
     @staticmethod
     def _border_exit_position(layout: LabyrinthLayout) -> Vector2:

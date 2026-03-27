@@ -13,8 +13,23 @@ class RenderSystem:
     def __init__(self, world: GameWorld) -> None:
         self.world = world
 
+    @staticmethod
+    def _render_priority(entity) -> int:
+        if entity.has_tag("maze-floor"):
+            return 0
+        if entity.has_tag("maze-wall"):
+            return 1
+        if entity.has_tag("maze-exit") or entity.has_tag("maze-key"):
+            return 2
+        if entity.has_tag("player"):
+            return 4
+        return 3
+
     def render(self, screen: pygame.Surface) -> None:
-        for entity in self.world.query(RENDERABLE_QUERY):
+        renderables = list(self.world.query(RENDERABLE_QUERY))
+        renderables.sort(key=lambda entity: (self._render_priority(entity), entity.id))
+
+        for entity in renderables:
             transform = entity.get_component(TransformComponent)
             render = entity.get_component(RenderComponent)
             if transform is None or render is None:

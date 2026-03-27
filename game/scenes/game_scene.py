@@ -136,7 +136,9 @@ class GameScene(Scene):
             self._commit_pending_game_over_transition()
 
     def render(self, screen: pygame.Surface) -> None:
-        self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+        handled_by_mode = self.mode.render_background(self, self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+        if not handled_by_mode:
+            self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.render_system.render(self._world_surface)
         self._render_survival_lava_overlay(self._world_surface)
         self._render_environment_event_overlay(self._world_surface)

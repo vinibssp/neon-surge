@@ -14,29 +14,79 @@ from game.components.data_components import (
     TransformComponent,
 )
 from game.ecs.entity import Entity
-from game.rendering.strategies import (
+from game.rendering.labyrinth_visuals import (
+    BossArenaFloorTileRenderStrategy,
+    PALETTE,
     LabyrinthExitRenderStrategy,
+    LabyrinthFloorTileRenderStrategy,
     LabyrinthKeyRenderStrategy,
+    LabyrinthVirusRenderStrategy,
     LabyrinthWallRenderStrategy,
-    VirusGlitchRenderStrategy,
 )
 
 
 class LabyrinthFactory:
     @staticmethod
-    def create_wall_visual(wall_rect: Rect, color: tuple[int, int, int] = (76, 255, 128)) -> Entity:
+    def create_floor_tile(position: Vector2, size: float, checker_variant: bool, boss_arena: bool = False) -> Entity:
+        tile = Entity()
+        tile.add_tag("maze-floor")
+        tile.add_component(TransformComponent(position=Vector2(position)))
+        if boss_arena:
+            base_color = PALETTE.boss_floor_a if checker_variant else PALETTE.boss_floor_b
+            tile.add_tag("maze-floor-boss")
+            tile.add_component(
+                RenderComponent(
+                    render_strategy=BossArenaFloorTileRenderStrategy(
+                        width=size,
+                        height=size,
+                        base_color=base_color,
+                        grid_color=PALETTE.boss_floor_grid,
+                        rune_color=PALETTE.boss_floor_rune,
+                        checker_variant=checker_variant,
+                    )
+                )
+            )
+            return tile
+
+        base_color = PALETTE.floor_a if checker_variant else PALETTE.floor_b
+        tile.add_component(
+            RenderComponent(
+                render_strategy=LabyrinthFloorTileRenderStrategy(
+                    width=size,
+                    height=size,
+                    base_color=base_color,
+                    edge_color=PALETTE.floor_edge,
+                )
+            )
+        )
+        return tile
+
+    @staticmethod
+    def create_wall_visual(
+        wall_rect: Rect,
+        color: tuple[int, int, int] | None = None,
+        is_outer_border: bool = False,
+    ) -> Entity:
         wall = Entity()
         wall.add_tag("maze-wall")
-        center = Vector2(wall_rect.centerx, wall_rect.centery)
+        if is_outer_border:
+            wall.add_tag("maze-wall-border")
+        center = Vector2(wall_rect.left + (wall_rect.width * 0.5), wall_rect.top + (wall_rect.height * 0.5))
+        default_fill = PALETTE.wall_outer_fill if is_outer_border else PALETTE.wall_fill
+        wall_fill = default_fill if color is None else color
+        outline_color = PALETTE.wall_outer_outline if is_outer_border else PALETTE.wall_outline
+        edge_color = PALETTE.wall_outer_edge if is_outer_border else PALETTE.wall_edge
+        edge_thickness = 3 if is_outer_border else 2
         wall.add_component(TransformComponent(position=center))
         wall.add_component(
             RenderComponent(
                 render_strategy=LabyrinthWallRenderStrategy(
-                    fill_color=color,
-                    edge_color=(28, 180, 96),
                     width=float(wall_rect.width),
                     height=float(wall_rect.height),
-                    line_thickness=10,
+                    outline_color=outline_color,
+                    fill_color=wall_fill,
+                    edge_color=edge_color,
+                    edge_thickness=edge_thickness,
                 )
             )
         )
@@ -89,5 +139,5 @@ class LabyrinthFactory:
         virus.add_component(EnemyKindComponent(kind=f"virus_{behavior_kind}"))
         color = (96, 222, 210) if behavior_kind == "chaser" else (234, 126, 184)
         core = (226, 235, 250)
-        virus.add_component(RenderComponent(render_strategy=VirusGlitchRenderStrategy(color, core, radius=radius)))
+        virus.add_component(RenderComponent(render_strategy=LabyrinthVirusRenderStrategy(color, core, radius=radius)))
         return virus
