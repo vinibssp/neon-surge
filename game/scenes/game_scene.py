@@ -152,6 +152,15 @@ class GameScene(Scene):
         handled_by_mode = self.mode.render_background(self, self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
         if not handled_by_mode:
             self.background_renderer.render(self._world_surface, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+        hud_lines = self.mode.build_hud_lines(self)
+        localizer = self.stack.localization_manager
+        if localizer is not None:
+            hud_lines = [localizer.localize_hud_line(line) for line in hud_lines]
+        self.hud_renderer.render_lines(self._world_surface, hud_lines, player=self.world.player)
+        if self._boss_card_states:
+            self._render_boss_cards(self._world_surface)
+
         self.render_system.render(self._world_surface)
         self._render_survival_lava_overlay(self._world_surface)
         self._render_environment_event_overlay(self._world_surface)
@@ -160,13 +169,6 @@ class GameScene(Scene):
         screen.fill((0, 0, 0))
         shake_offset = self._screen_shake_offset()
         screen.blit(self._world_surface, shake_offset)
-        hud_lines = self.mode.build_hud_lines(self)
-        localizer = self.stack.localization_manager
-        if localizer is not None:
-            hud_lines = [localizer.localize_hud_line(line) for line in hud_lines]
-        self.hud_renderer.render_lines(screen, hud_lines, player=self.world.player)
-        if self._boss_card_states:
-            self._render_boss_cards(screen)
 
     def _render_survival_lava_overlay(self, screen: pygame.Surface) -> None:
         lava_state = self.world.runtime_state.get("survival_lava")
@@ -831,15 +833,19 @@ class GameScene(Scene):
 
     def _render_boss_cards(self, screen: pygame.Surface) -> None:
         card_height = self.hud_renderer.boss_card_height()
-        y = 20
+        spacing = 8
+        bottom_margin = 16
+        total_height = (len(self._boss_card_states) * card_height) + (max(0, len(self._boss_card_states) - 1) * spacing)
+        y = screen.get_height() - bottom_margin - total_height
         for boss_state in self._boss_card_states:
             self.hud_renderer.render_boss_card(
                 screen,
                 BossHudCard(boss_name=boss_state.boss_name),
+                x=16,
                 y=y,
-                align_right=True,
+                align_right=False,
             )
-            y += card_height + 8
+            y += card_height + spacing
 
     def _screen_shake_offset(self) -> tuple[int, int]:
         if self._shake_time_left <= 0.0 or self._shake_duration <= 0.0 or self._shake_intensity <= 0.0:

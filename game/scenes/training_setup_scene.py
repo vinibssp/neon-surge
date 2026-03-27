@@ -19,71 +19,10 @@ from game.ui.components import ButtonConfig, LabelConfig, PanelConfig, create_bu
 EnemyCategory = Literal["enemy", "miniboss", "boss"]
 TrainingTab = Literal["enemy", "miniboss", "boss", "event"]
 
-ENEMY_CATEGORY_LABELS: dict[EnemyCategory, str] = {
-    "enemy": "Inimigos",
-    "miniboss": "Minibosses",
-    "boss": "Bosses",
-}
-
-EVENT_LABELS: dict[str, str] = {
-    "random": "Aleatorio",
-    "lava": "Lava",
-    "snow_drift": "Neve",
-    "water_region": "Agua",
-    "bullet_cloud": "Nuvem de Balas",
-    "black_hole": "Buraco Negro",
-}
-
-EVENT_DESCRIPTIONS: dict[str, str] = {
-    "random": "Sorteia qualquer evento ambiental disponivel.",
-    "lava": "Hazard de lava com aviso e fase ativa.",
-    "snow_drift": "Reduz controle e velocidade em area de neve.",
-    "water_region": "Invoca piratas em uma regiao de agua.",
-    "bullet_cloud": "Chuva de projeteis em area delimitada.",
-    "black_hole": "Puxa entidades e pode consumir o player.",
-}
-
-ENEMY_DESCRIPTIONS: dict[str, str] = {
-    "follower": "Persegue o player sem parar.",
-    "shooter": "Atira de longe com mira lenta.",
-    "quique": "Se move ricocheteando com pressao.",
-    "investida": "Telegrafa e avanca em investida.",
-    "explosivo": "Persegue e explode ao encostar.",
-    "metralhadora": "Torre de rajadas curtas.",
-    "morteiro": "Disparos em area com atraso.",
-    "estrafador_arcano": "Strafe lateral com tiro preciso.",
-    "emboscador_escopeta": "Burst forte em curta distancia.",
-    "orbitador_hex": "Orbita e pressiona por angulos.",
-    "sombra_investida": "Emboscada com salto rapido.",
-    "bombardeiro_runa": "Bombardeia com projeteis runicos.",
-    "atirador_laser": "Laser rapido em linha reta.",
-    "kamehameha": "Canaliza feixe continuo.",
-    "lanca_chamas": "Cone de dano em curto alcance.",
-    "fantasma": "Alterna fases e reposiciona.",
-    "buffer": "Fortalece inimigos proximos.",
-    "sapo": "Rajadas de acido em arco.",
-    "olho_orbitante": "Orbita e solta tiros triplos.",
-    "vigia_supressor": "Supressao a media distancia.",
-    "xama_mineiro": "Planta minas em zonas de rota.",
-    "algoz_faseado": "Ataque apos fase/teleporte.",
-    "fuzileiro_runico": "Rifle de supressao continuo.",
-    "necromante_torre": "Caster estatico de controle.",
-    "aranha_laser": "Mobilidade com feixes laser.",
-    "miniboss_espiral": "Espiral densa de projeteis.",
-    "miniboss_cacador": "Caca o player com agressividade.",
-    "miniboss_escudo": "Fase defensiva com escudo orbital.",
-    "miniboss_sniper": "Disparos precisos de longo alcance.",
-    "miniboss_laser_matrix": "Grade de lasers em sequencia.",
-    "miniboss_oraculo_kame": "Feixe prolongado em area.",
-    "miniboss_piro_hidra": "Fogo multiponto e saturacao.",
-    "miniboss_fantasma_senhor": "Stealth tatico com emboscadas.",
-    "miniboss_alquimista": "Rajadas alquimicas especiais.",
-    "boss": "Chefe balanceado de referencia.",
-    "boss_artilharia": "Boss focado em artilharia radial.",
-    "boss_caotico": "Padroes imprevisiveis e pressao.",
-    "boss_colosso_laser": "Varredura laser de alta ameaca.",
-    "boss_druida_toxico": "Invocacoes e campo toxico.",
-    "boss_soberano_espectral": "Rajadas espectrais avancadas.",
+ENEMY_CATEGORY_KEY: dict[EnemyCategory, str] = {
+    "enemy": "training.tab.enemy",
+    "miniboss": "training.tab.miniboss",
+    "boss": "training.tab.boss",
 }
 
 class TrainingSetupScene(BaseMenuScene):
@@ -140,7 +79,7 @@ class TrainingSetupScene(BaseMenuScene):
         # Header
         create_label(
             LabelConfig(
-                text="TREINO PERSONALIZADO",
+                text=self.t("training.title"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 320, 34), (640, 72)),
                 variant="title",
             ),
@@ -148,7 +87,7 @@ class TrainingSetupScene(BaseMenuScene):
         )
         create_label(
             LabelConfig(
-                text="Configure as hordas e eventos para praticar suas habilidades.",
+                text=self.t("training.subtitle"),
                 rect=pygame.Rect((SCREEN_WIDTH // 2 - 360, 100), (720, 30)),
                 variant="subtitle",
             ),
@@ -161,19 +100,19 @@ class TrainingSetupScene(BaseMenuScene):
         
         self._tab_buttons: dict[TrainingTab, object] = {
             "enemy": create_button(
-                ButtonConfig(text="Inimigos", rect=pygame.Rect((tab_start_x, 150), (tab_w, tab_h)), variant="tab_enemy"),
+                ButtonConfig(text=self.t("training.tab.enemy"), rect=pygame.Rect((tab_start_x, 150), (tab_w, tab_h)), variant="tab_enemy"),
                 manager=self.ui_manager,
             ),
             "miniboss": create_button(
-                ButtonConfig(text="Minibosses", rect=pygame.Rect((tab_start_x + (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_miniboss"),
+                ButtonConfig(text=self.t("training.tab.miniboss"), rect=pygame.Rect((tab_start_x + (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_miniboss"),
                 manager=self.ui_manager,
             ),
             "boss": create_button(
-                ButtonConfig(text="Bosses", rect=pygame.Rect((tab_start_x + 2 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_boss"),
+                ButtonConfig(text=self.t("training.tab.boss"), rect=pygame.Rect((tab_start_x + 2 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_boss"),
                 manager=self.ui_manager,
             ),
             "event": create_button(
-                ButtonConfig(text="Eventos", rect=pygame.Rect((tab_start_x + 3 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_event"),
+                ButtonConfig(text=self.t("training.tab.event"), rect=pygame.Rect((tab_start_x + 3 * (tab_w + gap), 150), (tab_w, tab_h)), variant="tab_event"),
                 manager=self.ui_manager,
             ),
         }
@@ -186,15 +125,15 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Table Headers
         self._header_name_label = create_label(
-            LabelConfig(text="Entidade", rect=pygame.Rect((20, 10), (220, 30)), variant="header"),
+            LabelConfig(text=self.t("training.header.entity"), rect=pygame.Rect((20, 10), (220, 30)), variant="header"),
             manager=self.ui_manager, container=self._content_panel,
         )
         self._header_desc_label = create_label(
-            LabelConfig(text="Descricao", rect=pygame.Rect((250, 10), (450, 30)), variant="header"),
+            LabelConfig(text=self.t("training.header.description"), rect=pygame.Rect((250, 10), (450, 30)), variant="header"),
             manager=self.ui_manager, container=self._content_panel,
         )
         self._header_count_label = create_label(
-            LabelConfig(text="Qtd", rect=pygame.Rect((780, 10), (100, 30)), variant="header"),
+            LabelConfig(text=self.t("training.header.count"), rect=pygame.Rect((780, 10), (100, 30)), variant="header"),
             manager=self.ui_manager, container=self._content_panel,
         )
 
@@ -235,7 +174,7 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Pagination
         self._page_label = create_label(
-            LabelConfig(text="Pagina 1/1", rect=pygame.Rect((400, 325), (200, 30)), variant="muted"),
+            LabelConfig(text=self.t("training.page", current=1, total=1), rect=pygame.Rect((400, 325), (200, 30)), variant="muted"),
             manager=self.ui_manager, container=self._content_panel
         )
         self._page_prev_button = create_button(
@@ -253,7 +192,7 @@ class TrainingSetupScene(BaseMenuScene):
             manager=self.ui_manager, container=self._content_panel
         )
         create_label(
-            LabelConfig(text="INTERVALO ENTRE EVENTOS", rect=pygame.Rect((20, 15), (260, 30)), variant="header"),
+            LabelConfig(text=self.t("training.event_interval"), rect=pygame.Rect((20, 15), (260, 30)), variant="header"),
             manager=self.ui_manager, container=self._event_interval_panel
         )
         self._event_interval_minus_btn = create_button(
@@ -271,20 +210,20 @@ class TrainingSetupScene(BaseMenuScene):
 
         # Bottom
         self._summary_label = create_label(
-            LabelConfig(text="Total: 0", rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 605), (600, 30)), variant="subtitle"),
+            LabelConfig(text=self.t("training.summary", total=0, event=self._event_label("random"), interval=22), rect=pygame.Rect((SCREEN_WIDTH // 2 - 300, 605), (600, 30)), variant="subtitle"),
             manager=self.ui_manager,
         )
         self._keyboard_hint_label = create_label(
-            LabelConfig(text="1-4: Abas | Q/E: Alternar | PgUp/Dn: Pagina | Enter: Iniciar | +/-: Ajustar | Mouse Wheel: Pagina | Dir: Ajuste Rapido", 
+            LabelConfig(text=self.t("training.hint"), 
                         rect=pygame.Rect((SCREEN_WIDTH // 2 - 500, 635), (1000, 25)), variant="muted"),
             manager=self.ui_manager,
         )
         self._start_button = create_button(
-            ButtonConfig(text="INICIAR TREINO", rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 665), (250, 50)), variant="primary"),
+            ButtonConfig(text=self.t("training.start"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 260, 665), (250, 50)), variant="primary"),
             manager=self.ui_manager,
         )
         self._back_button = create_button(
-            ButtonConfig(text="VOLTAR", rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 665), (250, 50)), variant="danger"),
+            ButtonConfig(text=self.t("training.back"), rect=pygame.Rect((SCREEN_WIDTH // 2 + 10, 665), (250, 50)), variant="danger"),
             manager=self.ui_manager,
         )
 
@@ -305,14 +244,14 @@ class TrainingSetupScene(BaseMenuScene):
         old_sel = self.navigator.selected_control if self.navigator else None
 
         if self._active_tab == "event":
-            self._header_name_label.set_text("Evento")
-            self._header_desc_label.set_text("Efeito")
-            self._header_count_label.set_text("Status")
+            self._header_name_label.set_text(self.t("training.header.event"))
+            self._header_desc_label.set_text(self.t("training.header.effect"))
+            self._header_count_label.set_text(self.t("training.header.status"))
             self._event_interval_panel.show()
         else:
-            self._header_name_label.set_text("Entidade")
-            self._header_desc_label.set_text("Descricao")
-            self._header_count_label.set_text("Qtd")
+            self._header_name_label.set_text(self.t("training.header.entity"))
+            self._header_desc_label.set_text(self.t("training.header.description"))
+            self._header_count_label.set_text(self.t("training.header.count"))
             self._event_interval_panel.hide()
 
         kinds = list(self._event_options) if self._active_tab == "event" else self._kinds_by_tab[self._active_tab]
@@ -336,18 +275,18 @@ class TrainingSetupScene(BaseMenuScene):
                 continue
 
             if self._active_tab == "event":
-                n_lbl.set_text(EVENT_LABELS.get(kind, kind.title()))
+                n_lbl.set_text(self._event_label(kind))
                 is_active = self._selected_event == kind
-                c_lbl.set_text("ATIVO" if is_active else "-")
+                c_lbl.set_text(self.t("training.status.active") if is_active else "-")
                 c_lbl.change_object_id(build_component_object_id("label", "highlight" if is_active else "value"))
-                d_lbl.set_text(EVENT_DESCRIPTIONS.get(kind, ""))
+                d_lbl.set_text(self._event_description(kind))
                 d_lbl.change_object_id(build_component_object_id("label", "value" if is_active else "muted"))
-                m_btn.set_text("Ativar"); m_btn.enable()
+                m_btn.set_text(self.t("training.action.activate")); m_btn.enable()
                 if is_active: m_btn.disable()
                 p_btn.hide()
             else:
                 n_lbl.set_text(format_enemy_name(kind))
-                d_lbl.set_text(ENEMY_DESCRIPTIONS.get(kind, ""))
+                d_lbl.set_text(self._enemy_description(kind))
                 d_lbl.change_object_id(build_component_object_id("label", None))
                 count = self._selected_counts.get(kind, 0)
                 c_lbl.set_text(str(count))
@@ -356,7 +295,7 @@ class TrainingSetupScene(BaseMenuScene):
                 if count <= 0: m_btn.disable()
                 else: m_btn.enable()
 
-        self._page_label.set_text(f"Pagina {current_page + 1}/{max_page + 1}")
+        self._page_label.set_text(self.t("training.page", current=current_page + 1, total=max_page + 1))
         if self._active_tab == "event":
             for ctrl in [self._page_label, self._page_prev_button, self._page_next_button]: ctrl.hide()
         else:
@@ -373,16 +312,38 @@ class TrainingSetupScene(BaseMenuScene):
         for cat, btn in self._tab_buttons.items():
             marker = ">> " if cat == self._active_tab else ""
             if cat == "event":
-                btn.set_text(f"{marker}Eventos ({EVENT_LABELS.get(self._selected_event, 'Aleatorio')})")
+                btn.set_text(f"{marker}{self.t('training.tab.event')} ({self._event_label(self._selected_event)})")
             else:
                 total = sum(self._selected_counts[k] for k in self._kinds_by_tab[cat])
-                btn.set_text(f"{marker}{ENEMY_CATEGORY_LABELS[cat]} ({total})")
+                btn.set_text(f"{marker}{self.t(ENEMY_CATEGORY_KEY[cat])} ({total})")
 
     def _update_summary(self) -> None:
         total = sum(self._selected_counts.values())
-        self._summary_label.set_text(f"Selecionados: {total} | Evento: {EVENT_LABELS.get(self._selected_event, 'Aleatorio')} | Intervalo: {self._selected_event_interval:.0f}s")
+        self._summary_label.set_text(
+            self.t(
+                "training.summary",
+                total=total,
+                event=self._event_label(self._selected_event),
+                interval=f"{self._selected_event_interval:.0f}",
+            )
+        )
         if total <= 0: self._start_button.disable()
         else: self._start_button.enable()
+
+    def _event_label(self, event_kind: str) -> str:
+        key = f"training.event.{event_kind}"
+        value = self.t(key)
+        return event_kind.title() if value == key else value
+
+    def _event_description(self, event_kind: str) -> str:
+        key = f"training.event_desc.{event_kind}"
+        value = self.t(key)
+        return "" if value == key else value
+
+    def _enemy_description(self, enemy_kind: str) -> str:
+        key = f"training.enemy_desc.{enemy_kind}"
+        value = self.t(key)
+        return "" if value == key else value
 
     def _switch_tab(self, tab: TrainingTab) -> None:
         self._active_tab = tab; self._refresh_view()

@@ -207,22 +207,53 @@ class HudRenderer:
         align_right: bool = False,
         right_margin: int = 16,
     ) -> None:
-        name_surface = self.font.render(card.boss_name, True, self.color)
-        card_width = name_surface.get_width() + self.padding_x * 2
-        card_height = self.padding_y * 2 + name_surface.get_height()
+        pulse = 0.5 + 0.5 * math.sin(pygame.time.get_ticks() * 0.008)
+        badge_text = "BOSS"
+
+        badge_surface_shadow = self._render_text_with_alpha(self.micro_font, badge_text, (0, 0, 0), 96)
+        badge_surface = self._render_text_with_alpha(self.micro_font, badge_text, (255, 172, 220), 206)
+        name_surface_shadow = self._render_text_with_alpha(self.font, card.boss_name, (0, 0, 0), 112)
+        name_surface = self._render_text_with_alpha(self.font, card.boss_name, (236, 245, 255), 218)
+
+        content_gap = 8
+        card_width = (
+            self.padding_x * 2
+            + badge_surface.get_width()
+            + content_gap
+            + name_surface.get_width()
+        )
+        card_height = self.padding_y * 2 + max(badge_surface.get_height(), name_surface.get_height())
         card_x = screen.get_width() - card_width - right_margin if align_right else x
 
         panel = pygame.Surface((card_width, card_height), pygame.SRCALPHA)
-        pygame.draw.rect(panel, card.fill_color, panel.get_rect(), border_radius=10)
-        pygame.draw.rect(panel, card.border_color, panel.get_rect(), width=2, border_radius=10)
+        panel_rect = panel.get_rect()
+        base_fill = (14, 8, 24, 74)
+        border_color = (78, 208, 255, 110)
+        accent_color = (
+            int(180 + 55 * pulse),
+            int(82 + 62 * pulse),
+            int(202 + 45 * pulse),
+            190,
+        )
+
+        pygame.draw.rect(panel, base_fill, panel_rect, border_radius=6)
+        pygame.draw.rect(panel, border_color, panel_rect, width=1, border_radius=6)
+        pygame.draw.line(panel, accent_color, (0, 0), (0, panel_rect.height), 2)
+        pygame.draw.line(panel, (120, 220, 255, 72), (2, 0), (panel_rect.width - 2, 0), 1)
         screen.blit(panel, (card_x, y))
 
-        text_x = card_x + self.padding_x
-        current_y = y + self.padding_y
-        screen.blit(name_surface, (text_x, current_y))
+        badge_x = card_x + self.padding_x
+        badge_y = y + (card_height - badge_surface.get_height()) // 2
+        self._blit_with_shadow(screen, badge_surface_shadow, badge_x, badge_y)
+        screen.blit(badge_surface, (badge_x, badge_y))
+
+        name_x = badge_x + badge_surface.get_width() + content_gap
+        name_y = y + (card_height - name_surface.get_height()) // 2
+        self._blit_with_shadow(screen, name_surface_shadow, name_x, name_y)
+        screen.blit(name_surface, (name_x, name_y))
 
     def boss_card_height(self) -> int:
-        return self.padding_y * 2 + self.font.get_height()
+        return self.padding_y * 2 + max(self.micro_font.get_height(), self.font.get_height())
 
 
 @dataclass(frozen=True)

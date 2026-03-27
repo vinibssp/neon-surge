@@ -38,11 +38,14 @@ class SettingsScene(BaseMenuScene):
         if self.stack.localization_manager is not None:
             current_language = self.stack.localization_manager.language
 
+        panel_x = (SCREEN_WIDTH // 2) - 430
+        panel_w = 860
+
         # Header
         create_label(
             LabelConfig(
                 text=self.t("settings.title"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 30), (800, 70)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 430, 30), (860, 70)),
                 variant="title",
             ),
             manager=self.ui_manager,
@@ -51,7 +54,7 @@ class SettingsScene(BaseMenuScene):
         # Main Audio Panel
         self._audio_panel = create_panel(
             PanelConfig(
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 120), (800, 240)),
+                rect=pygame.Rect((panel_x, 120), (panel_w, 230)),
                 variant="card",
             ),
             manager=self.ui_manager,
@@ -60,7 +63,7 @@ class SettingsScene(BaseMenuScene):
         create_label(
             LabelConfig(
                 text=self.t("settings.audio_header"),
-                rect=pygame.Rect((20, 10), (760, 40)),
+                rect=pygame.Rect((24, 10), (812, 40)),
                 variant="settings_header",
             ),
             manager=self.ui_manager,
@@ -69,52 +72,52 @@ class SettingsScene(BaseMenuScene):
 
         # Music Row
         create_label(
-            LabelConfig(text=self.t("settings.music"), rect=pygame.Rect((40, 65), (120, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.music"), rect=pygame.Rect((40, 62), (120, 40)), variant="settings_label"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._music_value_label = create_label(
-            LabelConfig(text=self._format_percent(self._music_volume_value), rect=pygame.Rect((680, 65), (80, 40)), variant="value"),
+            LabelConfig(text=self._format_percent(self._music_volume_value), rect=pygame.Rect((742, 62), (80, 40)), variant="value"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._music_decrease_btn = create_button(
-            ButtonConfig(text="-", rect=pygame.Rect((180, 65), (50, 40)), variant="ghost"),
+            ButtonConfig(text="-", rect=pygame.Rect((190, 62), (50, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._music_slider = create_slider(
-            SliderConfig(rect=pygame.Rect((240, 65), (380, 40)), value=self._music_volume_value, value_range=(0.0, 1.0)),
+            SliderConfig(rect=pygame.Rect((250, 62), (430, 40)), value=self._music_volume_value, value_range=(0.0, 1.0)),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._music_increase_btn = create_button(
-            ButtonConfig(text="+", rect=pygame.Rect((630, 65), (50, 40)), variant="ghost"),
+            ButtonConfig(text="+", rect=pygame.Rect((690, 62), (50, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._audio_panel
         )
 
         # SFX Row
         create_label(
-            LabelConfig(text=self.t("settings.sfx"), rect=pygame.Rect((40, 130), (120, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.sfx"), rect=pygame.Rect((40, 132), (120, 40)), variant="settings_label"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._sfx_value_label = create_label(
-            LabelConfig(text=self._format_percent(self._sfx_volume_value), rect=pygame.Rect((680, 130), (80, 40)), variant="value"),
+            LabelConfig(text=self._format_percent(self._sfx_volume_value), rect=pygame.Rect((742, 132), (80, 40)), variant="value"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._sfx_decrease_btn = create_button(
-            ButtonConfig(text="-", rect=pygame.Rect((180, 130), (50, 40)), variant="ghost"),
+            ButtonConfig(text="-", rect=pygame.Rect((190, 132), (50, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._sfx_slider = create_slider(
-            SliderConfig(rect=pygame.Rect((240, 130), (380, 40)), value=self._sfx_volume_value, value_range=(0.0, 1.0)),
+            SliderConfig(rect=pygame.Rect((250, 132), (430, 40)), value=self._sfx_volume_value, value_range=(0.0, 1.0)),
             manager=self.ui_manager, container=self._audio_panel
         )
         self._sfx_increase_btn = create_button(
-            ButtonConfig(text="+", rect=pygame.Rect((630, 130), (50, 40)), variant="ghost"),
+            ButtonConfig(text="+", rect=pygame.Rect((690, 132), (50, 40)), variant="ghost"),
             manager=self.ui_manager, container=self._audio_panel
         )
 
-        # Combined Preferences Panel
+        # Preferences Panel
         self._pref_panel = create_panel(
             PanelConfig(
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 380), (800, 220)),
+                rect=pygame.Rect((panel_x, 370), (panel_w, 260)),
                 variant="card",
             ),
             manager=self.ui_manager,
@@ -123,9 +126,15 @@ class SettingsScene(BaseMenuScene):
         create_label(
             LabelConfig(
                 text=self.t("settings.preferences_header"),
-                rect=pygame.Rect((20, 10), (760, 40)),
+                rect=pygame.Rect((24, 10), (812, 40)),
                 variant="settings_header",
             ),
+            manager=self.ui_manager,
+            container=self._pref_panel,
+        )
+
+        create_label(
+            LabelConfig(text=self.t("settings.identity"), rect=pygame.Rect((40, 60), (280, 40)), variant="settings_label"),
             manager=self.ui_manager,
             container=self._pref_panel,
         )
@@ -133,24 +142,33 @@ class SettingsScene(BaseMenuScene):
         self._change_name_button = create_button(
             ButtonConfig(
                 text=self.t("settings.change_name"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 400, 450), (350, 40)),
+                rect=pygame.Rect((350, 60), (470, 40)),
                 variant="primary",
             ),
             manager=self.ui_manager,
+            container=self._pref_panel,
+        )
+
+        create_label(
+            LabelConfig(text=self.t("settings.input"), rect=pygame.Rect((40, 112), (280, 40)), variant="settings_label"),
+            manager=self.ui_manager,
+            container=self._pref_panel,
         )
 
         self._controls_button = create_button(
             ButtonConfig(
                 text=self.t("settings.controls"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 400, 520), (350, 40)),
+                rect=pygame.Rect((350, 112), (470, 40)),
                 variant="primary",
             ),
             manager=self.ui_manager,
+            container=self._pref_panel,
         )
 
         create_label(
-            LabelConfig(text=self.t("settings.language"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 585), (200, 40)), variant="settings_label"),
-            manager=self.ui_manager
+            LabelConfig(text=self.t("settings.language"), rect=pygame.Rect((40, 172), (170, 40)), variant="settings_label"),
+            manager=self.ui_manager,
+            container=self._pref_panel,
         )
         self._language_status_label = create_label(
             LabelConfig(
@@ -158,42 +176,36 @@ class SettingsScene(BaseMenuScene):
                     "settings.language.current",
                     language=self._language_display_name(current_language),
                 ),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 240, 585), (220, 40)),
+                rect=pygame.Rect((220, 172), (190, 40)),
                 variant="value",
             ),
             manager=self.ui_manager,
+            container=self._pref_panel,
         )
         self._language_pt_button = create_button(
             ButtonConfig(
                 text=self.t("settings.language.pt"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 470, 585), (135, 40)),
+                rect=pygame.Rect((430, 172), (180, 40)),
                 variant="primary" if current_language == "pt_BR" else "ghost",
             ),
             manager=self.ui_manager,
+            container=self._pref_panel,
         )
         self._language_en_button = create_button(
             ButtonConfig(
                 text=self.t("settings.language.en"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 615, 585), (135, 40)),
+                rect=pygame.Rect((630, 172), (190, 40)),
                 variant="primary" if current_language == "en_US" else "ghost",
             ),
             manager=self.ui_manager,
-        )
-        
-        create_label(
-            LabelConfig(text=self.t("settings.identity"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 450), (300, 40)), variant="settings_label"),
-            manager=self.ui_manager
-        )
-        create_label(
-            LabelConfig(text=self.t("settings.input"), rect=pygame.Rect((SCREEN_WIDTH // 2 - 400 + 40, 520), (300, 40)), variant="settings_label"),
-            manager=self.ui_manager
+            container=self._pref_panel,
         )
 
         # Back Button
         self._back_button = create_button(
             ButtonConfig(
                 text=self.t("settings.back"),
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 200, 630), (400, 60)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 650), (440, 58)),
                 variant="danger",
             ),
             manager=self.ui_manager,
