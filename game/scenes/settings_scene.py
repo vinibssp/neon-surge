@@ -167,11 +167,40 @@ class SettingsScene(BaseMenuScene):
             container=self._profile_panel,
         )
 
+        # Controls Section
+        self._controls_panel = create_panel(
+            PanelConfig(
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 400, 570), (800, 100)),
+                variant="card",
+            ),
+            manager=self.ui_manager,
+        )
+
+        create_label(
+            LabelConfig(
+                text="CONFIGURAÇÃO DE INPUT",
+                rect=pygame.Rect((20, 10), (300, 80)),
+                variant="header",
+            ),
+            manager=self.ui_manager,
+            container=self._controls_panel,
+        )
+
+        self._controls_button = create_button(
+            ButtonConfig(
+                text="AJUSTAR CONTROLES",
+                rect=pygame.Rect((350, 25), (400, 50)),
+                variant="primary",
+            ),
+            manager=self.ui_manager,
+            container=self._controls_panel,
+        )
+
         # Back Button
         self._back_button = create_button(
             ButtonConfig(
                 text="VOLTAR",
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 600), (300, 60)),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 680), (300, 40)),
                 variant="danger",
             ),
             manager=self.ui_manager,
@@ -182,6 +211,7 @@ class SettingsScene(BaseMenuScene):
                 self._music_decrease_btn, self._music_increase_btn,
                 self._sfx_decrease_btn, self._sfx_increase_btn,
                 self._change_name_button,
+                self._controls_button,
                 self._back_button,
             ],
             actions={
@@ -190,10 +220,15 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_decrease_btn: lambda: self._step_sfx(-0.05),
                 self._sfx_increase_btn: lambda: self._step_sfx(0.05),
                 self._change_name_button: self._change_name,
+                self._controls_button: self._open_controls,
                 self._back_button: self._close,
             },
             on_cancel=self._close,
         )
+
+    def _open_controls(self) -> None:
+        from game.scenes.controls_scene import ControlsScene
+        self.stack.push(ControlsScene(self.stack))
 
     def _change_name(self) -> None:
         from game.scenes.player_name_scene import PlayerNameScene

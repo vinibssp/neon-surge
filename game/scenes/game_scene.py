@@ -70,7 +70,12 @@ class GameScene(Scene):
         super().__init__(stack)
         self.mode = mode
         self.world = GameWorld(width=SCREEN_WIDTH, height=SCREEN_HEIGHT, event_bus=self.stack.event_bus)
-        self.input_handler = InputHandler()
+        
+        input_settings = None
+        if self.stack.input_settings_manager is not None:
+            input_settings = self.stack.input_settings_manager.settings
+            
+        self.input_handler = InputHandler(settings=input_settings)
         self.elapsed_time = 0.0
         self.level_portal_spawned = False
         self.background_renderer = BackgroundRenderer()

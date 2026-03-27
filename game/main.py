@@ -12,6 +12,7 @@ from game.audio import (
 )
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH, WINDOW_TITLE
 from game.core.game import Game
+from game.core.input_settings import InputSettingsManager
 from game.core.scene_stack import SceneStack
 from game.scenes.main_menu_scene import MainMenuScene
 from game.scenes.player_name_scene import PlayerNameScene
@@ -42,6 +43,7 @@ def main() -> None:
         is_ducked_provider=lambda: audio_director.state.is_ducked,
     )
     stack.audio_settings_manager = audio_settings_manager
+    stack.input_settings_manager = InputSettingsManager()
     audio_director.initialize()
     audio_backend.apply_runtime_settings(is_ducked=False)
 
