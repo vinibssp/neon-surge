@@ -8,6 +8,7 @@ from game.core.events import (
     DashStarted,
     EnemySpawned,
     LifetimeExpired,
+    ParryLanded,
     SpawnPortalDestroyed,
 )
 
@@ -19,6 +20,7 @@ class GameSessionStats:
     collectible_collected_total: int = 0
     spawn_portal_destroyed_total: int = 0
     dash_started_total: int = 0
+    parry_landed_total: int = 0
     bullet_expired_total: int = 0
     lifetime_expired_total: int = 0
 
@@ -28,6 +30,7 @@ class GameSessionStats:
         self.collectible_collected_total = 0
         self.spawn_portal_destroyed_total = 0
         self.dash_started_total = 0
+        self.parry_landed_total = 0
         self.bullet_expired_total = 0
         self.lifetime_expired_total = 0
 
@@ -51,6 +54,10 @@ class StatsCollector:
     def on_dash_started(self, event: DashStarted) -> None:
         del event
         self.stats.dash_started_total += 1
+
+    def on_parry_landed(self, event: ParryLanded) -> None:
+        del event
+        self.stats.parry_landed_total += 1
 
     def on_bullet_expired(self, event: BulletExpired) -> None:
         del event

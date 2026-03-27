@@ -183,6 +183,7 @@ Resiliência operacional:
 - Evitar números mágicos em blocos de regra
 - `config.py` contém base global
 - Presets (`RaceConfig`, `RaceInfiniteConfig`, `SurvivalConfig`, `SurvivalHardcoreConfig`, etc.) concentram tuning por modo
+- Pontuação por modo deve considerar `parry` realizado como métrica explícita no `score_breakdown` (telemetria de sessão via evento de domínio)
 - Presets de modo devem concentrar tuning de política de spawn por categoria
 - Tuning global de dificuldade deve priorizar curva progressiva: frequência de spawn, chance por categoria e desbloqueio de roster
 - Presets de sobrevivência devem concentrar hazards periódicos (ex.: lava): intervalo, aviso, duração ativa e janela de pisca de encerramento

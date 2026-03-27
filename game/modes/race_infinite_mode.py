@@ -51,10 +51,12 @@ class RaceInfiniteMode(RaceMode):
         del reached_level
         collectible_count = session_stats.collectible_collected_total
         portal_count = session_stats.spawn_portal_destroyed_total
+        parry_count = session_stats.parry_landed_total
         return [
             (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
             (f"Coletaveis ({collectible_count}x5)", collectible_count * 5.0),
             (f"Portais ({portal_count}x5)", portal_count * 5.0),
+            (f"Parry ({parry_count}x5)", parry_count * 5.0),
         ]
 
     def create_retry_strategy(self) -> GameModeStrategy:

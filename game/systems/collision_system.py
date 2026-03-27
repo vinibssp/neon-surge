@@ -20,6 +20,7 @@ from game.components.data_components import (
 from game.core.events import (
     CollectibleCollected,
     ExplosionTriggered,
+    ParryLanded,
     PlayerDamaged,
     PlayerDied,
     PortalEntered,
@@ -110,6 +111,7 @@ class CollisionSystem:
                 if entity.has_tag("enemy") and is_player_parrying:
                     stagger_duration = 0.9 if player_parry is None else player_parry.stagger_duration
                     self._apply_stagger(entity, stagger_duration)
+                    self._confirm_parry_hit(player.id)
                     continue
 
                 if entity.has_tag("enemy") and self._is_enemy_staggered(entity):
@@ -126,6 +128,7 @@ class CollisionSystem:
                         else:
                             parry_radius = 70.0 if player_parry is None else player_parry.radius
                             self._apply_area_stagger(player_transform.position, parry_radius, stagger_duration)
+                        self._confirm_parry_hit(player.id)
                         continue
 
                 if entity.has_tag("bullet"):
@@ -240,6 +243,15 @@ class CollisionSystem:
         if owner is None:
             return format_enemy_name(None)
         return format_enemy_name(enemy_kind_from_entity(owner))
+
+    def _confirm_parry_hit(self, player_id: int) -> None:
+        is_open = bool(self.world.runtime_state.get("parry_window_open", False))
+        if not is_open:
+            return
+        if bool(self.world.runtime_state.get("parry_window_scored", False)):
+            return
+        self.world.runtime_state["parry_window_scored"] = True
+        self.world.event_bus.publish(ParryLanded(entity_id=player_id))
 
     @staticmethod
     def _is_enemy_staggered(enemy: Entity) -> bool:

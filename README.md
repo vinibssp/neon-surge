@@ -69,7 +69,7 @@ Eventos de domínio seguem um barramento único:
 
 - `EventBus` global compartilhado pelo `SceneStack`
 - eventos principais: `PlayerDied`, `PortalEntered`, `EnemySpawned`
-- eventos adicionais de telemetria/domínio: `CollectibleCollected`, `SpawnPortalDestroyed`, `DashStarted`, `BulletExpired`, `LifetimeExpired`
+- eventos adicionais de telemetria/domínio: `CollectibleCollected`, `SpawnPortalDestroyed`, `DashStarted`, `ParryLanded`, `BulletExpired`, `LifetimeExpired`
 - systems publicam eventos em `EventBus`
 - consumidores transversais (ex.: áudio/UI) podem registrar handlers diretamente no `EventBus`
 - `GameScene` registra/desregistra handlers de gameplay em `on_enter()`/`on_exit()`
@@ -163,6 +163,7 @@ Isso remove blocos hardcoded e concentra tuning por modo.
 - player possui parry em `J`; inimigos atingidos no raio do parry ficam desestabilizados temporariamente com pulso visual
 - durante stagger de parry, o inimigo nao causa dano ao player (colisao e projetil)
 - tela de morte estilo resumo de run: causa da morte + estatisticas da sessao (tempo, nivel, dashes, coletaveis, etc.)
+- pontuacao final exibe detalhamento por modo com bonus de `parry` acertado (telemetria de sessao)
 - no sobrevivencia/hardcore ha coletaveis de campo; a cada 100 coletados, ganha 1 carga de bomba nuclear acionada em I para limpar os inimigos atuais
 - explosoes de dominio (`ExplosionTriggered`) exibem animacao de impacto e aplicam screen shake no gameplay
 - escala de spawn por modo:

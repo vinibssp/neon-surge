@@ -23,6 +23,7 @@ from game.systems.survival_collectible_system import SurvivalCollectibleSystem
 from game.systems.system_pipeline import PipelinePhase, SystemSpec
 
 if TYPE_CHECKING:
+    from game.core.session_stats import GameSessionStats
     from game.scenes.game_scene import GameScene
 
 
@@ -71,6 +72,23 @@ class SurvivalMode(GameModeStrategy):
 
     def create_retry_strategy(self) -> GameModeStrategy:
         return SurvivalMode(config=self.config)
+
+    def score_breakdown(
+        self,
+        elapsed_time: float,
+        reached_level: int,
+        session_stats: "GameSessionStats",
+    ) -> list[tuple[str, float]]:
+        del reached_level
+        collectible_count = session_stats.collectible_collected_total
+        portal_count = session_stats.spawn_portal_destroyed_total
+        parry_count = session_stats.parry_landed_total
+        return [
+            (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
+            (f"Coletaveis ({collectible_count}x5)", collectible_count * 5.0),
+            (f"Portais ({portal_count}x10)", portal_count * 10.0),
+            (f"Parry ({parry_count}x5)", parry_count * 5.0),
+        ]
 
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         return [

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Callable
 
 import pygame
-from pygame_gui.elements import UITextBox
 
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.core.events import AudioContextChanged
@@ -81,6 +80,13 @@ class GameOverScene(BaseMenuScene):
 
         summary_rect = pygame.Rect((30, 40), (440, SCREEN_HEIGHT - 80))
         combat_rect = pygame.Rect((490, 40), (SCREEN_WIDTH - 520, SCREEN_HEIGHT - 80))
+        content_x = 24
+        content_width = summary_rect.width - (content_x * 2)
+        buttons_bottom_margin = 18
+        button_height = 56
+        button_gap = 14
+        buttons_block_height = (button_height * 2) + button_gap
+        buttons_y = summary_rect.height - buttons_bottom_margin - buttons_block_height
 
         self.summary_panel = create_panel(
             PanelConfig(
@@ -103,7 +109,7 @@ class GameOverScene(BaseMenuScene):
             create_label(
                 LabelConfig(
                     text=title,
-                    rect=pygame.Rect((20, 20), (400, 56)),
+                    rect=pygame.Rect((content_x, 20), (content_width, 56)),
                     variant=title_variant,
                 ),
                 manager=self.ui_manager,
@@ -116,7 +122,7 @@ class GameOverScene(BaseMenuScene):
                 create_label(
                     LabelConfig(
                         text=subtitle,
-                        rect=pygame.Rect((20, 72), (400, 36)),
+                        rect=pygame.Rect((content_x, 72), (content_width, 36)),
                         variant="subtitle",
                     ),
                     manager=self.ui_manager,
@@ -131,7 +137,7 @@ class GameOverScene(BaseMenuScene):
                 create_label(
                     LabelConfig(
                         text=defeated_by_text,
-                        rect=pygame.Rect((20, next_row), (400, 30)),
+                        rect=pygame.Rect((content_x, next_row), (content_width, 30)),
                         variant="value",
                     ),
                     manager=self.ui_manager,
@@ -149,20 +155,29 @@ class GameOverScene(BaseMenuScene):
                 [
                     ("Coletaveis", str(session_stats.collectible_collected_total)),
                     ("Dashes", str(session_stats.dash_started_total)),
+                    ("Parry", str(session_stats.parry_landed_total)),
                     ("Portais", str(session_stats.spawn_portal_destroyed_total)),
                     ("Inimigos", str(session_stats.enemy_spawned_total)),
                 ]
             )
 
-        status_table_height = 24 + (len(status_rows) * 28) + 10
+        status_header_height = 22
+        status_row_height = 24
+        status_row_gap = 4
+        status_table_height = 2 + status_header_height + 6 + (len(status_rows) * (status_row_height + status_row_gap))
         self._status_table = TableView(
             manager=self.ui_manager,
             container=self.summary_panel,
-            config=TableViewConfig(rect=pygame.Rect((20, next_row), (400, status_table_height))),
+            config=TableViewConfig(rect=pygame.Rect((content_x, next_row), (content_width, status_table_height))),
         )
+        status_column_gap = 8
+        status_padding_total = 16
+        status_inner_width = max(0, content_width - status_padding_total)
+        status_value_col_width = 148
+        status_item_col_width = max(180, status_inner_width - status_column_gap - status_value_col_width)
         status_columns = (
-            TableColumn(title="ITEM", width=220),
-            TableColumn(title="VALOR", width=160),
+            TableColumn(title="ITEM", width=status_item_col_width),
+            TableColumn(title="VALOR", width=status_value_col_width),
         )
         status_table_rows = tuple(
             TableRow(
@@ -174,30 +189,41 @@ class GameOverScene(BaseMenuScene):
             for item_name, item_value in status_rows
         )
         self._status_table.set_table(columns=status_columns, rows=status_table_rows)
-        next_row += status_table_height + 12
+        next_row += status_table_height + 6
 
         create_label(
-            LabelConfig(text="DETALHE DA PONTUACAO", rect=pygame.Rect((20, next_row), (400, 28)), variant="subtitle"),
+            LabelConfig(text="DETALHE DA PONTUACAO", rect=pygame.Rect((content_x, next_row), (content_width, 28)), variant="subtitle"),
             manager=self.ui_manager,
             container=self.summary_panel,
         )
-        next_row += 28
-        self.breakdown_box = UITextBox(
-            html_text=self._format_score_breakdown_html(self._score_breakdown_lines),
-            relative_rect=pygame.Rect((20, next_row), (400, 110)),
-            manager=self.ui_manager,
-            container=self.summary_panel,
-        )
+        next_row += 24
+        breakdown_lines = list(self._score_breakdown_lines)
+        breakdown_row_height = 22
+        available_breakdown_height = max(0, (buttons_y - 12) - next_row)
+        if len(breakdown_lines) > 0:
+            breakdown_row_height = min(22, max(14, available_breakdown_height // len(breakdown_lines)))
+        for line in breakdown_lines:
+            _labels.append(
+                create_label(
+                    LabelConfig(
+                        text=line,
+                        rect=pygame.Rect((content_x, next_row), (content_width, breakdown_row_height)),
+                        variant="value",
+                    ),
+                    manager=self.ui_manager,
+                    container=self.summary_panel,
+                )
+            )
+            next_row += breakdown_row_height
 
         del _labels
 
-        buttons_y = summary_rect.height - 142
         btn_x = (summary_rect.width - 280) // 2
 
         retry_button = create_button(
             ButtonConfig(
                 text="Tentar Novamente",
-                rect=pygame.Rect((btn_x, buttons_y), (280, 56)),
+                rect=pygame.Rect((btn_x, buttons_y), (280, button_height)),
                 variant="primary",
             ),
             manager=self.ui_manager,
@@ -206,7 +232,7 @@ class GameOverScene(BaseMenuScene):
         menu_button = create_button(
             ButtonConfig(
                 text="Menu Principal",
-                rect=pygame.Rect((btn_x, buttons_y + 72), (280, 56)),
+                rect=pygame.Rect((btn_x, buttons_y + button_height + button_gap), (280, button_height)),
                 variant="danger",
             ),
             manager=self.ui_manager,
@@ -349,11 +375,6 @@ class GameOverScene(BaseMenuScene):
         return lines
 
     @staticmethod
-    def _format_score_breakdown_html(lines: list[str]) -> str:
-        if not lines:
-            return "<i>Sem detalhamento.</i>"
-        return "<br>".join(lines)
-
     @staticmethod
     def _format_defeated_by_text(death_cause: str) -> str:
         enemy_name = GameOverScene._extract_enemy_name(death_cause)

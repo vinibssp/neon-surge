@@ -61,9 +61,11 @@ class OneVsOneMode(GameModeStrategy):
     ) -> list[tuple[str, float]]:
         del reached_level
         portal_count = session_stats.spawn_portal_destroyed_total
+        parry_count = session_stats.parry_landed_total
         return [
             (f"Tempo ({elapsed_time:.1f}s)", elapsed_time),
             (f"Portais ({portal_count}x5)", portal_count * 5.0),
+            (f"Parry ({parry_count}x5)", parry_count * 5.0),
         ]
 
     def configure_level(self, scene: "GameScene", level: int) -> None:

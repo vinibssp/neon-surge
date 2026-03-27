@@ -45,11 +45,13 @@ class GameModeStrategy(ABC):
     ) -> list[tuple[str, float]]:
         portal_count = session_stats.spawn_portal_destroyed_total
         collectible_count = session_stats.collectible_collected_total
+        parry_count = session_stats.parry_landed_total
         return [
-            ("level", reached_level * 100.0),
-            ("collectibles", collectible_count * 5.0),
-            ("portals", portal_count * 10.0),
-            ("time_penalty", -elapsed_time),
+            (f"Nivel ({reached_level}x100)", reached_level * 100.0),
+            (f"Coletaveis ({collectible_count}x5)", collectible_count * 5.0),
+            (f"Portais ({portal_count}x10)", portal_count * 10.0),
+            (f"Parry ({parry_count}x5)", parry_count * 5.0),
+            (f"Tempo (-{elapsed_time:.1f}s)", -elapsed_time),
         ]
 
     @abstractmethod

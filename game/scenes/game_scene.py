@@ -15,6 +15,7 @@ from game.core.events import (
     BulletExpired,
     CollectibleCollected,
     DashStarted,
+    ParryLanded,
     EnemySpawned,
     ExplosionTriggered,
     LifetimeExpired,
@@ -718,6 +719,7 @@ class GameScene(Scene):
             event_bus.on(CollectibleCollected, self.stats_collector.on_collectible_collected),
             event_bus.on(SpawnPortalDestroyed, self.stats_collector.on_spawn_portal_destroyed),
             event_bus.on(DashStarted, self.stats_collector.on_dash_started),
+            event_bus.on(ParryLanded, self.stats_collector.on_parry_landed),
             event_bus.on(BulletExpired, self.stats_collector.on_bullet_expired),
             event_bus.on(LifetimeExpired, self.stats_collector.on_lifetime_expired),
         ]

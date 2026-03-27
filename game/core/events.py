@@ -48,6 +48,11 @@ class DashStarted(DomainEvent):
 
 
 @dataclass(frozen=True)
+class ParryLanded(DomainEvent):
+    entity_id: int
+
+
+@dataclass(frozen=True)
 class BulletExpired(DomainEvent):
     owner_tag: str
 
