@@ -41,7 +41,7 @@ class TrainingMode(GameModeStrategy):
         spawned = total_planned - remaining_to_spawn
         defeated = max(0, spawned - active_enemies)
         scene.open_game_over(
-            title="Treino - Derrota",
+            title="GAME OVER",
             subtitle=f"Derrotados: {defeated}/{total_planned}",
             retry_strategy_factory=self.create_retry_strategy,
             death_cause=death_cause if isinstance(death_cause, str) else None,
