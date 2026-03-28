@@ -3,7 +3,7 @@ from __future__ import annotations
 # Janela e loop principal
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-WINDOW_TITLE = "Neon Surge 2"
+WINDOW_TITLE = "Neon Surge"
 TARGET_FPS = 120
 FIXED_UPS = 60
 FIXED_DT = 1.0 / FIXED_UPS

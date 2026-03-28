@@ -1,5 +1,5 @@
 [app]
-title = Neon Surge 2
+title = Neon Surge
 package.name = neonsurge
 package.domain = org.neonsurge
 source.dir = .
