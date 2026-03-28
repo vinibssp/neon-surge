@@ -5,6 +5,7 @@ from pygame import Vector2
 from game.components.data_components import (
     CollisionComponent,
     DashComponent,
+    EnergyComponent,
     InvulnerabilityComponent,
     MovementComponent,
     ParryComponent,
@@ -36,6 +37,7 @@ class PlayerFactory:
         player.add_tag("player")
         player.add_component(TransformComponent(position=position))
         player.add_component(MovementComponent(max_speed=PLAYER_SPEED))
+        player.add_component(EnergyComponent())
         player.add_component(
             DashComponent(
                 dash_speed=PLAYER_DASH_SPEED,

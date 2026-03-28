@@ -9,6 +9,7 @@ from game.components.data_components import (
     BossComponent,
     ChargeComponent,
     DashComponent,
+    EnergyComponent,
     ExplosiveComponent,
     GhostComponent,
     InvulnerabilityComponent,
@@ -159,13 +160,20 @@ class PlayerRenderStrategy:
     def render(self, screen: pygame.Surface, entity, transform) -> None:
         now = time.time()
         invulnerability = entity.get_component(InvulnerabilityComponent)
+        energy = entity.get_component(EnergyComponent)
         outer_color = self.outer_color
         if invulnerability is not None and invulnerability.time_left > 0:
             outer_color = PLAYER_CORE_COLOR
 
         pulse = 0.5 + 0.5 * math.sin(now * 9.0)
         center = (int(transform.position.x), int(transform.position.y))
-        halo_radius = max(1, int(self.radius + 2 + pulse * 2.0))
+
+        energy_ratio = 1.0
+        if energy is not None and energy.max_energy > 0.0:
+            energy_ratio = max(0.0, min(1.0, energy.current_energy / energy.max_energy))
+        halo_base = self.radius + 1.0 + (energy_ratio * 4.0)
+        halo_pulse = 1.1 + energy_ratio * 1.4
+        halo_radius = max(1, int(halo_base + pulse * halo_pulse))
 
         draw_neon_glow(
             surface=screen,
@@ -202,11 +210,16 @@ class PlayerRenderStrategy:
             draw_neon_glow(screen, dash_glow, center[0], center[1], max(1, ring_radius), 2)
             pygame.draw.circle(screen, dash_glow, center, ring_radius, 2)
 
-        if dash.cooldown_left > 0:
-            ratio = 1.0 if dash.cooldown <= 0 else 1.0 - (dash.cooldown_left / dash.cooldown)
-            ratio = max(0.0, min(1.0, ratio))
+        recharge_ratio = 1.0
+        if energy is not None and energy.max_energy > 0.0:
+            recharge_ratio = max(0.0, min(1.0, energy.current_energy / energy.max_energy))
+        elif dash.cooldown_left > 0:
+            recharge_ratio = 1.0 if dash.cooldown <= 0 else 1.0 - (dash.cooldown_left / dash.cooldown)
+            recharge_ratio = max(0.0, min(1.0, recharge_ratio))
+
+        if recharge_ratio < 1.0:
             start_angle = -math.pi / 2
-            end_angle = start_angle + (math.pi * 2 * ratio)
+            end_angle = start_angle + (math.pi * 2 * recharge_ratio)
             track_surface = pygame.Surface((ring_rect.width + 8, ring_rect.height + 8), pygame.SRCALPHA)
             track_rect = track_surface.get_rect(center=ring_rect.center)
             local_rect = track_surface.get_rect().inflate(-8, -8)

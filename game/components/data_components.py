@@ -22,6 +22,13 @@ class MovementComponent(Component):
 
 
 @dataclass
+class EnergyComponent(Component):
+    max_energy: float = 100.0
+    current_energy: float = 100.0
+    regen_rate: float = 60.0
+
+
+@dataclass
 class DashComponent(Component):
     dash_speed: float
     duration: float

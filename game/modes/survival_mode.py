@@ -10,6 +10,7 @@ from game.modes.mode_config import SurvivalConfig
 from game.modes.spawn_strategy import SpawnStrategy, SurvivalSpawnStrategy
 from game.systems.collision_system import CollisionSystem
 from game.systems.dash_system import DashSystem
+from game.systems.energy_system import EnergySystem
 from game.systems.environment_event_system import EnvironmentEventSystem
 from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
@@ -93,6 +94,7 @@ class SurvivalMode(GameModeStrategy):
 
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         return [
+            SystemSpec(system=EnergySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=5),
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
             SystemSpec(system=ParrySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=15),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),

@@ -5,6 +5,7 @@ from game.components.data_components import (
     BulletComponent,
     CollisionComponent,
     DashComponent,
+    EnergyComponent,
     FollowComponent,
     InvulnerabilityComponent,
     LifetimeComponent,
@@ -63,3 +64,8 @@ LIFETIME_QUERY = WorldQuery(component_types=(LifetimeComponent,))
 BULLET_QUERY = WorldQuery(component_types=(BulletComponent,), tags=("bullet",))
 MORTAR_SHELL_QUERY = WorldQuery(component_types=(MortarShellComponent, TransformComponent), tags=("bullet",))
 PORTAL_SPAWN_QUERY = WorldQuery(component_types=(PortalSpawnComponent, TransformComponent))
+
+PLAYER_QUERY = WorldQuery(
+    component_types=(EnergyComponent,),
+    tags=("player",),
+)

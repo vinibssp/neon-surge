@@ -53,6 +53,7 @@ Nao escreva explicações em texto, apenas se for absolutamente necessário para
 - Mudanças de cena disparadas durante handlers/eventos devem ser aplicadas fora do loop crítico de systems para evitar hitch na simulação
 - Entidades hostis recem-spawnadas devem ter janela curta de inatividade (`stagger`) para evitar contato/ataque instantaneo injusto no frame de surgimento
 - HUD de gameplay deve permanecer em composição de render (`HudRenderer`) com layout minimalista ancorado nas bordas (modo + estatísticas), preservando o centro da arena livre; em `Survival`, o tempo deve ter destaque no topo central
+- Recursos compartilhados de habilidade (ex.: energia para `dash`/`parry`) devem ficar em componente dedicado e sistema de regeneração próprio, com consumo aplicado nos systems de habilidade
 
 ### Event Bus de Domínio
 

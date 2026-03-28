@@ -10,6 +10,7 @@ from game.modes.level_progression_strategy import LevelProgressionStrategy, OneV
 from game.modes.spawn_strategy import OneVsOneSpawnStrategy, SpawnStrategy
 from game.systems.collision_system import CollisionSystem
 from game.systems.dash_system import DashSystem
+from game.systems.energy_system import EnergySystem
 from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
 from game.systems.lifetime_system import LifetimeSystem
@@ -111,6 +112,7 @@ class OneVsOneMode(GameModeStrategy):
 
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         return [
+            SystemSpec(system=EnergySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=5),
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),
             SystemSpec(system=FollowSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=30),

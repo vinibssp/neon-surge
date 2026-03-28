@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from game.components.data_components import ParryComponent, StaggeredComponent, TransformComponent
+from game.components.data_components import EnergyComponent, ParryComponent, StaggeredComponent, TransformComponent
 from game.core.events import ParryLanded
 from game.core.world import GameWorld
 from game.systems.world_queries import ENEMY_TRANSFORM_QUERY, PLAYER_PARRY_QUERY
+
+
+FULL_ENERGY_EPSILON = 0.0001
+PARRY_ENERGY_REDUCTION_RATIO = 0.5
 
 
 class ParrySystem:
@@ -19,9 +23,17 @@ class ParrySystem:
 
             parry.cooldown_left = max(0.0, parry.cooldown_left - dt)
 
-            should_start = parry.requested and parry.cooldown_left <= 0.0
+            energy = player.get_component(EnergyComponent)
+            can_start = True
+            if energy is not None:
+                can_start = energy.current_energy >= (energy.max_energy - FULL_ENERGY_EPSILON)
+
+            should_start = parry.requested and parry.cooldown_left <= 0.0 and can_start
             parry.requested = False
             if should_start:
+                if energy is not None:
+                    reduction = energy.max_energy * PARRY_ENERGY_REDUCTION_RATIO
+                    energy.current_energy = max(0.0, energy.current_energy - reduction)
                 parry.active_time_left = parry.duration
                 parry.cooldown_left = parry.cooldown
                 self.world.runtime_state["parry_window_open"] = True

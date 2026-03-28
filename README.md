@@ -117,6 +117,7 @@ O núcleo ECS fica em `game/ecs` e a consulta foi centralizada via `WorldQuery`:
 - lógica concentrada em systems
 - `GameWorld.query(WorldQuery)` para filtros reutilizáveis
 - catálogo de queries em `game/systems/world_queries.py` para evitar loops duplicados
+- recursos de habilidade do player centralizados por componente (`EnergyComponent`) e regenerados por system dedicado (`EnergySystem`)
 
 ### 4) Domain Event Bus
 
@@ -251,6 +252,12 @@ Para reduzir acoplamento e responsabilidades:
 - `post_update`
 
 Com `SystemSpec(system, phase, priority)` definido pelos modos, evitando acoplamento por ordem implícita de lista.
+
+Recurso de energia em gameplay:
+
+- `DashSystem` consome custo fixo de energia para iniciar dash
+- `ParrySystem` descarrega 59% da energia máxima ao ativar parry
+- `EnergySystem` regenera energia continuamente no `pre_update`
 
 Transições pesadas de UI (ex.: abertura de `GameOverScene`) são efetivadas fora do dispatch imediato de eventos, no fechamento do frame de update.
 

@@ -20,6 +20,7 @@ from game.modes.spawn_strategy import LabyrinthSpawnStrategy, SpawnStrategy
 from game.rendering.labyrinth_visuals import render_boss_arena_background
 from game.systems.collision_system import CollisionSystem
 from game.systems.dash_system import DashSystem
+from game.systems.energy_system import EnergySystem
 from game.systems.follow_system import FollowSystem
 from game.systems.invulnerability_system import InvulnerabilitySystem
 from game.systems.labyrinth_ai_system import LabyrinthAISystem
@@ -181,6 +182,7 @@ class LabyrinthMode(GameModeStrategy):
     def build_systems(self, world: GameWorld) -> list[SystemSpec]:
         runtime_provider = self._get_runtime_state
         return [
+            SystemSpec(system=EnergySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=5),
             SystemSpec(system=DashSystem(world), phase=PipelinePhase.PRE_UPDATE, priority=10),
             SystemSpec(system=ParrySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=15),
             SystemSpec(system=InvulnerabilitySystem(world), phase=PipelinePhase.PRE_UPDATE, priority=20),

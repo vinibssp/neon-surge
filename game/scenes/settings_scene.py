@@ -223,6 +223,15 @@ class SettingsScene(BaseMenuScene):
         )
 
         # Back Button
+        self._fullscreen_hint_label = create_label(
+            LabelConfig(
+                text=self.t("settings.fullscreen.hint"),
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 220, 620), (440, 24)),
+                variant="muted",
+            ),
+            manager=self.ui_manager,
+        )
+
         self._back_button = create_button(
             ButtonConfig(
                 text=self.t("settings.back"),
