@@ -24,12 +24,17 @@ class SettingsScene(BaseMenuScene):
         self._elapsed_time = 0.0
         self._background_renderer = CyberpunkMenuBackgroundRenderer()
         self._audio_settings_manager = self.stack.audio_settings_manager
+        self._display_settings_manager = self.stack.display_settings_manager
 
         self._music_volume_value = 0.20
         self._sfx_volume_value = 0.20
         if self._audio_settings_manager is not None:
             self._music_volume_value = self._audio_settings_manager.settings.music_volume
             self._sfx_volume_value = self._audio_settings_manager.settings.sfx_volume
+
+        self._is_fullscreen = False
+        if self._display_settings_manager is not None:
+            self._is_fullscreen = self._display_settings_manager.settings.fullscreen
 
         self._init_ui()
 
@@ -166,7 +171,23 @@ class SettingsScene(BaseMenuScene):
         )
 
         create_label(
-            LabelConfig(text=self.t("settings.language"), rect=pygame.Rect((40, 172), (170, 40)), variant="settings_label"),
+            LabelConfig(text=self.t("settings.fullscreen"), rect=pygame.Rect((40, 164), (280, 40)), variant="settings_label"),
+            manager=self.ui_manager,
+            container=self._pref_panel,
+        )
+
+        self._fullscreen_button = create_button(
+            ButtonConfig(
+                text=self._fullscreen_button_text(),
+                rect=pygame.Rect((350, 164), (470, 40)),
+                variant="primary" if self._is_fullscreen else "ghost",
+            ),
+            manager=self.ui_manager,
+            container=self._pref_panel,
+        )
+
+        create_label(
+            LabelConfig(text=self.t("settings.language"), rect=pygame.Rect((40, 214), (170, 40)), variant="settings_label"),
             manager=self.ui_manager,
             container=self._pref_panel,
         )
@@ -176,7 +197,7 @@ class SettingsScene(BaseMenuScene):
                     "settings.language.current",
                     language=self._language_display_name(current_language),
                 ),
-                rect=pygame.Rect((220, 172), (190, 40)),
+                rect=pygame.Rect((220, 214), (190, 40)),
                 variant="value",
             ),
             manager=self.ui_manager,
@@ -185,7 +206,7 @@ class SettingsScene(BaseMenuScene):
         self._language_pt_button = create_button(
             ButtonConfig(
                 text=self.t("settings.language.pt"),
-                rect=pygame.Rect((430, 172), (180, 40)),
+                rect=pygame.Rect((430, 214), (180, 40)),
                 variant="primary" if current_language == "pt_BR" else "ghost",
             ),
             manager=self.ui_manager,
@@ -194,7 +215,7 @@ class SettingsScene(BaseMenuScene):
         self._language_en_button = create_button(
             ButtonConfig(
                 text=self.t("settings.language.en"),
-                rect=pygame.Rect((630, 172), (190, 40)),
+                rect=pygame.Rect((630, 214), (190, 40)),
                 variant="primary" if current_language == "en_US" else "ghost",
             ),
             manager=self.ui_manager,
@@ -217,6 +238,7 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_decrease_btn, self._sfx_increase_btn,
                 self._change_name_button,
                 self._controls_button,
+                self._fullscreen_button,
                 self._language_pt_button,
                 self._language_en_button,
                 self._back_button,
@@ -228,6 +250,7 @@ class SettingsScene(BaseMenuScene):
                 self._sfx_increase_btn: lambda: self._step_sfx(0.05),
                 self._change_name_button: self._change_name,
                 self._controls_button: self._open_controls,
+                self._fullscreen_button: self._toggle_fullscreen,
                 self._language_pt_button: lambda: self._set_language("pt_BR"),
                 self._language_en_button: lambda: self._set_language("en_US"),
                 self._back_button: self._close,
@@ -245,6 +268,9 @@ class SettingsScene(BaseMenuScene):
 
     def handle_input(self, events: list[pygame.event.Event]) -> None:
         for event in events:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_F11:
+                self._toggle_fullscreen()
+                continue
             if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element is self._music_slider:
                     self._set_music_volume(float(event.value))
@@ -281,6 +307,17 @@ class SettingsScene(BaseMenuScene):
         manager.set_language(language)
         self.ui_manager.clear_and_reset()
         self._init_ui()
+
+    def _toggle_fullscreen(self) -> None:
+        if self._display_settings_manager is None:
+            return
+        self._display_settings_manager.toggle_fullscreen()
+        self._is_fullscreen = self._display_settings_manager.settings.fullscreen
+        self._fullscreen_button.set_text(self._fullscreen_button_text())
+
+    def _fullscreen_button_text(self) -> str:
+        state_key = "settings.fullscreen.on" if self._is_fullscreen else "settings.fullscreen.off"
+        return self.t("settings.fullscreen.toggle", state=self.t(state_key))
 
     def _language_display_name(self, language: str) -> str:
         manager = self.stack.localization_manager

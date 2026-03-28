@@ -11,6 +11,7 @@ from game.audio import (
     build_default_audio_settings,
 )
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH, WINDOW_TITLE
+from game.core.display_settings import DisplaySettingsManager
 from game.core.game import Game
 from game.core.input_settings import InputSettingsManager
 from game.core.localization import LocalizationManager
@@ -26,7 +27,8 @@ def main() -> None:
     # Initial joystick count check
     _ = pygame.joystick.get_count()
         
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    display_settings_manager = DisplaySettingsManager()
+    screen = display_settings_manager.apply_display_mode()
     pygame.display.set_caption(WINDOW_TITLE)
 
     stack = SceneStack()
@@ -48,6 +50,7 @@ def main() -> None:
         is_ducked_provider=lambda: audio_director.state.is_ducked,
     )
     stack.audio_settings_manager = audio_settings_manager
+    stack.display_settings_manager = display_settings_manager
     stack.input_settings_manager = InputSettingsManager()
     stack.localization_manager = LocalizationManager()
     audio_director.initialize()

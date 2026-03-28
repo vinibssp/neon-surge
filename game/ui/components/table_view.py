@@ -30,8 +30,10 @@ class TableViewConfig:
     rect: pygame.Rect
     padding_x: int = 8
     column_gap: int = 8
-    header_height: int = 22
-    row_height: int = 24
+    header_height: int = 26
+    row_height: int = 28
+    row_gap: int = 4
+    message_height: int = 30
 
 
 class TableView:
@@ -58,7 +60,10 @@ class TableView:
             create_label(
                 LabelConfig(
                     text=text,
-                    rect=pygame.Rect((rect.x + self._config.padding_x, rect.y + 6), (rect.width - self._config.padding_x * 2, 24)),
+                    rect=pygame.Rect(
+                        (rect.x + self._config.padding_x, rect.y + 6),
+                        (rect.width - self._config.padding_x * 2, self._config.message_height),
+                    ),
                     variant=variant,
                 ),
                 manager=self._manager,
@@ -91,7 +96,7 @@ class TableView:
 
         row_start_y = y_header + self._config.header_height + 6
         for row_index, row in enumerate(rows):
-            y = row_start_y + row_index * (self._config.row_height + 4)
+            y = row_start_y + row_index * (self._config.row_height + self._config.row_gap)
             for col_index, cell in enumerate(row.cells):
                 if col_index >= len(columns):
                     break

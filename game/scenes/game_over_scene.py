@@ -56,6 +56,12 @@ class GameOverScene(BaseMenuScene):
         self._global_table: RankingTable | None = None
         self._status_table: TableView | None = None
         self._rank_position_label = None
+
+        title_top = 20
+        title_height = 78
+        subtitle_top = 104
+        subtitle_height = 40
+        death_cause_height = 34
         
         self._retry_mode_instance = self.retry_strategy_factory()
         stats_for_breakdown = session_stats if session_stats is not None else GameSessionStats()
@@ -111,27 +117,27 @@ class GameOverScene(BaseMenuScene):
             create_label(
                 LabelConfig(
                     text=title,
-                    rect=pygame.Rect((content_x, 20), (content_width, 56)),
-                    variant=title_variant,
+                    rect=pygame.Rect((content_x, title_top), (content_width, title_height)),
+                    variant="game_over_title" if title_variant == "title" else title_variant,
                 ),
                 manager=self.ui_manager,
                 container=self.summary_panel,
             )
         )
-        next_row = 72
+        next_row = title_top + title_height + 6
         if subtitle_text != "" and not subtitle_is_redundant:
             _labels.append(
                 create_label(
                     LabelConfig(
                         text=subtitle,
-                        rect=pygame.Rect((content_x, 72), (content_width, 36)),
-                        variant="subtitle",
+                        rect=pygame.Rect((content_x, subtitle_top), (content_width, subtitle_height)),
+                        variant="game_over_subtitle",
                     ),
                     manager=self.ui_manager,
                     container=self.summary_panel,
                 )
             )
-            next_row = 108
+            next_row = subtitle_top + subtitle_height + 6
 
         if death_cause is not None and death_cause.strip() != "":
             defeated_by_text = self._format_defeated_by_text(death_cause)
@@ -139,14 +145,14 @@ class GameOverScene(BaseMenuScene):
                 create_label(
                     LabelConfig(
                         text=defeated_by_text,
-                        rect=pygame.Rect((content_x, next_row), (content_width, 30)),
-                        variant="value",
+                        rect=pygame.Rect((content_x, next_row), (content_width, death_cause_height)),
+                        variant="game_over_value",
                     ),
                     manager=self.ui_manager,
                     container=self.summary_panel,
                 )
             )
-            next_row += 34
+            next_row += death_cause_height + 8
 
 
         status_rows: list[tuple[str, str]] = [(self.t("hud.key.level"), str(reached_level))]
@@ -163,14 +169,23 @@ class GameOverScene(BaseMenuScene):
                 ]
             )
 
-        status_header_height = 22
-        status_row_height = 24
-        status_row_gap = 4
-        status_table_height = 2 + status_header_height + 6 + (len(status_rows) * (status_row_height + status_row_gap))
+        status_header_height = 20
+        status_row_height = 18
+        status_row_gap = 1
+        status_rows_height = 0
+        if len(status_rows) > 0:
+            status_rows_height = (len(status_rows) * status_row_height) + ((len(status_rows) - 1) * status_row_gap)
+        status_table_height = 2 + status_header_height + 6 + status_rows_height
         self._status_table = TableView(
             manager=self.ui_manager,
             container=self.summary_panel,
-            config=TableViewConfig(rect=pygame.Rect((content_x, next_row), (content_width, status_table_height))),
+            config=TableViewConfig(
+                rect=pygame.Rect((content_x, next_row), (content_width, status_table_height)),
+                header_height=status_header_height,
+                row_height=status_row_height,
+                row_gap=status_row_gap,
+                message_height=30,
+            ),
         )
         status_column_gap = 8
         status_padding_total = 16
@@ -184,8 +199,8 @@ class GameOverScene(BaseMenuScene):
         status_table_rows = tuple(
             TableRow(
                 cells=(
-                    TableCell(text=item_name, variant="subtitle"),
-                    TableCell(text=item_value, variant="value"),
+                    TableCell(text=item_name, variant="game_over_item"),
+                    TableCell(text=item_value, variant="game_over_value"),
                 )
             )
             for item_name, item_value in status_rows
@@ -194,29 +209,34 @@ class GameOverScene(BaseMenuScene):
         next_row += status_table_height + 6
 
         create_label(
-            LabelConfig(text=self.t("game_over.score_detail"), rect=pygame.Rect((content_x, next_row), (content_width, 28)), variant="subtitle"),
+            LabelConfig(
+                text=self.t("game_over.score_detail"),
+                rect=pygame.Rect((content_x, next_row), (content_width, 24)),
+                variant="game_over_subtitle",
+            ),
             manager=self.ui_manager,
             container=self.summary_panel,
         )
-        next_row += 24
+        next_row += 26
         breakdown_lines = list(self._score_breakdown_lines)
-        breakdown_row_height = 22
+        breakdown_gap = 1
         available_breakdown_height = max(0, (buttons_y - 12) - next_row)
+        breakdown_row_height = 14
         if len(breakdown_lines) > 0:
-            breakdown_row_height = min(22, max(14, available_breakdown_height // len(breakdown_lines)))
+            breakdown_row_height = min(18, max(12, (available_breakdown_height - (len(breakdown_lines) - 1) * breakdown_gap) // len(breakdown_lines)))
         for line in breakdown_lines:
             _labels.append(
                 create_label(
                     LabelConfig(
                         text=line,
                         rect=pygame.Rect((content_x, next_row), (content_width, breakdown_row_height)),
-                        variant="value",
+                        variant="game_over_breakdown",
                     ),
                     manager=self.ui_manager,
                     container=self.summary_panel,
                 )
             )
-            next_row += breakdown_row_height
+            next_row += breakdown_row_height + breakdown_gap
 
         del _labels
 
@@ -242,12 +262,12 @@ class GameOverScene(BaseMenuScene):
         )
 
         create_label(
-            LabelConfig(text=self.t("game_over.local"), rect=pygame.Rect((20, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=self.t("game_over.local"), rect=pygame.Rect((20, 20), (320, 32)), variant="game_over_subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
         create_label(
-            LabelConfig(text=self.t("game_over.global"), rect=pygame.Rect((combat_rect.width // 2 + 10, 20), (320, 40)), variant="subtitle"),
+            LabelConfig(text=self.t("game_over.global"), rect=pygame.Rect((combat_rect.width // 2 + 10, 20), (320, 32)), variant="game_over_subtitle"),
             manager=self.ui_manager,
             container=self.combat_panel
         )
@@ -293,7 +313,7 @@ class GameOverScene(BaseMenuScene):
         self._global_table.show_loading(self.t("game_over.loading.global"))
 
         self.sync_status_label = create_label(
-            LabelConfig(text=self.t("game_over.sync.running"), rect=pygame.Rect((20, combat_rect.height - 36), (combat_rect.width - 40, 24)), variant="muted"),
+            LabelConfig(text=self.t("game_over.sync.running"), rect=pygame.Rect((20, combat_rect.height - 36), (combat_rect.width - 40, 24)), variant="game_over_muted"),
             manager=self.ui_manager,
             container=self.combat_panel,
         )
@@ -301,7 +321,7 @@ class GameOverScene(BaseMenuScene):
             LabelConfig(
                 text=self.t("game_over.rank_position", local="--", **{"global": "--"}),
                 rect=pygame.Rect((20, combat_rect.height - 62), (combat_rect.width - 40, 24)),
-                variant="value",
+                variant="game_over_value",
             ),
             manager=self.ui_manager,
             container=self.combat_panel,

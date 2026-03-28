@@ -718,6 +718,8 @@ class GameScene(Scene):
             mode=pending.mode_key,
             score=pending.final_score,
             limit=10,
+            stats=summary_stats,
+            duration=self.elapsed_time,
         )
         self.stack.replace(
             GameOverScene(

@@ -6,10 +6,15 @@ import time
 import threading
 import urllib.parse
 import urllib.request
+import base64
+import hashlib
+import hmac
+import re
 from typing import Any, Callable
 
 SUPABASE_URL = "https://irwyyqgxahlmoncfpacg.supabase.co/rest/v1/rankings"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlyd3l5cWd4YWhsbW9uY2ZwYWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzUwMDMsImV4cCI6MjA4OTg1MTAwM30.Lum4HXhLBMn4GmtAjbKAh-7pnjI6YYNoI41g0fZkxUg"
+SECRET_KEY = b"NeonSurge2_SuperSecretKey_2026"
 
 
 class RankingService:
@@ -24,43 +29,71 @@ class RankingService:
         self._lock = threading.Lock()
         self.local_data = self._load_local_data()
 
+    def _calculate_hmac(self, data_dict: dict) -> str:
+        data_str = json.dumps(data_dict, sort_keys=True, separators=(',', ':'))
+        return hmac.new(SECRET_KEY, data_str.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    def generate_signature(self, player_name: str, score: float, mode: str) -> str:
+        data_dict = {"player_name": player_name, "score": score, "mode": mode}
+        return self._calculate_hmac(data_dict)
+
     def _load_local_data(self) -> dict:
         if os.path.exists(self.profile_path):
             try:
                 with open(self.profile_path, "r", encoding="utf-8") as f:
-                    loaded = json.load(f)
-                    if not isinstance(loaded, dict):
+                    content = f.read().strip()
+                
+                try:
+                    decoded = base64.b64decode(content).decode("utf-8")
+                    wrapper = json.loads(decoded)
+                    if not isinstance(wrapper, dict) or "data" not in wrapper or "signature" not in wrapper:
                         return self._empty_data()
-                    player_name = loaded.get("player_name")
-                    if player_name is not None and not isinstance(player_name, str):
+                        
+                    data = wrapper["data"]
+                    signature = wrapper["signature"]
+                    expected_signature = self._calculate_hmac(data)
+                    
+                    if not hmac.compare_digest(signature, expected_signature):
+                        print("[RankingService] Assinatura HMAC inválida. Dados corrompidos ou editados.")
                         return self._empty_data()
-                    scores = loaded.get("scores")
-                    if not isinstance(scores, dict):
-                        return self._empty_data()
-                    normalized_scores: dict[str, list[dict[str, Any]]] = {}
-                    for mode, entries in scores.items():
-                        if not isinstance(mode, str) or not isinstance(entries, list):
+                        
+                    loaded = data
+                except Exception:
+                    # Legacy fallback
+                    loaded = json.loads(content)
+
+                if not isinstance(loaded, dict):
+                    return self._empty_data()
+                player_name = loaded.get("player_name")
+                if player_name is not None and not isinstance(player_name, str):
+                    return self._empty_data()
+                scores = loaded.get("scores")
+                if not isinstance(scores, dict):
+                    return self._empty_data()
+                normalized_scores: dict[str, list[dict[str, Any]]] = {}
+                for mode, entries in scores.items():
+                    if not isinstance(mode, str) or not isinstance(entries, list):
+                        continue
+                    normalized_entries: list[dict[str, Any]] = []
+                    for entry in entries:
+                        if not isinstance(entry, dict):
                             continue
-                        normalized_entries: list[dict[str, Any]] = []
-                        for entry in entries:
-                            if not isinstance(entry, dict):
-                                continue
-                            entry_player = str(entry.get("player_name", "Desconhecido"))
-                            entry_score = float(entry.get("score", 0.0))
-                            entry_id = str(entry.get("id", f"{mode}-{time.time_ns()}"))
-                            normalized_entries.append(
-                                {
-                                    "id": entry_id,
-                                    "player_name": entry_player,
-                                    "score": entry_score,
-                                    "synced": bool(entry.get("synced", False)),
-                                    "sync_attempts": max(0, int(entry.get("sync_attempts", 0))),
-                                    "created_at": float(entry.get("created_at", time.time())),
-                                }
-                            )
-                        normalized_entries.sort(key=lambda item: item.get("score", 0.0), reverse=True)
-                        normalized_scores[mode] = normalized_entries[:30]
-                    return {"player_name": player_name, "scores": normalized_scores}
+                        entry_player = str(entry.get("player_name", "Desconhecido"))
+                        entry_score = float(entry.get("score", 0.0))
+                        entry_id = str(entry.get("id", f"{mode}-{time.time_ns()}"))
+                        normalized_entries.append(
+                            {
+                                "id": entry_id,
+                                "player_name": entry_player,
+                                "score": entry_score,
+                                "synced": bool(entry.get("synced", False)),
+                                "sync_attempts": max(0, int(entry.get("sync_attempts", 0))),
+                                "created_at": float(entry.get("created_at", time.time())),
+                            }
+                        )
+                    normalized_entries.sort(key=lambda item: item.get("score", 0.0), reverse=True)
+                    normalized_scores[mode] = normalized_entries[:30]
+                return {"player_name": player_name, "scores": normalized_scores}
             except Exception:
                 pass
         return self._empty_data()
@@ -71,8 +104,11 @@ class RankingService:
 
     def _save_local_data(self) -> None:
         try:
+            signature = self._calculate_hmac(self.local_data)
+            payload = json.dumps({"data": self.local_data, "signature": signature})
+            encoded = base64.b64encode(payload.encode("utf-8")).decode("utf-8")
             with open(self.profile_path, "w", encoding="utf-8") as f:
-                json.dump(self.local_data, f, indent=4)
+                f.write(encoded)
         except Exception as e:
             print(f"[RankingService] Erro ao salvar dados locais: {e}")
 
@@ -80,8 +116,9 @@ class RankingService:
         return self.local_data.get("player_name")
 
     def set_player_name(self, name: str) -> None:
+        clean_name = re.sub(r'[^a-zA-Z0-9 ]', '', name)[:15]
         with self._lock:
-            self.local_data["player_name"] = name
+            self.local_data["player_name"] = clean_name
             self._save_local_data()
 
     def save_local_score(self, player_name: str, mode: str, score: float, synced: bool = False) -> str:
@@ -175,25 +212,15 @@ class RankingService:
                 return
 
     def submit_global_score(self, player_name: str, mode: str, score: float, timeout: float = 3.0) -> bool:
-        try:
-            payload = json.dumps(
-                {
-                    "player_name": player_name,
-                    "score": float(score),
-                    "mode": mode,
-                }
-            ).encode("utf-8")
-            post_request = urllib.request.Request(
-                SUPABASE_URL,
-                data=payload,
-                headers=self.headers,
-                method="POST",
-            )
-            with urllib.request.urlopen(post_request, timeout=timeout):
-                return True
-        except Exception as e:
-            print(f"[RankingService] Erro no envio global: {e}")
-            return False
+        from game.services.supabase_service import SupabaseService
+        signature = self.generate_signature(player_name, score, mode)
+        return SupabaseService().submit_score(
+            player_name=player_name,
+            score=score,
+            mode=mode,
+            signature=signature,
+            timeout=timeout
+        )
 
     def sync_pending_scores(
         self,

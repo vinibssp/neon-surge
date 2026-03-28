@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 import pygame
@@ -7,6 +8,7 @@ import pygame
 from game.config import SCREEN_HEIGHT, SCREEN_WIDTH
 from game.scenes.menus._base_menu_scene import BaseMenuScene
 from game.services.ranking_service import RankingService
+from game.services.supabase_service import SupabaseService
 from game.ui.components import (
     ButtonConfig,
     LabelConfig,
@@ -31,6 +33,7 @@ class LeaderboardScene(BaseMenuScene):
         self._highlight_data = highlight_data
         self._local_table: RankingTable | None = None
         self._global_table: RankingTable | None = None
+        self._global_fallback_local = False
         
         # Internal key -> Display name
         self._modes = {
@@ -43,6 +46,9 @@ class LeaderboardScene(BaseMenuScene):
         self._time_based_modes = {"OneVsOne", "Training"}
         
         self._setup_ui()
+        self._fetch_data()
+
+    def on_enter(self) -> None:
         self._fetch_data()
 
     def _setup_ui(self) -> None:
@@ -154,14 +160,23 @@ class LeaderboardScene(BaseMenuScene):
         current_ticket = self._fetch_ticket
         self._local_applied = False
         self._global_applied = False
+        self._global_fallback_local = False
         self._local_data = RankingService().get_local_ranking(mode=self._mode_key, limit=10)
         self._global_data = None
+        mode_key = self._mode_key
+        local_fallback_snapshot = list(self._local_data)
 
-        RankingService().fetch_global_ranking(
-            limit=10,
-            mode=self._mode_key,
-            callback=lambda data: self._on_global_ranking_fetched(current_ticket, data),
-        )
+        def _run_fetch() -> None:
+            try:
+                global_scores = SupabaseService().fetch_top_scores(mode=mode_key, limit=10)
+                self._on_global_ranking_fetched(current_ticket, global_scores)
+            except Exception:
+                if current_ticket != self._fetch_ticket:
+                    return
+                self._global_fallback_local = True
+                self._on_global_ranking_fetched(current_ticket, local_fallback_snapshot)
+
+        threading.Thread(target=_run_fetch, daemon=True).start()
 
     def _on_global_ranking_fetched(self, ticket: int, data: list[dict[str, Any]]) -> None:
         if ticket != self._fetch_ticket:

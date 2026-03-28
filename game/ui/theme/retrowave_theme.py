@@ -266,13 +266,79 @@ THEME_DATA = {
         }
     },
 
-    "label.subtitle": {
+    "label.game_over_title": {
+        "colours": {
+            "normal_text": ACCENT_PINK
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "36",
+            "bold": "1"
+        }
+    },
+
+    "label.game_over_subtitle": {
         "colours": {
             "normal_text": ACCENT_BLUE
         },
         "font": {
             "name": "noto_sans",
             "size": "16",
+            "bold": "1"
+        }
+    },
+
+    "label.game_over_item": {
+        "colours": {
+            "normal_text": "#8fc7e6"
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "0"
+        }
+    },
+
+    "label.game_over_value": {
+        "colours": {
+            "normal_text": ACCENT_BLUE
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "14",
+            "bold": "1"
+        }
+    },
+
+    "label.game_over_breakdown": {
+        "colours": {
+            "normal_text": ACCENT_BLUE
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "12",
+            "bold": "1"
+        }
+    },
+
+    "label.game_over_muted": {
+        "colours": {
+            "normal_text": "#6a4a7e"
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "12",
+            "bold": "0"
+        }
+    },
+
+    "label.subtitle": {
+        "colours": {
+            "normal_text": ACCENT_BLUE
+        },
+        "font": {
+            "name": "noto_sans",
+            "size": "20",
             "bold": "0"
         }
     },
@@ -294,7 +360,7 @@ THEME_DATA = {
         },
         "font": {
             "name": "noto_sans",
-            "size": "14",
+            "size": "16",
             "bold": "1"
         }
     },

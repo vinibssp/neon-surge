@@ -38,6 +38,9 @@ class Game:
 
             interpolation = accumulator / FIXED_DT
             del interpolation
+            current_screen = pygame.display.get_surface()
+            if current_screen is not None and current_screen is not self.screen:
+                self.screen = current_screen
             self.screen.fill(BACKGROUND_COLOR)
             self.scene_stack.render(self.screen)
             pygame.display.flip()

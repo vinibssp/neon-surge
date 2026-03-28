@@ -37,11 +37,12 @@ class PlayerNameScene(BaseMenuScene):
         self.text_entry = create_text_input(
             TextInputConfig(
                 initial_text=current_name, 
-                rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 280), (300, 50))
+                rect=pygame.Rect((SCREEN_WIDTH // 2 - 150, 280), (300, 50)),
+                length_limit=15,
+                regex_pattern=r"^[a-zA-Z0-9 ]*$"
             ),
             manager=self.ui_manager
         )
-        self.text_entry.set_text_length_limit(12)
         
         confirm_btn = create_button(
             ButtonConfig(

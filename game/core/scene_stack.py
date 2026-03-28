@@ -10,6 +10,7 @@ from game.core.events import AudioContextChanged, EventBus
 
 if TYPE_CHECKING:
     from game.audio.audio_settings_manager import AudioSettingsManager
+    from game.core.display_settings import DisplaySettingsManager
     from game.core.input_settings import InputSettingsManager
     from game.core.localization import LocalizationManager
 
@@ -44,6 +45,7 @@ class SceneStack:
         self._stack: list[Scene] = []
         self.event_bus = EventBus()
         self.audio_settings_manager: AudioSettingsManager | None = None
+        self.display_settings_manager: DisplaySettingsManager | None = None
         self.input_settings_manager: InputSettingsManager | None = None
         self.localization_manager: LocalizationManager | None = None
         self.joysticks: list[pygame.joystick.Joystick] = []
