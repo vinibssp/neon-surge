@@ -6,14 +6,20 @@ Jogo 2D em Python + Pygame com arquitetura modular e desacoplada, seguindo ECS, 
 
 - Python 3.11+
 - `pygame-ce`
-- `pygame_gui`
-- Dependências em `requirements.txt`
+- `pygame-gui`
+- Dependencias em `requirements.txt`
 
 ## Instalação
 
 ```bash
 python -m venv .venv
+
+# Linux/macOS
 source .venv/bin/activate
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 ```
 
@@ -22,6 +28,55 @@ pip install -r requirements.txt
 ```bash
 python -m game.main
 ```
+
+## Validacao Tecnica
+
+```bash
+python -m compileall -q game
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+## Publicacao
+
+- CI em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) com matriz Python 3.11/3.12
+- Smoke test headless em [`tests/test_smoke_boot.py`](tests/test_smoke_boot.py)
+- Dependencias fixadas em [`requirements.txt`](requirements.txt)
+- Licenca em [`LICENSE`](LICENSE)
+
+### Publicacao Multiplataforma
+
+- Entrypoint de empacotamento: [`main.py`](main.py)
+- Dependencias de release: [`requirements-release.txt`](requirements-release.txt)
+- Build web (WASM): [`pygbag.toml`](pygbag.toml)
+- Build Android (APK): [`buildozer.spec`](buildozer.spec)
+- Workflow manual de builds: [`.github/workflows/release-multiplatform.yml`](.github/workflows/release-multiplatform.yml)
+
+#### PC (Windows executavel)
+
+```bash
+pip install -r requirements-release.txt
+pyinstaller --noconfirm --clean --name neon-surge --windowed --add-data "game/assets;game/assets" main.py
+```
+
+Saida: `dist/neon-surge/`
+
+#### Navegador (WebAssembly)
+
+```bash
+pip install -r requirements-release.txt
+python -m pygbag --build main.py
+```
+
+Saida: `build/web/`
+
+#### Android (APK debug)
+
+```bash
+pip install -r requirements-release.txt
+buildozer android debug
+```
+
+Saida: `bin/*.apk`
 
 ## Controles
 

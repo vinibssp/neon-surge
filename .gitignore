@@ -2,3 +2,8 @@
 __pycache__/
 *.pyc
 player_profile.json
+build/
+dist/
+bin/
+.buildozer/
+*.spec.bak

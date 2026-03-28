@@ -1,0 +1,14 @@
+app_name = "Neon Surge 2"
+package = "neon_surge"
+icon = ""
+ume_block = 0
+can_close = false
+
+[build]
+source = "."
+
+[include]
+paths = [
+  "main.py",
+  "game",
+]

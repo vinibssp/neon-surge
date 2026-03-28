@@ -245,3 +245,12 @@ game/
 - Nomeação explícita e orientada a intenção
 - Não quebrar contratos públicos sem justificativa
 - Remover ou reintegrar código morto
+
+## Prontidão de Publicação
+
+- Build e validação devem ser automatizados por CI (`.github/workflows/ci.yml`)
+- Publicação deve exigir, no mínimo, compile check + smoke test headless
+- Dependências de runtime devem ficar centralizadas em `requirements.txt`
+- Repositório deve manter licença explícita (`LICENSE`) antes de release pública
+- Build de distribuição deve cobrir `desktop`, `web` e `android` via workflow dedicado (`.github/workflows/release-multiplatform.yml`)
+- Entrypoint de empacotamento deve permanecer estável em `main.py` para tooling de release
