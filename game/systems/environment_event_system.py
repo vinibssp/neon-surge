@@ -6,6 +6,7 @@ import random
 from pygame import Rect, Vector2
 
 from game.components.data_components import CollisionComponent, InvulnerabilityComponent, MovementComponent, TransformComponent
+from game.config import TEST_PLAYER_IMMORTAL
 from game.core.events import PlayerDamaged, PlayerDied
 from game.core.world import GameWorld
 from game.systems.world_queries import COLLIDABLE_QUERY
@@ -287,6 +288,8 @@ class EnvironmentEventSystem:
         self._publish_lava_state()
 
     def _kill_player(self, cause: str) -> None:
+        if TEST_PLAYER_IMMORTAL:
+            return
         if self.world.runtime_state.get("death_transition"):
             return
         self.world.runtime_state["death_transition"] = True

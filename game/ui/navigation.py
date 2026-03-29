@@ -73,6 +73,12 @@ class PygameGUIEventAdapter:
                 self.navigator.on_control_hovered(ui_element)
             return False
 
+        if self._text_entry_finished_event is not None and event.type == self._text_entry_finished_event:
+            ui_element = getattr(event, "ui_element", None)
+            if self.navigator.knows_control(ui_element):
+                self.navigator.on_control_pressed(ui_element)
+            return False
+
         return False
 
     def update(self, dt: float) -> None:

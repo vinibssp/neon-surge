@@ -27,6 +27,7 @@ from game.core.events import (
     SpawnPortalDestroyed,
 )
 from game.core.enemy_names import enemy_kind_from_entity, format_enemy_name
+from game.config import TEST_PLAYER_IMMORTAL
 from game.core.world import GameWorld
 from game.ecs.entity import Entity
 from game.systems.world_queries import COLLIDABLE_QUERY, MORTAR_SHELL_QUERY
@@ -259,6 +260,8 @@ class CollisionSystem:
         return stagger is not None and stagger.time_left > 0.0
 
     def _kill_player(self, cause: str) -> None:
+        if TEST_PLAYER_IMMORTAL:
+            return
         if self.world.runtime_state.get("death_transition"):
             return
         self.world.runtime_state["death_transition"] = True
