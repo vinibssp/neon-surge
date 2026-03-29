@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from pygame import Rect
 from pygame import Vector2
 
-from game.components.data_components import MovementComponent, TransformComponent
+from game.components.data_components import EnemyKindComponent, MovementComponent, TransformComponent
 from game.core.events import EnemySpawned
 from game.core.world import GameWorld
 from game.factories.enemy_factory import EnemyFactory
@@ -133,6 +133,10 @@ class LabyrinthMode(GameModeStrategy):
                 speed=speed,
             )
             scene.world.add_entity(virus)
+            virus_kind = virus.get_component(EnemyKindComponent)
+            scene.world.event_bus.publish(
+                EnemySpawned(enemy_kind=virus_kind.kind if virus_kind is not None else "maze_virus")
+            )
 
     def build_level_progression_strategy(self) -> LevelProgressionStrategy:
         return LabyrinthLevelProgressionStrategy()
@@ -258,6 +262,10 @@ class LabyrinthMode(GameModeStrategy):
                 radius=11.0,
             )
             scene.world.add_entity(support_enemy)
+            support_kind = support_enemy.get_component(EnemyKindComponent)
+            scene.world.event_bus.publish(
+                EnemySpawned(enemy_kind=support_kind.kind if support_kind is not None else "maze_virus")
+            )
 
     def _position_player(self, scene: "GameScene", level: int, layout: LabyrinthLayout) -> None:
         del level
